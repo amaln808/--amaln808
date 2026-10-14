@@ -30,7 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/', label: ar.nav.dashboard, shortLabel: 'المؤشرات', icon: LayoutDashboard, primary: true },
   { to: '/inventory', label: ar.nav.inventory, icon: Boxes, primary: true },
   { to: '/production', label: ar.nav.production, icon: Factory, primary: true },
-  { to: '/customers', label: ar.nav.customers, shortLabel: ar.nav.customersShort, icon: Users, primary: true },
+  { to: '/customers', label: ar.nav.customers, shortLabel: ar.nav.customersShort, icon: Users, primary: true, also: ['/invoices', '/quotes'] },
   { to: '/suppliers', label: ar.nav.suppliers, icon: Truck, primary: false, also: ['/purchases'] },
   { to: '/expenses', label: ar.nav.expenses, icon: ReceiptText, primary: false },
   { to: '/settings', label: ar.nav.settings, icon: Settings, primary: false },

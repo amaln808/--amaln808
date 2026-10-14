@@ -4,6 +4,41 @@ import type { ExpenseCategory, Item, Settings } from './types'
 
 export const SETTINGS_ID = 'main'
 
+const OLD_DEFAULT_NAME = 'مصنع معجون التمر'
+
+export const BUSINESS_DEFAULTS = {
+  businessName: 'زوردة',
+  businessPhone: '77681600',
+  commercialRegNo: '1552738',
+  businessAddress: 'بوشر',
+}
+
+/** Fills settings fields added after v1, keeping anything the user already set. */
+type UpgradedFields = Pick<
+  Settings,
+  | 'businessName'
+  | 'businessPhone'
+  | 'commercialRegNo'
+  | 'businessAddress'
+  | 'quotePrefix'
+  | 'nextQuoteNo'
+  | 'invoiceDueDays'
+  | 'quoteValidityDays'
+>
+
+export function upgradeSettings(s: Partial<Settings>): UpgradedFields {
+  return {
+    businessName: !s.businessName || s.businessName === OLD_DEFAULT_NAME ? BUSINESS_DEFAULTS.businessName : s.businessName,
+    businessPhone: s.businessPhone || BUSINESS_DEFAULTS.businessPhone,
+    commercialRegNo: s.commercialRegNo || BUSINESS_DEFAULTS.commercialRegNo,
+    businessAddress: s.businessAddress || BUSINESS_DEFAULTS.businessAddress,
+    quotePrefix: s.quotePrefix ?? 'Q-',
+    nextQuoteNo: s.nextQuoteNo ?? 1,
+    invoiceDueDays: s.invoiceDueDays ?? 15,
+    quoteValidityDays: s.quoteValidityDays ?? 14,
+  }
+}
+
 const DEFAULT_EXPENSE_CATEGORIES: Array<[string, string]> = [
   ['إيجار', '#8b5cf6'],
   ['كهرباء', '#f59e0b'],
@@ -51,13 +86,13 @@ export async function seedIfEmpty(db: FactoryDB): Promise<void> {
       id: SETTINGS_ID,
       createdAt: now,
       updatedAt: now,
-      businessName: 'مصنع معجون التمر',
       currency: 'OMR',
       vatRatePercent: 0,
       invoicePrefix: 'INV-',
       batchPrefix: 'B-',
       nextInvoiceNo: 1,
       nextBatchNo: 1,
+      ...upgradeSettings({}),
     }
     await db.settings.add(settings)
 

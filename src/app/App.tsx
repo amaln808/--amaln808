@@ -1,5 +1,9 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { CustomerDetailPage } from '../features/customers/CustomerDetailPage'
 import { CustomersPage } from '../features/customers/CustomersPage'
+import { InvoiceDetailPage } from '../features/sales/InvoiceDetailPage'
+import { QuoteDetailPage } from '../features/sales/QuoteDetailPage'
+import { SalesDocFormPage } from '../features/sales/SalesDocFormPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { ExpensesPage } from '../features/expenses/ExpensesPage'
 import { InventoryPage } from '../features/inventory/InventoryPage'
@@ -30,6 +34,11 @@ const router = createBrowserRouter([
       { path: '/purchases/new', element: <PurchaseFormPage /> },
       { path: '/purchases/:id', element: <PurchaseDetailPage /> },
       { path: '/customers', element: <CustomersPage /> },
+      { path: '/customers/:id', element: <CustomerDetailPage /> },
+      { path: '/invoices/new', element: <SalesDocFormPage key="invoice" kind="invoice" /> },
+      { path: '/invoices/:id', element: <InvoiceDetailPage /> },
+      { path: '/quotes/new', element: <SalesDocFormPage key="quote" kind="quote" /> },
+      { path: '/quotes/:id', element: <QuoteDetailPage /> },
       { path: '/expenses', element: <ExpensesPage /> },
       { path: '/settings', element: <SettingsPage /> },
       { path: '/more', element: <MorePage /> },

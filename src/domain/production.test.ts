@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   computeBatchCost,
   findShortages,
-  formatBatchNo,
+  formatDocNo,
   mergeConsumption,
   recipeUnitCost,
   suggestConsumption,
@@ -71,6 +71,6 @@ describe('production costing', () => {
       ['jar', 45],
     ])
     expect(recipeUnitCost(recipe, avg)).toBe(322.5)
-    expect(formatBatchNo('B-', 7)).toBe('B-0007')
+    expect(formatDocNo('B-', 7)).toBe('B-0007')
   })
 })

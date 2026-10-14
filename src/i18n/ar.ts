@@ -1,5 +1,5 @@
 export const ar = {
-  appName: 'مصنع معجون التمر',
+  appName: 'زوردة',
   nav: {
     dashboard: 'لوحة المؤشرات',
     inventory: 'المخزون',
@@ -30,6 +30,25 @@ export const ar = {
     sale: 'بيع',
     adjustment: 'تسوية',
     waste: 'تالف',
+  },
+  customerTypes: {
+    individual: 'فرد',
+    store: 'متجر',
+    distributor: 'موزع',
+  },
+  invoiceStatus: {
+    paid: 'مدفوعة',
+    partial: 'مدفوعة جزئياً',
+    unpaid: 'غير مدفوعة',
+    overdue: 'متأخرة',
+  },
+  quoteStatus: {
+    draft: 'مسودة',
+    sent: 'مُرسل',
+    accepted: 'مقبول',
+    rejected: 'مرفوض',
+    expired: 'منتهي',
+    invoiced: 'تحوّل لفاتورة',
   },
   paymentMethods: {
     cash: 'نقداً',

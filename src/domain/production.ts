@@ -72,6 +72,7 @@ export function recipeUnitCost(components: Component[], avgCost: Map<string, num
   return roundUnitCost(components.reduce((s, c) => s + c.qtyPerUnit * (avgCost.get(c.itemId) ?? 0), 0))
 }
 
-export function formatBatchNo(prefix: string, n: number): string {
+export function formatDocNo(prefix: string, n: number): string {
   return `${prefix}${String(n).padStart(4, '0')}`
 }
+

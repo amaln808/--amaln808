@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+import { upgradeSettings } from './seed'
 import type {
   Customer,
   CustomerPayment,
@@ -7,6 +8,7 @@ import type {
   Item,
   ProductionBatch,
   Purchase,
+  Quotation,
   Recipe,
   SalesInvoice,
   Settings,
@@ -27,6 +29,7 @@ export class FactoryDB extends Dexie {
   customers!: EntityTable<Customer, 'id'>
   salesInvoices!: EntityTable<SalesInvoice, 'id'>
   customerPayments!: EntityTable<CustomerPayment, 'id'>
+  quotations!: EntityTable<Quotation, 'id'>
   expenseCategories!: EntityTable<ExpenseCategory, 'id'>
   expenses!: EntityTable<Expense, 'id'>
 
@@ -47,6 +50,15 @@ export class FactoryDB extends Dexie {
       expenseCategories: 'id, name',
       expenses: 'id, categoryId, date',
     })
+    // v2: quotations + business details for invoices
+    this.version(2)
+      .stores({ quotations: 'id, &quoteNo, customerId, date, status' })
+      .upgrade((tx) =>
+        tx
+          .table('settings')
+          .toCollection()
+          .modify((s: Partial<Settings>) => Object.assign(s, upgradeSettings(s))),
+      )
   }
 }
 

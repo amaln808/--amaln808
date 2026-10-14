@@ -2,7 +2,7 @@ import type { FactoryDB } from '../db/db'
 import { newRecord } from '../db/records'
 import { SETTINGS_ID } from '../db/seed'
 import type { ConsumedLine, ID, ProductionBatch } from '../db/types'
-import { computeBatchCost, findShortages, formatBatchNo, mergeConsumption, type ConsumptionLine } from '../domain/production'
+import { computeBatchCost, findShortages, formatDocNo, mergeConsumption, type ConsumptionLine } from '../domain/production'
 import { formatQty } from '../domain/quantity'
 import { UserError } from './errors'
 import { getItemOrThrow, postMovement, reverseMovements } from './stock'
@@ -76,7 +76,7 @@ export async function createBatch(db: FactoryDB, input: BatchInput): Promise<ID>
 
     const batch: ProductionBatch = {
       ...newRecord({
-        batchNo: formatBatchNo(settings?.batchPrefix ?? 'B-', seq),
+        batchNo: formatDocNo(settings?.batchPrefix ?? 'B-', seq),
         date: input.date,
         recipeId: input.recipeId,
         finishedItemId: product.id,

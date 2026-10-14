@@ -17,12 +17,23 @@ export type PaymentMethod = 'cash' | 'bank' | 'card' | 'other'
 export interface Settings extends BaseRecord {
   businessName: string
   businessPhone?: string
+  /** Commercial registration number (س.ت) */
+  commercialRegNo?: string
+  businessAddress?: string
+  /** Custom logo as a data URL; the bundled /logo.png is used otherwise */
+  logoDataUrl?: string
   currency: 'OMR'
   vatRatePercent: number
   invoicePrefix: string
   batchPrefix: string
+  quotePrefix: string
   nextInvoiceNo: number
   nextBatchNo: number
+  nextQuoteNo: number
+  /** Default days until an invoice is due */
+  invoiceDueDays: number
+  /** Default days a quotation stays valid */
+  quoteValidityDays: number
   lastBackupAt?: ISODateTime
   /** Set once the estimated starter recipes have been created */
   recipesSeeded?: boolean
@@ -164,6 +175,34 @@ export interface SalesInvoice extends BaseRecord {
   vatRatePercent: number
   vatBaisa: number
   totalBaisa: number
+  /** The quotation this invoice was created from */
+  quoteId?: ID
+  notes?: string
+}
+
+export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected'
+
+export interface QuoteLine {
+  itemId: ID
+  qty: number
+  unitPriceBaisa: number
+}
+
+/** Price quotation; does not touch stock or balances. */
+export interface Quotation extends BaseRecord {
+  quoteNo: string
+  customerId: ID
+  date: ISODate
+  validUntil?: ISODate
+  lines: QuoteLine[]
+  subtotalBaisa: number
+  discountBaisa: number
+  vatRatePercent: number
+  vatBaisa: number
+  totalBaisa: number
+  status: QuoteStatus
+  /** Set once converted to a sales invoice */
+  invoiceId?: ID
   notes?: string
 }
 

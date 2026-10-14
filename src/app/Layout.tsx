@@ -26,8 +26,11 @@ function Sidebar() {
   return (
     <aside className="hidden md:flex w-56 lg:w-64 shrink-0 flex-col border-e border-stone-200 bg-white">
       <div className="flex items-center gap-3 px-5 py-5">
-        <img src="/icon.svg" alt="" className="size-10 rounded-xl" />
-        <span className="font-bold text-brand-800 leading-tight">{ar.appName}</span>
+        <img src="/logo.png" alt="" className="h-14 w-auto" />
+        <div className="leading-tight">
+          <div className="text-xl font-bold text-[#5b4a2f]">{ar.appName}</div>
+          <div className="text-xs text-stone-500">إدارة المصنع</div>
+        </div>
       </div>
       <nav className="flex flex-col gap-1 px-3 pb-4">
         {NAV_ITEMS.map((item) => {
