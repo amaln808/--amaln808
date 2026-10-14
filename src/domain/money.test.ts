@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { formatBaisa, formatOMR, lineTotal, normalizeDigits, parseRialToBaisa } from './money'
-import { formatQty, parseQty } from './quantity'
+import { formatQty, formatSignedQty, parseQty } from './quantity'
 
 describe('money', () => {
   it('formats baisa as rials with 3 decimals', () => {
     expect(formatBaisa(1234500)).toBe('1,234.500')
     expect(formatBaisa(5)).toBe('0.005')
     expect(formatOMR(0)).toBe('0.000 ر.ع')
+    expect(formatOMR(-5000)).toBe('\u2066-5.000\u2069 ر.ع')
   })
 
   it('parses rial input into integer baisa', () => {
@@ -45,5 +46,7 @@ describe('quantity', () => {
     expect(parseQty('٢٥٠')).toBe(250)
     expect(parseQty('x')).toBeNull()
     expect(formatQty(12.5, 'kg')).toBe('12.5 كجم')
+    expect(formatSignedQty(-2, 'kg')).toBe('\u2066−2\u2069 كجم')
+    expect(formatSignedQty(20)).toBe('\u2066+20\u2069')
   })
 })

@@ -10,9 +10,18 @@ const rialFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 3,
 })
 
-/** 1234500 → "1,234.500" */
+/**
+ * Wraps text in a left-to-right isolate so a sign stays next to its number
+ * inside Arabic (RTL) text, e.g. "−2" instead of "2−".
+ */
+export function ltr(text: string): string {
+  return `\u2066${text}\u2069`
+}
+
+/** 1234500 → "1,234.500" (negative values are direction-isolated) */
 export function formatBaisa(baisa: number): string {
-  return rialFormatter.format(baisa / BAISA_PER_RIAL)
+  const s = rialFormatter.format(baisa / BAISA_PER_RIAL)
+  return baisa < 0 ? ltr(s) : s
 }
 
 /** 1234500 → "1,234.500 ر.ع" */
@@ -55,4 +64,9 @@ export function roundBaisa(baisa: number): number {
 /** qty × unit price, rounded to whole baisa. */
 export function lineTotal(qty: number, unitBaisa: number): number {
   return roundBaisa(qty * unitBaisa)
+}
+
+/** Baisa → plain rial string for pre-filling an input, e.g. 1250 → "1.250". */
+export function baisaToInput(baisa: number): string {
+  return (Math.round(baisa) / BAISA_PER_RIAL).toFixed(3)
 }

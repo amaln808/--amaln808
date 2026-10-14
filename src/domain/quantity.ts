@@ -1,4 +1,4 @@
-import { normalizeDigits } from './money'
+import { ltr, normalizeDigits } from './money'
 
 export type Unit = 'kg' | 'g' | 'piece' | 'liter'
 
@@ -23,6 +23,12 @@ export function parseQty(input: string): number | null {
 const qtyFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 })
 
 export function formatQty(qty: number, unit?: Unit): string {
-  const n = qtyFormatter.format(qty)
+  const n = qty < 0 ? ltr(qtyFormatter.format(qty)) : qtyFormatter.format(qty)
+  return unit ? `${n} ${UNIT_LABELS[unit]}` : n
+}
+
+/** "+20 كجم" / "−2 كجم" with the sign kept beside the number in RTL text. */
+export function formatSignedQty(qty: number, unit?: Unit): string {
+  const n = ltr(`${qty > 0 ? '+' : qty < 0 ? '−' : ''}${qtyFormatter.format(Math.abs(qty))}`)
   return unit ? `${n} ${UNIT_LABELS[unit]}` : n
 }

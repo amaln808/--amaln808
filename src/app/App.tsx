@@ -3,6 +3,10 @@ import { CustomersPage } from '../features/customers/CustomersPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { ExpensesPage } from '../features/expenses/ExpensesPage'
 import { InventoryPage } from '../features/inventory/InventoryPage'
+import { ItemDetailPage } from '../features/inventory/ItemDetailPage'
+import { PurchaseDetailPage } from '../features/purchases/PurchaseDetailPage'
+import { PurchaseFormPage } from '../features/purchases/PurchaseFormPage'
+import { SupplierDetailPage } from '../features/suppliers/SupplierDetailPage'
 import { ProductionPage } from '../features/production/ProductionPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { SuppliersPage } from '../features/suppliers/SuppliersPage'
@@ -15,8 +19,12 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <DashboardPage /> },
       { path: '/inventory', element: <InventoryPage /> },
+      { path: '/inventory/:id', element: <ItemDetailPage /> },
       { path: '/production', element: <ProductionPage /> },
       { path: '/suppliers', element: <SuppliersPage /> },
+      { path: '/suppliers/:id', element: <SupplierDetailPage /> },
+      { path: '/purchases/new', element: <PurchaseFormPage /> },
+      { path: '/purchases/:id', element: <PurchaseDetailPage /> },
       { path: '/customers', element: <CustomersPage /> },
       { path: '/expenses', element: <ExpensesPage /> },
       { path: '/settings', element: <SettingsPage /> },

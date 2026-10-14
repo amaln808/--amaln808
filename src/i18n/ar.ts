@@ -23,6 +23,20 @@ export const ar = {
     packaging: 'تغليف',
     finished: 'منتج نهائي',
   },
+  movementTypes: {
+    purchase: 'شراء',
+    production_in: 'إنتاج (إضافة)',
+    production_out: 'استهلاك في الإنتاج',
+    sale: 'بيع',
+    adjustment: 'تسوية',
+    waste: 'تالف',
+  },
+  paymentMethods: {
+    cash: 'نقداً',
+    bank: 'تحويل بنكي',
+    card: 'بطاقة',
+    other: 'أخرى',
+  },
   storage: {
     title: 'حفظ البيانات',
     persisted: 'البيانات محمية من الحذف التلقائي على هذا الجهاز.',
