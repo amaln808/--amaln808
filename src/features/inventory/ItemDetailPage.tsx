@@ -18,6 +18,7 @@ import { ItemFormModal } from './ItemFormModal'
 
 function refLink(m: StockMovement): string | null {
   if (m.refType === 'purchase' && m.refId) return `/purchases/${m.refId}`
+  if (m.refType === 'batch' && m.refId) return `/production/${m.refId}`
   return null
 }
 

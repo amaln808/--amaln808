@@ -24,6 +24,8 @@ export interface Settings extends BaseRecord {
   nextInvoiceNo: number
   nextBatchNo: number
   lastBackupAt?: ISODateTime
+  /** Set once the estimated starter recipes have been created */
+  recipesSeeded?: boolean
 }
 
 export type ItemType = 'raw' | 'packaging' | 'finished'
@@ -106,6 +108,8 @@ export interface Recipe extends BaseRecord {
   name: string
   components: RecipeComponent[]
   active: boolean
+  /** Starter recipe with guessed quantities; cleared when the user saves it */
+  isEstimate?: boolean
 }
 
 export interface ConsumedLine {
@@ -117,7 +121,7 @@ export interface ConsumedLine {
 export interface ProductionBatch extends BaseRecord {
   batchNo: string
   date: ISODate
-  recipeId: ID
+  recipeId?: ID
   finishedItemId: ID
   qtyProduced: number
   consumed: ConsumedLine[]

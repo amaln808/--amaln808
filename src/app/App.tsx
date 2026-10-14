@@ -7,6 +7,8 @@ import { ItemDetailPage } from '../features/inventory/ItemDetailPage'
 import { PurchaseDetailPage } from '../features/purchases/PurchaseDetailPage'
 import { PurchaseFormPage } from '../features/purchases/PurchaseFormPage'
 import { SupplierDetailPage } from '../features/suppliers/SupplierDetailPage'
+import { BatchDetailPage } from '../features/production/BatchDetailPage'
+import { BatchFormPage } from '../features/production/BatchFormPage'
 import { ProductionPage } from '../features/production/ProductionPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { SuppliersPage } from '../features/suppliers/SuppliersPage'
@@ -21,6 +23,8 @@ const router = createBrowserRouter([
       { path: '/inventory', element: <InventoryPage /> },
       { path: '/inventory/:id', element: <ItemDetailPage /> },
       { path: '/production', element: <ProductionPage /> },
+      { path: '/production/new', element: <BatchFormPage /> },
+      { path: '/production/:id', element: <BatchDetailPage /> },
       { path: '/suppliers', element: <SuppliersPage /> },
       { path: '/suppliers/:id', element: <SupplierDetailPage /> },
       { path: '/purchases/new', element: <PurchaseFormPage /> },

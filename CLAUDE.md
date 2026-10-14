@@ -35,6 +35,9 @@
   - تُحسب **تكلفة الوحدة** = (تكلفة المواد المستهلكة + تكاليف إضافية مباشرة اختيارية للدفعة، مثل غاز التشغيل) ÷ الكمية المنتجة.
   - **الرواتب لا تدخل** في تكلفة الدفعة (تُسجل في المصروفات العامة).
 - منع الحفظ إذا كانت المواد غير كافية (مع رسالة توضح النقص).
+- **وصفة واحدة لكل منتج نهائي.** الوصفة تُستخدم للاقتراح فقط؛ الاستهلاك الفعلي يُعدَّل في كل دفعة.
+- **الوصفات التقديرية:** الكميات الحقيقية غير معروفة بعد، فتُنشأ مرة واحدة وصفات مبدئية (`isEstimate = true`) بنسبة ≈70% تمر / 30% فول سوداني + علبة + غطاء + ملصق. تظهر بشارة «تقديرية» حتى يحفظها المستخدم بعد تعديلها.
+- حذف دفعة يعيد المواد للمخزون ويخصم العبوات، ويُرفض إذا بيعت أو استُخدمت عبوات منها.
 - رقم دفعة تلقائي، تاريخ إنتاج، تاريخ انتهاء اختياري.
 
 ### 2.4 العملاء
@@ -132,7 +135,7 @@ src/
 حقول مشتركة في كل جدول: `id`, `createdAt`, `updatedAt`.
 
 ### settings (سجل واحد)
-`businessName`, `businessPhone?`, `currency: 'OMR'`, `vatRatePercent` (= 0 حالياً), `invoicePrefix`, `batchPrefix`, `nextInvoiceNo`, `nextBatchNo`, `lastBackupAt?`
+`businessName`, `businessPhone?`, `currency: 'OMR'`, `vatRatePercent` (= 0 حالياً), `invoicePrefix`, `batchPrefix`, `nextInvoiceNo`, `nextBatchNo`, `lastBackupAt?`, `recipesSeeded?`
 
 ### items — الأصناف
 | الحقل | النوع | ملاحظة |
@@ -161,10 +164,10 @@ src/
 `supplierId`, `purchaseId?`, `date`, `amountBaisa`, `method: 'cash' | 'bank' | 'card' | 'other'`, `notes?`
 
 ### recipes — الوصفات
-`finishedItemId`, `name`, `components: [{ itemId, qtyPerUnit }]`, `active`
+`finishedItemId` (فريد), `name`, `components: [{ itemId, qtyPerUnit }]`, `active`, `isEstimate?`
 
 ### productionBatches — دفعات الإنتاج
-`batchNo`, `date`, `recipeId`, `finishedItemId`, `qtyProduced`, `consumed: [{ itemId, qty, unitCostBaisa }]`, `materialsCostBaisa`, `extraCostBaisa` (عمالة/طاقة مباشرة، اختياري), `totalCostBaisa`, `unitCostBaisa`, `expiryDate?`, `notes?`
+`batchNo` (مثل `B-0001`), `date`, `recipeId?`, `finishedItemId`, `qtyProduced`, `consumed: [{ itemId, qty, unitCostBaisa }]`, `materialsCostBaisa`, `extraCostBaisa` (عمالة/طاقة مباشرة، اختياري), `totalCostBaisa`, `unitCostBaisa`, `expiryDate?`, `notes?`
 
 ### customers — العملاء
 `name`, `phone`, `type: 'individual' | 'store' | 'distributor'`, `address?`, `notes?`, `active`
@@ -234,7 +237,7 @@ expenses: id, categoryId, date
 ## 9. حالة التنفيذ
 - [x] **المرحلة 0** — الأساس: الهيكل، RTL والخط، التخطيط (شريط جانبي على الآيباد / شريط سفلي + «المزيد» على الجوال)، مخطط Dexie، البذور (إعدادات بضريبة 0%، تصنيفات المصروفات، الأصناف المبدئية وعبوتا 250/500 جم)، أدوات المال والكميات مع الاختبارات، طلب التخزين الدائم وتنبيهه، أيقونات وmanifest.
 - [x] **المرحلة 1** — المخزون والموردون: إضافة/تعديل/إيقاف الأصناف مع رصيد افتتاحي، صفحة الصنف وحركاته، التسوية والتالف، تنبيه الانخفاض (شارة في القائمة + فلتر)، قيمة المخزون، الموردون، فواتير الشراء متعددة البنود مع دفع كامل/جزئي/آجل، دفعات الموردين، المستحقات وكشف الحساب، حذف الشراء مع عكس الحركات. اختبارات للخدمات والمتوسط المرجح.
-- [ ] المرحلة 2 — التصنيع
+- [x] **المرحلة 2** — التصنيع: الوصفات (مع وصفات تقديرية قابلة للتعديل وتكلفة العبوة التقديرية)، دفعة إنتاج تقترح الاستهلاك من الوصفة وتعرض المتوفر وتكلفة كل مادة مباشرة، منع الحفظ عند النقص مع تظليل المواد الناقصة، خصم المواد وإضافة المنتج بتكلفة العبوة، ترقيم تلقائي، سجل الدفعات وتفاصيلها، حذف الدفعة مع عكس الحركات. اختبارات للتكلفة والخدمات.
 - [ ] المرحلة 3 — العملاء والمبيعات (+ PDF وواتساب)
 - [ ] المرحلة 4 — المصروفات
 - [ ] المرحلة 5 — لوحة المؤشرات
