@@ -8,6 +8,7 @@ import { Badge, Button, Card, PageHeader } from '../../components/ui'
 import { db } from '../../db/db'
 import { ar } from '../../i18n/ar'
 import { updateSettings } from '../../services/settings'
+import { LOGO_URL } from '../../app/assets'
 
 /** Scales an uploaded image down so it stays small inside the database. */
 async function imageToDataUrl(file: File, maxSide = 600): Promise<string> {
@@ -88,7 +89,7 @@ export function SettingsPage() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
               <div className="flex size-24 items-center justify-center rounded-2xl border border-stone-200 bg-white p-2">
-                <img src={settings?.logoDataUrl || '/logo.png'} alt="الشعار" className="max-h-full max-w-full" />
+                <img src={settings?.logoDataUrl || LOGO_URL} alt="الشعار" className="max-h-full max-w-full" />
               </div>
               <div className="flex flex-col gap-2">
                 <Button variant="secondary" onClick={() => fileRef.current?.click()}>

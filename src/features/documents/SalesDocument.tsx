@@ -3,6 +3,7 @@ import { formatDate } from '../../components/format'
 import type { Customer, Item, Settings } from '../../db/types'
 import { formatOMR, lineTotal, ltr } from '../../domain/money'
 import { formatQty } from '../../domain/quantity'
+import { LOGO_URL } from '../../app/assets'
 
 export interface DocData {
   kind: 'invoice' | 'quote'
@@ -43,7 +44,7 @@ export const SalesDocument = forwardRef<
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: `3px solid ${brand}`, paddingBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-          <img src={settings.logoDataUrl || '/logo.png'} alt="" style={{ height: 120, width: 'auto' }} />
+          <img src={settings.logoDataUrl || LOGO_URL} alt="" style={{ height: 120, width: 'auto' }} />
           <div>
             <div style={{ fontSize: 30, fontWeight: 700, color: brand }}>{settings.businessName}</div>
             <div style={{ fontSize: 14, color: '#57534e', marginTop: 6, lineHeight: 1.8 }}>

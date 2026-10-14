@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { createHashRouter, RouterProvider } from 'react-router-dom'
 import { CustomerDetailPage } from '../features/customers/CustomerDetailPage'
 import { CustomersPage } from '../features/customers/CustomersPage'
 import { InvoiceDetailPage } from '../features/sales/InvoiceDetailPage'
@@ -19,7 +19,8 @@ import { SuppliersPage } from '../features/suppliers/SuppliersPage'
 import { Layout } from './Layout'
 import { MorePage } from './MorePage'
 
-const router = createBrowserRouter([
+// Hash URLs (…/#/inventory) work on any static host and sub-path without server rewrites
+const router = createHashRouter([
   {
     element: <Layout />,
     children: [

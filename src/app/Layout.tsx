@@ -6,6 +6,7 @@ import { isLowStock } from '../domain/inventory'
 import { ar } from '../i18n/ar'
 import { isNavActive, NAV_ITEMS } from './nav'
 import { StorageBanner } from './StorageBanner'
+import { LOGO_URL } from './assets'
 
 function useLowStockCount() {
   return useLiveQuery(async () => (await db.items.toArray()).filter((i) => i.active && isLowStock(i)).length, []) ?? 0
@@ -26,7 +27,7 @@ function Sidebar() {
   return (
     <aside className="hidden md:flex w-56 lg:w-64 shrink-0 flex-col border-e border-stone-200 bg-white">
       <div className="flex items-center gap-3 px-5 py-5">
-        <img src="/logo.png" alt="" className="h-14 w-auto" />
+        <img src={LOGO_URL} alt="" className="h-14 w-auto" />
         <div className="leading-tight">
           <div className="text-xl font-bold text-[#5b4a2f]">{ar.appName}</div>
           <div className="text-xs text-stone-500">إدارة المصنع</div>
