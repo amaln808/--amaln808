@@ -1,10 +1,10 @@
+import { lazy, Suspense } from 'react'
 import { createHashRouter, RouterProvider } from 'react-router-dom'
 import { CustomerDetailPage } from '../features/customers/CustomerDetailPage'
 import { CustomersPage } from '../features/customers/CustomersPage'
 import { InvoiceDetailPage } from '../features/sales/InvoiceDetailPage'
 import { QuoteDetailPage } from '../features/sales/QuoteDetailPage'
 import { SalesDocFormPage } from '../features/sales/SalesDocFormPage'
-import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { ExpensesPage } from '../features/expenses/ExpensesPage'
 import { InventoryPage } from '../features/inventory/InventoryPage'
 import { ItemDetailPage } from '../features/inventory/ItemDetailPage'
@@ -19,12 +19,15 @@ import { SuppliersPage } from '../features/suppliers/SuppliersPage'
 import { Layout } from './Layout'
 import { MorePage } from './MorePage'
 
+// Charts library is large; load the dashboard on demand
+const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })))
+
 // Hash URLs (…/#/inventory) work on any static host and sub-path without server rewrites
 const router = createHashRouter([
   {
     element: <Layout />,
     children: [
-      { path: '/', element: <DashboardPage /> },
+      { path: '/', element: <Suspense fallback={null}><DashboardPage /></Suspense> },
       { path: '/inventory', element: <InventoryPage /> },
       { path: '/inventory/:id', element: <ItemDetailPage /> },
       { path: '/production', element: <ProductionPage /> },
