@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import type { FactoryDB } from '../db/db'
 import { newRecord } from '../db/records'
 import { SETTINGS_ID } from '../db/seed'
@@ -13,17 +14,17 @@ export interface RecipeInput {
 /** One recipe per finished product. Saving clears the "estimated" flag. */
 export async function saveRecipe(db: FactoryDB, input: RecipeInput): Promise<ID> {
   const components = input.components.filter((c) => c.itemId)
-  if (!components.length) throw new UserError('أضف مكوّناً واحداً على الأقل')
-  if (components.some((c) => !(c.qtyPerUnit > 0))) throw new UserError('كمية كل مكوّن يجب أن تكون أكبر من صفر')
-  if (new Set(components.map((c) => c.itemId)).size !== components.length) throw new UserError('يوجد مكوّن مكرر')
+  if (!components.length) throw new UserError(t("أضف مكوّناً واحداً على الأقل", "Add at least one component"))
+  if (components.some((c) => !(c.qtyPerUnit > 0))) throw new UserError(t("كمية كل مكوّن يجب أن تكون أكبر من صفر", "Each component quantity must be greater than zero"))
+  if (new Set(components.map((c) => c.itemId)).size !== components.length) throw new UserError(t("يوجد مكوّن مكرر", "Duplicate component"))
 
   return db.transaction('rw', db.recipes, db.items, async () => {
     const product = await db.items.get(input.finishedItemId)
-    if (!product || product.type !== 'finished') throw new UserError('اختر منتجاً نهائياً')
+    if (!product || product.type !== 'finished') throw new UserError(t("اختر منتجاً نهائياً", "Choose a finished product"))
     for (const c of components) {
       const item = await db.items.get(c.itemId)
-      if (!item) throw new UserError('أحد المكونات غير موجود')
-      if (item.type === 'finished') throw new UserError(`«${item.name}» منتج نهائي ولا يكون مكوّناً`)
+      if (!item) throw new UserError(t("أحد المكونات غير موجود", "A component doesn't exist"))
+      if (item.type === 'finished') throw new UserError(t(`«${item.name}» منتج نهائي ولا يكون مكوّناً`, `“${item.name}” is a finished product and can't be a component`))
     }
     const name = input.name?.trim() || product.name
     const existing = await db.recipes.where('finishedItemId').equals(input.finishedItemId).first()

@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import { useCallback, useRef, useState } from 'react'
 import { Modal } from './Modal'
 import { Button } from './ui'
@@ -34,10 +35,10 @@ export function useConfirm() {
       footer={
         <>
           <Button className={`flex-1 ${opts?.danger ? '!bg-red-600 hover:!bg-red-700' : ''}`} onClick={() => close(true)}>
-            {opts?.confirmLabel ?? 'تأكيد'}
+            {opts?.confirmLabel ?? t("تأكيد", "Confirm")}
           </Button>
           <Button variant="secondary" className="flex-1" onClick={() => close(false)}>
-            إلغاء
+            {t("إلغاء", "Cancel")}
           </Button>
         </>
       }

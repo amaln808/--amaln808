@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Banknote, FilePlus2, MessageCircle, Pencil, Phone, Power, ReceiptText, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -33,7 +34,7 @@ export function CustomerDetailPage() {
   const { confirm, dialog } = useConfirm()
 
   if (customer === undefined) return null
-  if (customer === null) return <p>العميل غير موجود</p>
+  if (customer === null) return <p>{t("العميل غير موجود", "Customer not found")}</p>
 
   const now = today()
   const invoiceById = new Map(invoices?.map((i) => [i.id, i]))
@@ -44,7 +45,7 @@ export function CustomerDetailPage() {
   const wa = toWhatsAppNumber(customer.phone)
 
   const remove = async () => {
-    if (!(await confirm({ title: 'حذف العميل', message: `حذف «${customer.name}»؟`, confirmLabel: 'حذف', danger: true }))) return
+    if (!(await confirm({ title: t("حذف العميل", "Delete customer"), message: t(`حذف «${customer.name}»؟`, `Delete “${customer.name}”?`), confirmLabel: t("حذف", "Delete"), danger: true }))) return
     try {
       await deleteCustomer(db, customer.id)
       navigate('/customers')
@@ -67,7 +68,7 @@ export function CustomerDetailPage() {
             )}
             {wa && (
               <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#1a9e4b]">
-                <MessageCircle className="size-4" /> واتساب
+                <MessageCircle className="size-4" /> {t("واتساب", "WhatsApp")}
               </a>
             )}
           </span>
@@ -76,13 +77,13 @@ export function CustomerDetailPage() {
         actions={
           <>
             <LinkButton to={`/invoices/new?customer=${customer.id}`}>
-              <ReceiptText className="size-4" /> فاتورة
+              <ReceiptText className="size-4" /> {t("فاتورة", "Invoice")}
             </LinkButton>
             <LinkButton to={`/quotes/new?customer=${customer.id}`} variant="secondary">
-              <FilePlus2 className="size-4" /> عرض سعر
+              <FilePlus2 className="size-4" /> {t("عرض سعر", "Quotation")}
             </LinkButton>
             <Button variant="secondary" onClick={() => setPaying(true)}>
-              <Banknote className="size-4" /> دفعة
+              <Banknote className="size-4" /> {t("دفعة", "Payment")}
             </Button>
             <Button variant="secondary" onClick={() => setEditing(true)}>
               <Pencil className="size-4" />
@@ -92,14 +93,14 @@ export function CustomerDetailPage() {
       />
 
       <div className="mb-5 grid grid-cols-3 gap-3">
-        <Stat label="إجمالي المبيعات" value={formatOMR(totalSales)} />
-        <Stat label="إجمالي المدفوع" value={formatOMR(totalPaid)} />
-        <Stat label="المستحق" value={formatOMR(balance)} tone={balance > 0 ? 'red' : 'green'} />
+        <Stat label={t("إجمالي المبيعات", "Total sales")} value={formatOMR(totalSales)} />
+        <Stat label={t("إجمالي المدفوع", "Total paid")} value={formatOMR(totalPaid)} />
+        <Stat label={t("المستحق", "Balance due")} value={formatOMR(balance)} tone={balance > 0 ? 'red' : 'green'} />
       </div>
 
       {!!quotes?.length && (
         <Card className="!p-0 mb-5 overflow-hidden">
-          <h2 className="px-5 pt-4 pb-2 text-lg font-bold">عروض الأسعار</h2>
+          <h2 className="px-5 pt-4 pb-2 text-lg font-bold">{t("عروض الأسعار", "Quotations")}</h2>
           <ul>
             {quotes.map((q) => (
               <li key={q.id} className="border-t border-stone-100">
@@ -116,18 +117,18 @@ export function CustomerDetailPage() {
       )}
 
       <Card className="!p-0 overflow-hidden">
-        <h2 className="px-5 pt-4 pb-2 text-lg font-bold">كشف الحساب</h2>
-        {!statement?.length && <p className="px-5 pb-5 text-stone-500">لا توجد فواتير أو دفعات بعد.</p>}
+        <h2 className="px-5 pt-4 pb-2 text-lg font-bold">{t("كشف الحساب", "Statement of account")}</h2>
+        {!statement?.length && <p className="px-5 pb-5 text-stone-500">{t("لا توجد فواتير أو دفعات بعد.", "No invoices or payments yet.")}</p>}
         {!!statement?.length && (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
               <thead className="text-stone-500">
                 <tr className="border-b border-stone-200">
-                  <th className="px-5 py-2 text-start font-medium">التاريخ</th>
-                  <th className="py-2 pe-4 text-start font-medium">البيان</th>
-                  <th className="py-2 pe-4 text-start font-medium">فواتير</th>
-                  <th className="py-2 pe-4 text-start font-medium">مدفوع</th>
-                  <th className="py-2 pe-4 text-start font-medium">الرصيد</th>
+                  <th className="px-5 py-2 text-start font-medium">{t("التاريخ", "Date")}</th>
+                  <th className="py-2 pe-4 text-start font-medium">{t("البيان", "Description")}</th>
+                  <th className="py-2 pe-4 text-start font-medium">{t("فواتير", "Invoices")}</th>
+                  <th className="py-2 pe-4 text-start font-medium">{t("مدفوع", "Paid")}</th>
+                  <th className="py-2 pe-4 text-start font-medium">{t("الرصيد", "Balance")}</th>
                   <th className="w-12" />
                 </tr>
               </thead>
@@ -145,7 +146,7 @@ export function CustomerDetailPage() {
                             <InvoiceStatusBadge status={invoiceStatus(inv.totalBaisa, paid?.get(inv.id) ?? 0, inv.dueDate, now)} />
                           </span>
                         ) : (
-                          <>دفعة — {pay && ar.paymentMethods[pay.method]}</>
+                          <>{t("دفعة —", "Payment —")} {pay && ar.paymentMethods[pay.method]}</>
                         )}
                       </td>
                       <td className="py-3 pe-4"><span className="num">{row.chargeBaisa ? formatOMR(row.chargeBaisa) : ''}</span></td>
@@ -155,11 +156,11 @@ export function CustomerDetailPage() {
                         {pay && (
                           <button
                             onClick={async () => {
-                              if (await confirm({ title: 'حذف الدفعة', message: 'حذف هذه الدفعة؟ سيزيد المستحق على العميل بمقدارها.', confirmLabel: 'حذف', danger: true }))
+                              if (await confirm({ title: t("حذف الدفعة", "Delete payment"), message: t("حذف هذه الدفعة؟ سيزيد المستحق على العميل بمقدارها.", "Delete this payment? The customer's balance will increase by its amount."), confirmLabel: t("حذف", "Delete"), danger: true }))
                                 await deleteCustomerPayment(db, pay.id)
                             }}
                             className="flex size-10 items-center justify-center rounded-full text-stone-400 hover:bg-red-50 hover:text-red-600"
-                            aria-label="حذف الدفعة"
+                            aria-label={t("حذف الدفعة", "Delete payment")}
                           >
                             <Trash2 className="size-4" />
                           </button>
@@ -176,17 +177,17 @@ export function CustomerDetailPage() {
 
       {(customer.address || customer.notes) && (
         <Card className="mt-5 text-sm">
-          {customer.address && <p>العنوان: {customer.address}</p>}
+          {customer.address && <p>{t("العنوان:", "Address:")} {customer.address}</p>}
           {customer.notes && <p className="text-stone-500">{customer.notes}</p>}
         </Card>
       )}
 
       <div className="mt-6 flex flex-wrap gap-2">
         <Button variant="ghost" onClick={() => saveCustomer(db, { ...customer, active: !customer.active }, customer.id)}>
-          <Power className="size-4" /> {customer.active ? 'إيقاف العميل' : 'إعادة تفعيل العميل'}
+          <Power className="size-4" /> {customer.active ? t("إيقاف العميل", "Deactivate customer") : t("إعادة تفعيل العميل", "Reactivate customer")}
         </Button>
         <Button variant="ghost" className="text-red-700" onClick={remove}>
-          <Trash2 className="size-4" /> حذف
+          <Trash2 className="size-4" /> {t("حذف", "Delete")}
         </Button>
       </div>
       {error && <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}

@@ -1,3 +1,4 @@
+import { nameOf, t } from '../../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { AlertTriangle, ChevronLeft, Factory, LayoutDashboard, ReceiptText } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
@@ -104,50 +105,50 @@ export function DashboardPage() {
         <Card className="mb-5">
           <EmptyState
             icon={LayoutDashboard}
-            title="لا توجد بيانات بعد"
-            description="ستظهر المؤشرات هنا عندما تسجّل المشتريات ودفعات الإنتاج والفواتير والمصروفات."
+            title={t("لا توجد بيانات بعد", "No data yet")}
+            description={t("ستظهر المؤشرات هنا عندما تسجّل المشتريات ودفعات الإنتاج والفواتير والمصروفات.", "Indicators will appear here once you record purchases, production batches, invoices and expenses.")}
           />
           <div className="flex flex-wrap justify-center gap-2">
-            <LinkButton to="/production/new" variant="secondary"><Factory className="size-4" /> دفعة إنتاج</LinkButton>
-            <LinkButton to="/invoices/new" variant="secondary"><ReceiptText className="size-4" /> فاتورة</LinkButton>
+            <LinkButton to="/production/new" variant="secondary"><Factory className="size-4" /> {t("دفعة إنتاج", "Production batch")}</LinkButton>
+            <LinkButton to="/invoices/new" variant="secondary"><ReceiptText className="size-4" /> {t("فاتورة", "Invoice")}</LinkButton>
           </div>
         </Card>
       )}
 
       {/* Profit for the period */}
       <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="الإيرادات" value={formatOMR(k.revenueBaisa)} sub={<>{k.invoiceCount} فاتورة · {formatQty(k.unitsSold)} عبوة</>} />
+        <Kpi label={t("الإيرادات", "Revenue")} value={formatOMR(k.revenueBaisa)} sub={<>{k.invoiceCount} {t("فاتورة ·", k.invoiceCount === 1 ? "invoice ·" : "invoices ·")} {formatQty(k.unitsSold)} {t("عبوة", "jars")}</>} />
         <Kpi
-          label="صافي الربح"
+          label={t("صافي الربح", "Net profit")}
           value={formatOMR(k.netProfitBaisa)}
           tone={k.netProfitBaisa > 0 ? 'good' : k.netProfitBaisa < 0 ? 'bad' : undefined}
-          sub={<>هامش صافي الربح {pct(k.netMargin)}</>}
+          sub={<>{t("هامش صافي الربح", "Net margin")} {pct(k.netMargin)}</>}
         />
-        <Kpi label="مجمل الربح" value={formatOMR(k.grossProfitBaisa)} sub={<>بعد تكلفة البضاعة المباعة · هامش {pct(k.grossMargin)}</>} />
-        <Kpi label="المصروفات" value={formatOMR(k.expensesBaisa)} sub="إيجار، رواتب، كهرباء…" to="/expenses" />
+        <Kpi label={t("مجمل الربح", "Gross profit")} value={formatOMR(k.grossProfitBaisa)} sub={<>{t("بعد تكلفة البضاعة المباعة · هامش", "after cost of goods sold · margin")} {pct(k.grossMargin)}</>} />
+        <Kpi label={t("المصروفات", "Expenses")} value={formatOMR(k.expensesBaisa)} sub={t("إيجار، رواتب، كهرباء…", "Rent, salaries, electricity…")} to="/expenses" />
       </div>
       {/* Current position */}
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi
-          label="متوسط تكلفة العبوة"
+          label={t("متوسط تكلفة العبوة", "Average cost per jar")}
           value={k.avgUnitCostBaisa == null ? '—' : formatOMR(k.avgUnitCostBaisa)}
-          sub={k.unitsProduced ? <>{formatQty(k.unitsProduced)} عبوة منتجة في الفترة</> : 'لا إنتاج في الفترة'}
+          sub={k.unitsProduced ? <>{formatQty(k.unitsProduced)} {t("عبوة منتجة في الفترة", "jars produced in period")}</> : t("لا إنتاج في الفترة", "No production in period")}
           to="/production"
         />
         <Kpi
-          label="قيمة المخزون الحالية"
+          label={t("قيمة المخزون الحالية", "Current stock value")}
           value={formatOMR(stock.total)}
-          sub={<>خام {formatOMR(stock.raw)} · تغليف {formatOMR(stock.packaging)} · منتج {formatOMR(stock.finished)}</>}
+          sub={<>{t("خام", "Raw")} {formatOMR(stock.raw)} {t("· تغليف", "· Packaging")} {formatOMR(stock.packaging)} {t("· منتج", "· Product")} {formatOMR(stock.finished)}</>}
           to="/inventory"
         />
-        <Kpi label="مستحق لنا (على العملاء)" value={formatOMR(owed.receivableBaisa)} tone={owed.receivableBaisa > 0 ? 'bad' : undefined} to="/customers" />
-        <Kpi label="مستحق علينا (للموردين)" value={formatOMR(owed.payableBaisa)} to="/suppliers" />
+        <Kpi label={t("مستحق لنا (على العملاء)", "Owed to us (customers)")} value={formatOMR(owed.receivableBaisa)} tone={owed.receivableBaisa > 0 ? 'bad' : undefined} to="/customers" />
+        <Kpi label={t("مستحق علينا (للموردين)", "Owed by us (suppliers)")} value={formatOMR(owed.payableBaisa)} to="/suppliers" />
       </div>
 
       {low.length > 0 && (
         <Card className="mb-5 border-red-200 bg-red-50/40">
           <h2 className="mb-2 flex items-center gap-2 font-bold text-red-800">
-            <AlertTriangle className="size-5" /> تنبيهات المخزون المنخفض ({low.length})
+            <AlertTriangle className="size-5" /> {t("تنبيهات المخزون المنخفض (", "Low stock alerts (")}{low.length})
           </h2>
           <ul className="grid gap-x-6 sm:grid-cols-2">
             {low.map((i) => {
@@ -155,11 +156,11 @@ export function DashboardPage() {
               return (
                 <li key={i.id}>
                   <Link to={`/inventory/${i.id}`} className="flex min-h-11 items-center justify-between gap-2 border-b border-red-100 text-sm">
-                    <span>{item.name}</span>
+                    <span>{nameOf(item)}</span>
                     <span className="flex items-center gap-1 text-red-700">
                       <span className="num">{formatQty(item.qtyOnHand, item.unit)}</span>
-                      <span className="text-xs text-stone-500">/ حد {formatQty(item.minQty)}</span>
-                      <ChevronLeft className="size-4 text-stone-400" />
+                      <span className="text-xs text-stone-500">{t("/ حد", "/ min")} {formatQty(item.minQty)}</span>
+                      <ChevronLeft className="size-4 text-stone-400 ltr:rotate-180" />
                     </span>
                   </Link>
                 </li>
@@ -171,29 +172,29 @@ export function DashboardPage() {
 
       <div className="mb-5 grid gap-5 xl:grid-cols-2">
         <MonthlyChart
-          title="الإيرادات والتكاليف وصافي الربح شهرياً"
+          title={t("الإيرادات والتكاليف وصافي الربح شهرياً", "Monthly revenue, costs and net profit")}
           rows={monthly}
           series={[
-            { key: 'revenueBaisa', label: 'الإيرادات', color: SERIES.in, kind: 'bar' },
-            { key: 'costsBaisa', label: 'التكاليف (بضاعة مباعة + مصروفات)', color: SERIES.out, kind: 'bar' },
-            { key: 'netProfitBaisa', label: 'صافي الربح', color: SERIES.net, kind: 'line' },
+            { key: 'revenueBaisa', label: t("الإيرادات", "Revenue"), color: SERIES.in, kind: 'bar' },
+            { key: 'costsBaisa', label: t("التكاليف (بضاعة مباعة + مصروفات)", "Costs (goods sold + expenses)"), color: SERIES.out, kind: 'bar' },
+            { key: 'netProfitBaisa', label: t("صافي الربح", "Net profit"), color: SERIES.net, kind: 'line' },
           ]}
         />
         <MonthlyChart
-          title="التدفق النقدي الشهري"
+          title={t("التدفق النقدي الشهري", "Monthly cash flow")}
           rows={monthly}
           series={[
-            { key: 'cashInBaisa', label: 'داخل (مقبوضات العملاء)', color: SERIES.in, kind: 'bar' },
-            { key: 'cashOutBaisa', label: 'خارج (للموردين + مصروفات)', color: SERIES.out, kind: 'bar' },
-            { key: 'netCashBaisa', label: 'الصافي', color: SERIES.net, kind: 'line' },
+            { key: 'cashInBaisa', label: t("داخل (مقبوضات العملاء)", "In (customer payments)"), color: SERIES.in, kind: 'bar' },
+            { key: 'cashOutBaisa', label: t("خارج (للموردين + مصروفات)", "Out (suppliers + expenses)"), color: SERIES.out, kind: 'bar' },
+            { key: 'netCashBaisa', label: t("الصافي", "Net"), color: SERIES.net, kind: 'line' },
           ]}
         />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
         <RankList
-          title="أفضل العملاء"
-          empty="لا مبيعات في هذه الفترة."
+          title={t("أفضل العملاء", "Top customers")}
+          empty={t("لا مبيعات في هذه الفترة.", "No sales in this period.")}
           rows={topCustomers(input, range).map((r) => ({
             key: r.key,
             label: customerById.get(r.key)?.name ?? '—',
@@ -203,23 +204,23 @@ export function DashboardPage() {
           }))}
         />
         <RankList
-          title="أفضل المنتجات"
-          empty="لا مبيعات في هذه الفترة."
+          title={t("أفضل المنتجات", "Top products")}
+          empty={t("لا مبيعات في هذه الفترة.", "No sales in this period.")}
           rows={topProducts(input, range).map((p) => ({
             key: p.itemId,
-            label: itemById.get(p.itemId)?.name ?? '—',
+            label: nameOf(itemById.get(p.itemId)),
             value: p.revenueBaisa,
             display: formatOMR(p.revenueBaisa),
-            sub: <>{formatQty(p.qty)} عبوة</>,
+            sub: <>{formatQty(p.qty)} {t("عبوة", "jars")}</>,
             to: `/inventory/${p.itemId}`,
           }))}
         />
         <RankList
-          title="المصروفات حسب التصنيف"
-          empty="لا مصروفات في هذه الفترة."
+          title={t("المصروفات حسب التصنيف", "Expenses by category")}
+          empty={t("لا مصروفات في هذه الفترة.", "No expenses in this period.")}
           rows={expensesByCategory(input, range).map((c) => ({
             key: c.key,
-            label: categoryById.get(c.key)?.name ?? '—',
+            label: nameOf(categoryById.get(c.key)),
             value: c.total,
             display: formatOMR(c.total),
             sub: k.expensesBaisa ? ltr(`${Math.round((c.total / k.expensesBaisa) * 100)}%`) : undefined,

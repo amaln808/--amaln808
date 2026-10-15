@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import type { FactoryDB } from '../db/db'
 import { newRecord } from '../db/records'
 import { SETTINGS_ID } from '../db/seed'
@@ -23,17 +24,17 @@ export interface BatchInput {
  * finished units at the resulting unit cost, and assigns the next batch number.
  */
 export async function createBatch(db: FactoryDB, input: BatchInput): Promise<ID> {
-  if (!(input.qtyProduced > 0)) throw new UserError('أدخل الكمية المنتجة')
+  if (!(input.qtyProduced > 0)) throw new UserError(t("أدخل الكمية المنتجة", "Enter the quantity produced"))
   const lines = mergeConsumption(input.consumed)
-  if (!lines.length) throw new UserError('أضف المواد المستهلكة')
-  if ((input.extraCostBaisa ?? 0) < 0) throw new UserError('التكاليف الإضافية لا يمكن أن تكون سالبة')
+  if (!lines.length) throw new UserError(t("أضف المواد المستهلكة", "Add the materials consumed"))
+  if ((input.extraCostBaisa ?? 0) < 0) throw new UserError(t("التكاليف الإضافية لا يمكن أن تكون سالبة", "Extra costs can't be negative"))
 
   return db.transaction('rw', [db.items, db.stockMovements, db.productionBatches, db.settings], async () => {
     const product = await getItemOrThrow(db, input.finishedItemId)
-    if (product.type !== 'finished') throw new UserError('اختر منتجاً نهائياً')
+    if (product.type !== 'finished') throw new UserError(t("اختر منتجاً نهائياً", "Choose a finished product"))
 
     const materials = await Promise.all(lines.map((l) => getItemOrThrow(db, l.itemId)))
-    if (materials.some((m) => m.type === 'finished')) throw new UserError('لا يمكن استهلاك منتج نهائي في الإنتاج')
+    if (materials.some((m) => m.type === 'finished')) throw new UserError(t("لا يمكن استهلاك منتج نهائي في الإنتاج", "A finished product can't be consumed in production"))
 
     // Report every missing material at once
     const shortages = findShortages(lines, new Map(materials.map((m) => [m.id, m.qtyOnHand])))
@@ -41,9 +42,9 @@ export async function createBatch(db: FactoryDB, input: BatchInput): Promise<ID>
       const byId = new Map(materials.map((m) => [m.id, m]))
       const details = shortages.map((s) => {
         const m = byId.get(s.itemId)!
-        return `• ${m.name}: المطلوب ${formatQty(s.required, m.unit)} والمتوفر ${formatQty(s.available, m.unit)}`
+        return t(`• ${m.name}: المطلوب ${formatQty(s.required, m.unit)} والمتوفر ${formatQty(s.available, m.unit)}`, `• ${m.name}: needed ${formatQty(s.required, m.unit)}, available ${formatQty(s.available, m.unit)}`)
       })
-      throw new UserError(`المواد غير كافية:\n${details.join('\n')}`)
+      throw new UserError(t(`المواد غير كافية:\n${details.join('\n')}`, `Insufficient materials:\n${details.join('\n')}`))
     }
 
     const settings = await db.settings.get(SETTINGS_ID)
@@ -97,7 +98,7 @@ export async function createBatch(db: FactoryDB, input: BatchInput): Promise<ID>
 /** Deletes a batch, returning materials to stock. Refused if its units were already sold or used. */
 export async function deleteBatch(db: FactoryDB, id: ID): Promise<void> {
   await db.transaction('rw', [db.items, db.stockMovements, db.productionBatches], async () => {
-    if (!(await db.productionBatches.get(id))) throw new UserError('الدفعة غير موجودة')
+    if (!(await db.productionBatches.get(id))) throw new UserError(t("الدفعة غير موجودة", "Batch not found"))
     await reverseMovements(db, 'batch', id)
     await db.productionBatches.delete(id)
   })

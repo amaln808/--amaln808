@@ -1,3 +1,4 @@
+import { nameOf, t } from '../../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -22,20 +23,20 @@ export function PurchaseDetailPage() {
   const { confirm, dialog } = useConfirm()
 
   if (purchase === undefined) return null
-  if (purchase === null) return <p>فاتورة الشراء غير موجودة</p>
+  if (purchase === null) return <p>{t("فاتورة الشراء غير موجودة", "Purchase invoice not found")}</p>
 
   const itemById = new Map(items?.map((i) => [i.id, i]))
   const paid = payments?.reduce((s, p) => s + p.amountBaisa, 0) ?? 0
 
   const remove = async () => {
     const msg = [
-      'سيتم حذف الفاتورة وخصم كمياتها من المخزون.',
-      payments?.length ? `وسيتم حذف ${payments.length} دفعة مرتبطة بها.` : '',
-      'لا يمكن التراجع عن ذلك.',
+      t("سيتم حذف الفاتورة وخصم كمياتها من المخزون.", "The invoice will be deleted and its quantities removed from stock."),
+      payments?.length ? t(`وسيتم حذف ${payments.length} دفعة مرتبطة بها.`, `${payments.length} linked payment(s) will also be deleted.`) : '',
+      t("لا يمكن التراجع عن ذلك.", "This cannot be undone."),
     ]
       .filter(Boolean)
       .join('\n')
-    if (!(await confirm({ title: 'حذف فاتورة الشراء', message: msg, confirmLabel: 'حذف', danger: true }))) return
+    if (!(await confirm({ title: t("حذف فاتورة الشراء", "Delete purchase invoice"), message: msg, confirmLabel: t("حذف", "Delete"), danger: true }))) return
     try {
       await deletePurchase(db, purchase.id)
       navigate(`/suppliers/${purchase.supplierId}`, { replace: true })
@@ -47,7 +48,7 @@ export function PurchaseDetailPage() {
   return (
     <>
       <PageHeader
-        title={`فاتورة شراء${purchase.supplierInvoiceNo ? ` #${purchase.supplierInvoiceNo}` : ''}`}
+        title={t(`فاتورة شراء${purchase.supplierInvoiceNo ? ` #${purchase.supplierInvoiceNo}` : ''}`, `Purchase invoice${purchase.supplierInvoiceNo ? ` #${purchase.supplierInvoiceNo}` : ''}`)}
         subtitle={
           <>
             <Link to={`/suppliers/${purchase.supplierId}`} className="text-brand-700">{supplier?.name}</Link>
@@ -59,19 +60,19 @@ export function PurchaseDetailPage() {
       />
 
       <div className="mb-5 grid grid-cols-3 gap-3">
-        <Stat label="الإجمالي" value={formatOMR(purchase.totalBaisa)} />
-        <Stat label="مدفوع عنها" value={formatOMR(paid)} />
-        <Stat label="المتبقي" value={formatOMR(purchase.totalBaisa - paid)} tone={purchase.totalBaisa - paid > 0 ? 'red' : 'green'} />
+        <Stat label={t("الإجمالي", "Total")} value={formatOMR(purchase.totalBaisa)} />
+        <Stat label={t("مدفوع عنها", "Paid against it")} value={formatOMR(paid)} />
+        <Stat label={t("المتبقي", "Remaining")} value={formatOMR(purchase.totalBaisa - paid)} tone={purchase.totalBaisa - paid > 0 ? 'red' : 'green'} />
       </div>
 
       <Card className="!p-0 mb-5 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="text-stone-500">
             <tr className="border-b border-stone-200">
-              <th className="px-5 py-3 text-start font-medium">الصنف</th>
-              <th className="py-3 pe-4 text-start font-medium">الكمية</th>
-              <th className="py-3 pe-4 text-start font-medium">سعر الوحدة</th>
-              <th className="py-3 pe-5 text-start font-medium">المجموع</th>
+              <th className="px-5 py-3 text-start font-medium">{t("الصنف", "Item")}</th>
+              <th className="py-3 pe-4 text-start font-medium">{t("الكمية", "Quantity")}</th>
+              <th className="py-3 pe-4 text-start font-medium">{t("سعر الوحدة", "Unit price")}</th>
+              <th className="py-3 pe-5 text-start font-medium">{t("المجموع", "Total")}</th>
             </tr>
           </thead>
           <tbody>
@@ -80,7 +81,7 @@ export function PurchaseDetailPage() {
               return (
                 <tr key={i} className="border-b border-stone-100 last:border-0">
                   <td className="px-5 py-3">
-                    <Link to={`/inventory/${l.itemId}`} className="text-brand-700">{item?.name ?? '—'}</Link>
+                    <Link to={`/inventory/${l.itemId}`} className="text-brand-700">{nameOf(item)}</Link>
                   </td>
                   <td className="py-3 pe-4"><span className="num">{formatQty(l.qty, item?.unit)}</span></td>
                   <td className="py-3 pe-4"><span className="num">{formatOMR(l.unitCostBaisa)}</span></td>
@@ -94,7 +95,7 @@ export function PurchaseDetailPage() {
 
       {!!payments?.length && (
         <Card className="mb-5">
-          <h2 className="mb-2 font-bold">الدفعات المرتبطة</h2>
+          <h2 className="mb-2 font-bold">{t("الدفعات المرتبطة", "Linked payments")}</h2>
           <ul className="text-sm">
             {payments.map((p) => (
               <li key={p.id} className="flex justify-between border-b border-stone-100 py-2 last:border-0">
@@ -109,9 +110,9 @@ export function PurchaseDetailPage() {
       {purchase.notes && <Card className="mb-5 text-sm text-stone-600">{purchase.notes}</Card>}
 
       <Button variant="ghost" className="text-red-700" onClick={remove}>
-        <Trash2 className="size-4" /> حذف الفاتورة
+        <Trash2 className="size-4" /> {t("حذف الفاتورة", "Delete invoice")}
       </Button>
-      <p className="mt-1 text-xs text-stone-500">لتعديل فاتورة: احذفها ثم أدخلها من جديد.</p>
+      <p className="mt-1 text-xs text-stone-500">{t("لتعديل فاتورة: احذفها ثم أدخلها من جديد.", "To edit an invoice: delete it and enter it again.")}</p>
       {error && <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
       {dialog}
     </>

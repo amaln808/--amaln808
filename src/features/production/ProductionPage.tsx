@@ -1,3 +1,4 @@
+import { nameOf, t } from '../../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronLeft, Factory, Pencil, Plus, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
@@ -42,22 +43,22 @@ export function ProductionPage() {
         title={ar.nav.production}
         actions={
           <LinkButton to="/production/new">
-            <Plus className="size-5" /> دفعة إنتاج جديدة
+            <Plus className="size-5" /> {t("دفعة إنتاج جديدة", "New production batch")}
           </LinkButton>
         }
       />
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Stat label="عبوات منتجة هذا الشهر" value={unitsThisMonth} />
-        <Stat label="متوسط تكلفة العبوة هذا الشهر" value={unitsThisMonth ? formatOMR(Math.round(costThisMonth / unitsThisMonth)) : '—'} />
-        <Stat label="عدد الدفعات هذا الشهر" value={thisMonth.length} />
+        <Stat label={t("عبوات منتجة هذا الشهر", "Jars produced this month")} value={unitsThisMonth} />
+        <Stat label={t("متوسط تكلفة العبوة هذا الشهر", "Average cost per jar this month")} value={unitsThisMonth ? formatOMR(Math.round(costThisMonth / unitsThisMonth)) : '—'} />
+        <Stat label={t("عدد الدفعات هذا الشهر", "Batches this month")} value={thisMonth.length} />
       </div>
       <div className="mb-5 max-w-xs">
         <Segmented
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'batches', label: 'الدفعات' },
-            { value: 'recipes', label: 'الوصفات' },
+            { value: 'batches', label: t("الدفعات", "Batches") },
+            { value: 'recipes', label: t("الوصفات", "Recipes") },
           ]}
         />
       </div>
@@ -65,7 +66,7 @@ export function ProductionPage() {
       {tab === 'batches' && (
         <Card className="!p-0 overflow-hidden">
           {batches && !batches.length && (
-            <EmptyState icon={Factory} title="لا توجد دفعات إنتاج بعد" description="سجّل أول دفعة لتُخصم المواد ويُضاف المنتج للمخزون تلقائياً." />
+            <EmptyState icon={Factory} title={t("لا توجد دفعات إنتاج بعد", "No production batches yet")} description={t("سجّل أول دفعة لتُخصم المواد ويُضاف المنتج للمخزون تلقائياً.", "Record the first batch to deduct materials and add the product to stock automatically.")} />
           )}
           <ul>
             {batches?.map((b) => {
@@ -75,17 +76,17 @@ export function ProductionPage() {
                   <Link to={`/production/${b.id}`} className="flex items-center gap-3 px-5 py-4 hover:bg-stone-50">
                     <div className="flex-1">
                       <div className="font-medium">
-                        <span className="num text-stone-500">{b.batchNo}</span> · {product?.name}
+                        <span className="num text-stone-500">{b.batchNo}</span> · {nameOf(product)}
                       </div>
                       <div className="text-sm text-stone-500">
                         <span className="num">{formatDate(b.date)}</span> · <span className="num">{formatQty(b.qtyProduced, product?.unit)}</span>
                       </div>
                     </div>
                     <div className="text-end">
-                      <div className="text-xs text-stone-500">تكلفة العبوة</div>
+                      <div className="text-xs text-stone-500">{t("تكلفة العبوة", "Cost per jar")}</div>
                       <div className="num font-bold">{formatOMR(Math.round(b.unitCostBaisa))}</div>
                     </div>
-                    <ChevronLeft className="size-5 text-stone-400" />
+                    <ChevronLeft className="size-5 text-stone-400 ltr:rotate-180" />
                   </Link>
                 </li>
               )
@@ -99,7 +100,7 @@ export function ProductionPage() {
           {hasEstimates && (
             <div className="flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
               <TriangleAlert className="size-5 shrink-0" />
-              <p>بعض الوصفات <b>تقديرية</b> (حوالي 70% تمر و30% فول سوداني). عدّل الكميات عندما تتأكد منها، وستُستخدم في اقتراح الاستهلاك فقط — يمكنك دائماً تعديل الاستهلاك الفعلي في كل دفعة.</p>
+              <p>{t("بعض الوصفات", "Some recipes are")} <b>{t("تقديرية", "estimated")}</b> {t("(حوالي 70% تمر و30% فول سوداني). عدّل الكميات عندما تتأكد منها، وستُستخدم في اقتراح الاستهلاك فقط — يمكنك دائماً تعديل الاستهلاك الفعلي في كل دفعة.", "(about 70% dates and 30% peanuts). Adjust the quantities once confirmed; they are only used to suggest consumption — you can always edit actual use in each batch.")}</p>
             </div>
           )}
           <div className="grid gap-4 lg:grid-cols-2">
@@ -109,11 +110,11 @@ export function ProductionPage() {
                 <Card key={p.id}>
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <div>
-                      <h2 className="font-bold">{p.name}</h2>
-                      {recipe?.isEstimate && <Badge tone="amber">تقديرية</Badge>}
+                      <h2 className="font-bold">{nameOf(p)}</h2>
+                      {recipe?.isEstimate && <Badge tone="amber">{t("تقديرية", "estimated")}</Badge>}
                     </div>
                     <Button variant="secondary" onClick={() => setEditing(p)}>
-                      <Pencil className="size-4" /> {recipe ? 'تعديل' : 'إنشاء وصفة'}
+                      <Pencil className="size-4" /> {recipe ? t("تعديل", "Edit") : t("إنشاء وصفة", "Create recipe")}
                     </Button>
                   </div>
                   {recipe ? (
@@ -123,19 +124,19 @@ export function ProductionPage() {
                           const m = itemById.get(c.itemId)
                           return (
                             <li key={c.itemId} className="flex justify-between border-b border-stone-100 py-2 last:border-0">
-                              <span>{m?.name ?? '—'}</span>
+                              <span>{nameOf(m)}</span>
                               <span className="num">{formatQty(c.qtyPerUnit, m?.unit)}</span>
                             </li>
                           )
                         })}
                       </ul>
                       <div className="mt-3 flex justify-between rounded-xl bg-stone-50 px-3 py-2 text-sm">
-                        <span>تكلفة المواد للعبوة (تقديرية)</span>
+                        <span>{t("تكلفة المواد للعبوة (تقديرية)", "Material cost per jar (estimated)")}</span>
                         <b className="num">{formatOMR(Math.round(recipeUnitCost(recipe.components, avgCost)))}</b>
                       </div>
                     </>
                   ) : (
-                    <p className="text-sm text-stone-500">لا توجد وصفة لهذا المنتج.</p>
+                    <p className="text-sm text-stone-500">{t("لا توجد وصفة لهذا المنتج.", "No recipe for this product.")}</p>
                   )}
                 </Card>
               )

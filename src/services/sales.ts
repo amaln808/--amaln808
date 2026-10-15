@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import type { FactoryDB } from '../db/db'
 import { newRecord } from '../db/records'
 import type { ID, InvoiceLine, PaymentMethod, QuoteLine, QuoteStatus, Quotation, SalesInvoice } from '../db/types'
@@ -17,18 +18,18 @@ export interface SalesDocInput {
 }
 
 function validateDoc(input: SalesDocInput): QuoteLine[] {
-  if (!input.customerId) throw new UserError('اختر العميل')
+  if (!input.customerId) throw new UserError(t("اختر العميل", "Choose the customer"))
   const lines = input.lines.filter((l) => l.itemId)
-  if (!lines.length) throw new UserError('أضف بنداً واحداً على الأقل')
-  if (lines.some((l) => !(l.qty > 0))) throw new UserError('الكمية يجب أن تكون أكبر من صفر')
-  if (lines.some((l) => !(l.unitPriceBaisa >= 0))) throw new UserError('السعر غير صحيح')
+  if (!lines.length) throw new UserError(t("أضف بنداً واحداً على الأقل", "Add at least one line"))
+  if (lines.some((l) => !(l.qty > 0))) throw new UserError(t("الكمية يجب أن تكون أكبر من صفر", "Quantity must be greater than zero"))
+  if (lines.some((l) => !(l.unitPriceBaisa >= 0))) throw new UserError(t("السعر غير صحيح", "Invalid price"))
   return lines
 }
 
 async function checkProducts(db: FactoryDB, lines: QuoteLine[]) {
   const items = await Promise.all(lines.map((l) => getItemOrThrow(db, l.itemId)))
   const notFinished = items.find((i) => i.type !== 'finished')
-  if (notFinished) throw new UserError(`«${notFinished.name}» ليس منتجاً نهائياً`)
+  if (notFinished) throw new UserError(t(`«${notFinished.name}» ليس منتجاً نهائياً`, `“${notFinished.name}” is not a finished product`))
   return items
 }
 
@@ -41,7 +42,7 @@ export interface QuoteInput extends SalesDocInput {
 export async function createQuote(db: FactoryDB, input: QuoteInput): Promise<ID> {
   const lines = validateDoc(input)
   return db.transaction('rw', [db.items, db.customers, db.quotations, db.settings], async () => {
-    if (!(await db.customers.get(input.customerId))) throw new UserError('العميل غير موجود')
+    if (!(await db.customers.get(input.customerId))) throw new UserError(t("العميل غير موجود", "Customer not found"))
     await checkProducts(db, lines)
     const { settings, seq } = await takeNumber(db, 'nextQuoteNo')
     const quote: Quotation = newRecord({
@@ -61,8 +62,8 @@ export async function createQuote(db: FactoryDB, input: QuoteInput): Promise<ID>
 
 export async function setQuoteStatus(db: FactoryDB, id: ID, status: QuoteStatus): Promise<void> {
   const q = await db.quotations.get(id)
-  if (!q) throw new UserError('عرض السعر غير موجود')
-  if (q.invoiceId) throw new UserError('تم تحويل هذا العرض إلى فاتورة')
+  if (!q) throw new UserError(t("عرض السعر غير موجود", "Quotation not found"))
+  if (q.invoiceId) throw new UserError(t("تم تحويل هذا العرض إلى فاتورة", "This quotation was converted to an invoice"))
   await db.quotations.put({ ...q, status, updatedAt: new Date().toISOString() })
 }
 
@@ -88,7 +89,7 @@ export async function createInvoice(db: FactoryDB, input: InvoiceInput): Promise
     'rw',
     [db.items, db.stockMovements, db.customers, db.salesInvoices, db.customerPayments, db.quotations, db.settings],
     async () => {
-      if (!(await db.customers.get(input.customerId))) throw new UserError('العميل غير موجود')
+      if (!(await db.customers.get(input.customerId))) throw new UserError(t("العميل غير موجود", "Customer not found"))
       const items = await checkProducts(db, lines)
       const byId = new Map(items.map((i) => [i.id, i]))
 
@@ -99,9 +100,9 @@ export async function createInvoice(db: FactoryDB, input: InvoiceInput): Promise
       if (shortages.length) {
         const details = shortages.map((s) => {
           const it = byId.get(s.itemId)!
-          return `• ${it.name}: المطلوب ${formatQty(s.required, it.unit)} والمتوفر ${formatQty(s.available, it.unit)}`
+          return t(`• ${it.name}: المطلوب ${formatQty(s.required, it.unit)} والمتوفر ${formatQty(s.available, it.unit)}`, `• ${it.name}: needed ${formatQty(s.required, it.unit)}, available ${formatQty(s.available, it.unit)}`)
         })
-        throw new UserError(`الكمية غير متوفرة في المخزون:\n${details.join('\n')}`)
+        throw new UserError(t(`الكمية غير متوفرة في المخزون:\n${details.join('\n')}`, `Not enough in stock:\n${details.join('\n')}`))
       }
 
       const { settings, seq } = await takeNumber(db, 'nextInvoiceNo')
@@ -160,7 +161,7 @@ export async function createInvoice(db: FactoryDB, input: InvoiceInput): Promise
 export async function deleteInvoice(db: FactoryDB, id: ID): Promise<void> {
   await db.transaction('rw', [db.items, db.stockMovements, db.salesInvoices, db.customerPayments, db.quotations], async () => {
     const inv = await db.salesInvoices.get(id)
-    if (!inv) throw new UserError('الفاتورة غير موجودة')
+    if (!inv) throw new UserError(t("الفاتورة غير موجودة", "Invoice not found"))
     await reverseMovements(db, 'invoice', id)
     await db.customerPayments.where('invoiceId').equals(id).delete()
     if (inv.quoteId) {

@@ -1,3 +1,4 @@
+import { type DocLang, t } from '../../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { FileCheck2, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
@@ -27,30 +28,34 @@ export function QuoteDetailPage() {
   const { confirm, dialog } = useConfirm()
 
   if (quote === undefined || !settings || !items) return null
-  if (quote === null) return <p>عرض السعر غير موجود</p>
+  if (quote === null) return <p>{t("عرض السعر غير موجود", "Quotation not found")}</p>
 
   const status = quoteDisplayStatus(quote, today())
   const open = !quote.invoiceId && quote.status !== 'rejected'
 
   const remove = async () => {
-    if (!(await confirm({ title: `حذف ${quote.quoteNo}`, message: 'حذف عرض السعر؟', confirmLabel: 'حذف', danger: true }))) return
+    if (!(await confirm({ title: t(`حذف ${quote.quoteNo}`, `Delete ${quote.quoteNo}`), message: t("حذف عرض السعر؟", "Delete this quotation?"), confirmLabel: t("حذف", "Delete"), danger: true }))) return
     await deleteQuote(db, quote.id)
     navigate(`/customers/${quote.customerId}`, { replace: true })
   }
   const mark = (s: 'sent' | 'rejected') => setQuoteStatus(db, quote.id, s).catch((e) => setError(errorMessage(e)))
 
-  const shareText = `مرحباً ${customer?.name ?? ''}، مرفق عرض سعر رقم ${quote.quoteNo} بإجمالي ${formatOMR(quote.totalBaisa)}${quote.validUntil ? `، ساري حتى ${formatDate(quote.validUntil)}` : ''}. مع تحيات ${settings.businessName}.`
+  const shareText = (lang: DocLang) => {
+    const arText = `مرحباً ${customer?.name ?? ''}، مرفق عرض سعر رقم ${quote.quoteNo} بإجمالي ${formatOMR(quote.totalBaisa, 'ar')}${quote.validUntil ? `، ساري حتى ${formatDate(quote.validUntil)}` : ''}. مع تحيات ${settings.businessName}.`
+    const enText = `Hello ${customer?.name ?? ''}, please find attached quotation ${quote.quoteNo} totalling ${formatOMR(quote.totalBaisa, 'en')}${quote.validUntil ? `, valid until ${formatDate(quote.validUntil)}` : ''}. Best regards, ${settings.businessName}.`
+    return lang === 'en' ? enText : lang === 'both' ? `${arText}\n\n${enText}` : arText
+  }
 
   return (
     <>
       <PageHeader
-        title={`عرض سعر ${quote.quoteNo}`}
+        title={t(`عرض سعر ${quote.quoteNo}`, `Quotation ${quote.quoteNo}`)}
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
             <Link to={`/customers/${quote.customerId}`} className="text-brand-700">{customer?.name}</Link>·
             <span className="num">{formatDate(quote.date)}</span>
             <QuoteStatusBadge status={status} />
-            {invoice && <Link to={`/invoices/${invoice.id}`} className="text-sm text-brand-700">← الفاتورة {invoice.invoiceNo}</Link>}
+            {invoice && <Link to={`/invoices/${invoice.id}`} className="text-sm text-brand-700">{t("← الفاتورة", "→ Invoice")} {invoice.invoiceNo}</Link>}
           </span>
         }
         back={{ to: `/customers/${quote.customerId}`, label: customer?.name ?? ar.nav.customers }}
@@ -58,18 +63,18 @@ export function QuoteDetailPage() {
           open && (
             <>
               <LinkButton to={`/invoices/new?quote=${quote.id}`}>
-                <FileCheck2 className="size-5" /> تحويل إلى فاتورة
+                <FileCheck2 className="size-5" /> {t("تحويل إلى فاتورة", "Convert to invoice")}
               </LinkButton>
               <Button variant="secondary" onClick={() => mark('rejected')}>
-                <X className="size-5" /> رفض العميل
+                <X className="size-5" /> {t("رفض العميل", "Customer declined")}
               </Button>
             </>
           )
         }
       />
       <div className="mb-5 grid grid-cols-2 gap-3">
-        <Stat label="إجمالي العرض" value={formatOMR(quote.totalBaisa)} />
-        <Stat label="ساري حتى" value={quote.validUntil ? formatDate(quote.validUntil) : '—'} tone={status === 'expired' ? 'red' : undefined} />
+        <Stat label={t("إجمالي العرض", "Quotation total")} value={formatOMR(quote.totalBaisa)} />
+        <Stat label={t("ساري حتى", "Valid until")} value={quote.validUntil ? formatDate(quote.validUntil) : '—'} tone={status === 'expired' ? 'red' : undefined} />
       </div>
 
       <DocumentPanel
@@ -95,7 +100,7 @@ export function QuoteDetailPage() {
 
       <div className="mt-6">
         <Button variant="ghost" className="text-red-700" onClick={remove}>
-          <Trash2 className="size-4" /> حذف عرض السعر
+          <Trash2 className="size-4" /> {t("حذف عرض السعر", "Delete quotation")}
         </Button>
       </div>
       {error && <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}

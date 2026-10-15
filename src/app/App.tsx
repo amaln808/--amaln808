@@ -1,5 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { createHashRouter, RouterProvider } from 'react-router-dom'
+import { applyLang, getLang } from '../i18n/index'
+import { useSettings } from './useSettings'
 import { CustomerDetailPage } from '../features/customers/CustomerDetailPage'
 import { CustomersPage } from '../features/customers/CustomersPage'
 import { InvoiceDetailPage } from '../features/sales/InvoiceDetailPage'
@@ -50,6 +52,10 @@ const router = createHashRouter([
   },
 ])
 
+/** Re-renders the whole app in the chosen language (RTL for Arabic, LTR for English). */
 export function App() {
-  return <RouterProvider router={router} />
+  const settings = useSettings()
+  const lang = settings?.uiLanguage ?? getLang()
+  if (lang !== getLang()) applyLang(lang)
+  return <RouterProvider key={lang} router={router} />
 }

@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import type { FactoryDB } from '../db/db'
 import { newRecord } from '../db/records'
 import type { Customer, CustomerType, ID, PaymentMethod } from '../db/types'
@@ -16,10 +17,10 @@ export interface CustomerInput {
 
 export async function saveCustomer(db: FactoryDB, input: CustomerInput, id?: ID): Promise<ID> {
   const name = input.name.trim()
-  if (!name) throw new UserError('اسم العميل مطلوب')
+  if (!name) throw new UserError(t("اسم العميل مطلوب", "Customer name is required"))
   if (id) {
     const existing = await db.customers.get(id)
-    if (!existing) throw new UserError('العميل غير موجود')
+    if (!existing) throw new UserError(t("العميل غير موجود", "Customer not found"))
     await db.customers.put({ ...existing, ...input, name, updatedAt: new Date().toISOString() })
     return id
   }
@@ -34,7 +35,7 @@ export async function deleteCustomer(db: FactoryDB, id: ID): Promise<void> {
       (await db.salesInvoices.where('customerId').equals(id).count()) +
       (await db.customerPayments.where('customerId').equals(id).count()) +
       (await db.quotations.where('customerId').equals(id).count())
-    if (used) throw new UserError('لا يمكن حذف عميل له فواتير أو عروض أو دفعات — يمكنك إيقافه بدلاً من ذلك')
+    if (used) throw new UserError(t("لا يمكن حذف عميل له فواتير أو عروض أو دفعات — يمكنك إيقافه بدلاً من ذلك", "A customer with invoices, quotations or payments can't be deleted — deactivate them instead"))
     await db.customers.delete(id)
   })
 }
@@ -49,7 +50,7 @@ export interface CustomerPaymentInput {
 }
 
 export async function recordCustomerPayment(db: FactoryDB, input: CustomerPaymentInput): Promise<ID> {
-  if (!(input.amountBaisa > 0)) throw new UserError('أدخل مبلغاً أكبر من صفر')
+  if (!(input.amountBaisa > 0)) throw new UserError(t("أدخل مبلغاً أكبر من صفر", "Enter an amount greater than zero"))
   const p = newRecord(input)
   await db.customerPayments.add(p)
   return p.id

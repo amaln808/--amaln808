@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Ellipsis } from 'lucide-react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
@@ -6,6 +7,7 @@ import { isLowStock } from '../domain/inventory'
 import { ar } from '../i18n/ar'
 import { isNavActive, NAV_ITEMS } from './nav'
 import { BackupReminder } from './BackupReminder'
+import { LanguageToggle } from './LanguageToggle'
 import { StorageBanner } from './StorageBanner'
 import { LOGO_URL } from './assets'
 
@@ -31,7 +33,7 @@ function Sidebar() {
         <img src={LOGO_URL} alt="" className="h-14 w-auto" />
         <div className="leading-tight">
           <div className="text-xl font-bold text-[#5b4a2f]">{ar.appName}</div>
-          <div className="text-xs text-stone-500">إدارة المصنع</div>
+          <div className="text-xs text-stone-500">{t("إدارة المصنع", "Factory management")}</div>
         </div>
       </div>
       <nav className="flex flex-col gap-1 px-3 pb-4">
@@ -54,6 +56,9 @@ function Sidebar() {
           )
         })}
       </nav>
+      <div className="mt-auto px-3 pb-4">
+        <LanguageToggle className="w-full" />
+      </div>
     </aside>
   )
 }

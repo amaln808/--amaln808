@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import { upgradeSettings } from './seed'
+import { ENGLISH_NAMES, upgradeSettings } from './seed'
 import type {
   Customer,
   CustomerPayment,
@@ -59,6 +59,17 @@ export class FactoryDB extends Dexie {
           .toCollection()
           .modify((s: Partial<Settings>) => Object.assign(s, upgradeSettings(s))),
       )
+    // v3: bilingual — English names for starter items/categories, document language
+    this.version(3)
+      .stores({})
+      .upgrade(async (tx) => {
+        const addEn = (r: { name: string; nameEn?: string }) => {
+          if (!r.nameEn && ENGLISH_NAMES[r.name]) r.nameEn = ENGLISH_NAMES[r.name]
+        }
+        await tx.table('items').toCollection().modify(addEn)
+        await tx.table('expenseCategories').toCollection().modify(addEn)
+        await tx.table('settings').toCollection().modify((s: Partial<Settings>) => Object.assign(s, upgradeSettings(s)))
+      })
   }
 }
 

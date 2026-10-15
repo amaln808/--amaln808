@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index'
 import { useEffect, useState } from 'react'
 import { Field, FormError, TextInput, Textarea } from '../../components/form'
 import { errorMessage } from '../../components/format'
@@ -60,30 +61,30 @@ export function SupplierFormModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={supplier ? 'تعديل المورد' : 'مورد جديد'}
+      title={supplier ? t("تعديل المورد", "Edit supplier") : t("مورد جديد", "New supplier")}
       footer={
         <>
-          <Button className="flex-1" onClick={save}>حفظ</Button>
-          <Button variant="secondary" className="flex-1" onClick={onClose}>إلغاء</Button>
+          <Button className="flex-1" onClick={save}>{t("حفظ", "Save")}</Button>
+          <Button variant="secondary" className="flex-1" onClick={onClose}>{t("إلغاء", "Cancel")}</Button>
         </>
       }
     >
       <div className="flex flex-col gap-4">
-        <Field label="اسم المورد">
+        <Field label={t("اسم المورد", "Supplier name")}>
           <TextInput value={form.name} onChange={set('name')} autoFocus />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="الهاتف">
-            <TextInput value={form.phone} onChange={set('phone')} inputMode="tel" dir="ltr" className="text-end" />
+          <Field label={t("الهاتف", "Phone")}>
+            <TextInput value={form.phone} onChange={set('phone')} inputMode="tel" dir="ltr" className="rtl:text-right" />
           </Field>
-          <Field label="البريد الإلكتروني">
-            <TextInput value={form.email} onChange={set('email')} inputMode="email" dir="ltr" className="text-end" />
+          <Field label={t("البريد الإلكتروني", "Email")}>
+            <TextInput value={form.email} onChange={set('email')} inputMode="email" dir="ltr" className="rtl:text-right" />
           </Field>
         </div>
-        <Field label="العنوان">
+        <Field label={t("العنوان", "Address")}>
           <TextInput value={form.address} onChange={set('address')} />
         </Field>
-        <Field label="ملاحظات">
+        <Field label={t("ملاحظات", "Notes")}>
           <Textarea value={form.notes} onChange={set('notes')} />
         </Field>
         <FormError message={error} />

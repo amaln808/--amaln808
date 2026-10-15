@@ -1,3 +1,4 @@
+import { nameOf, t } from '../../i18n/index'
 import { useEffect, useState } from 'react'
 import { DateInput, Field, FormError, NumberInput, Segmented, Textarea } from '../../components/form'
 import { errorMessage } from '../../components/format'
@@ -42,9 +43,9 @@ export function AdjustModal({
 
   const save = async () => {
     const q = parseQty(qty)
-    if (!q) return setError('أدخل كمية صحيحة')
+    if (!q) return setError(t("أدخل كمية صحيحة", "Enter a valid quantity"))
     const c = mode === 'increase' ? parseRialToBaisa(cost || '0') : undefined
-    if (c === null) return setError('التكلفة غير صحيحة')
+    if (c === null) return setError(t("التكلفة غير صحيحة", "Invalid cost"))
     try {
       await adjustStock(db, {
         itemId: item.id,
@@ -64,14 +65,14 @@ export function AdjustModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={`تسوية مخزون — ${item.name}`}
+      title={t(`تسوية مخزون — ${item.name}`, `Stock adjustment — ${nameOf(item)}`)}
       footer={
         <>
           <Button className="flex-1" onClick={save}>
-            حفظ
+            {t("حفظ", "Save")}
           </Button>
           <Button variant="secondary" className="flex-1" onClick={onClose}>
-            إلغاء
+            {t("إلغاء", "Cancel")}
           </Button>
         </>
       }
@@ -81,28 +82,28 @@ export function AdjustModal({
           value={mode}
           onChange={setMode}
           options={[
-            { value: 'increase', label: 'زيادة' },
-            { value: 'decrease', label: 'نقص' },
-            { value: 'waste', label: 'تالف' },
+            { value: 'increase', label: t("زيادة", "Increase") },
+            { value: 'decrease', label: t("نقص", "Decrease") },
+            { value: 'waste', label: t("تالف", "Waste") },
           ]}
         />
         <p className="text-sm text-stone-500">
-          الرصيد الحالي: <span className="num">{formatQty(item.qtyOnHand, item.unit)}</span>
+          {t("الرصيد الحالي:", "Current balance:")} <span className="num">{formatQty(item.qtyOnHand, item.unit)}</span>
         </p>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="الكمية">
+          <Field label={t("الكمية", "Quantity")}>
             <NumberInput value={qty} onChange={(e) => setQty(e.target.value)} suffix={UNIT_LABELS[item.unit]} autoFocus />
           </Field>
-          <Field label="التاريخ">
+          <Field label={t("التاريخ", "Date")}>
             <DateInput value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
         </div>
         {mode === 'increase' && (
-          <Field label="تكلفة الوحدة" hint="افتراضياً متوسط التكلفة الحالي">
-            <NumberInput value={cost} onChange={(e) => setCost(e.target.value)} suffix="ر.ع" />
+          <Field label={t("تكلفة الوحدة", "Unit cost")} hint={t("افتراضياً متوسط التكلفة الحالي", "Defaults to the current average cost")}>
+            <NumberInput value={cost} onChange={(e) => setCost(e.target.value)} suffix={t("ر.ع", "OMR")} />
           </Field>
         )}
-        <Field label="السبب / ملاحظات">
+        <Field label={t("السبب / ملاحظات", "Reason / notes")}>
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
         </Field>
         <FormError message={error} />

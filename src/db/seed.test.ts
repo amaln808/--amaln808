@@ -36,8 +36,28 @@ describe('v1 → v2 migration', () => {
 
     const db = new FactoryDB(name)
     const s = await db.settings.get(SETTINGS_ID)
-    expect(s).toMatchObject({ businessName: 'زوردة', commercialRegNo: '1552738', nextInvoiceNo: 4, nextQuoteNo: 1, invoiceDueDays: 15 })
+    expect(s).toMatchObject({ businessName: 'زوردة', commercialRegNo: '1552738', nextInvoiceNo: 4, nextQuoteNo: 1, invoiceDueDays: 15, docLanguage: 'ar', businessAddressEn: 'Bawshar' })
     expect(await db.quotations.count()).toBe(0)
+    db.close()
+  })
+})
+
+describe('v2 → v3 migration', () => {
+  it('adds English names to starter items and categories, keeping custom ones', async () => {
+    const Dexie = (await import('dexie')).default
+    const name = 'migrate-v3'
+    const v2 = new Dexie(name)
+    v2.version(2).stores({ settings: 'id', items: 'id, type, name, active', expenseCategories: 'id, name' })
+    await v2.table('settings').add({ id: SETTINGS_ID, businessName: 'زوردة', businessAddress: 'بوشر', quotePrefix: 'Q-' })
+    await v2.table('items').bulkAdd([{ id: 'a', name: 'معجون تمر' }, { id: 'b', name: 'صنف خاص' }])
+    await v2.table('expenseCategories').add({ id: 'c', name: 'رواتب' })
+    v2.close()
+
+    const db = new FactoryDB(name)
+    expect((await db.items.get('a'))?.nameEn).toBe('Date paste')
+    expect((await db.items.get('b'))?.nameEn).toBeUndefined()
+    expect((await db.expenseCategories.get('c'))?.nameEn).toBe('Salaries')
+    expect(await db.settings.get(SETTINGS_ID)).toMatchObject({ docLanguage: 'ar', businessAddressEn: 'Bawshar' })
     db.close()
   })
 })

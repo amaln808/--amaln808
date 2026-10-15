@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import type { FactoryDB } from '../db/db'
 import { newRecord } from '../db/records'
 import type { ID, PaymentMethod, Purchase, PurchaseLine } from '../db/types'
@@ -17,16 +18,16 @@ export interface PurchaseInput {
 
 export async function createPurchase(db: FactoryDB, input: PurchaseInput): Promise<ID> {
   const lines = input.lines.filter((l) => l.itemId)
-  if (!input.supplierId) throw new UserError('اختر المورد')
-  if (!lines.length) throw new UserError('أضف بنداً واحداً على الأقل')
-  if (lines.some((l) => !(l.qty > 0))) throw new UserError('الكمية يجب أن تكون أكبر من صفر')
-  if (lines.some((l) => l.unitCostBaisa < 0)) throw new UserError('سعر الوحدة لا يمكن أن يكون سالباً')
+  if (!input.supplierId) throw new UserError(t("اختر المورد", "Choose the supplier"))
+  if (!lines.length) throw new UserError(t("أضف بنداً واحداً على الأقل", "Add at least one line"))
+  if (lines.some((l) => !(l.qty > 0))) throw new UserError(t("الكمية يجب أن تكون أكبر من صفر", "Quantity must be greater than zero"))
+  if (lines.some((l) => l.unitCostBaisa < 0)) throw new UserError(t("سعر الوحدة لا يمكن أن يكون سالباً", "Unit cost can't be negative"))
 
   return db.transaction(
     'rw',
     [db.items, db.stockMovements, db.purchases, db.supplierPayments, db.suppliers],
     async () => {
-      if (!(await db.suppliers.get(input.supplierId))) throw new UserError('المورد غير موجود')
+      if (!(await db.suppliers.get(input.supplierId))) throw new UserError(t("المورد غير موجود", "Supplier not found"))
       const purchase: Purchase = newRecord({
         supplierId: input.supplierId,
         date: input.date,
@@ -39,7 +40,7 @@ export async function createPurchase(db: FactoryDB, input: PurchaseInput): Promi
 
       for (const line of lines) {
         const item = await getItemOrThrow(db, line.itemId)
-        if (item.type === 'finished') throw new UserError(`«${item.name}» منتج نهائي ولا يُشترى`)
+        if (item.type === 'finished') throw new UserError(t(`«${item.name}» منتج نهائي ولا يُشترى`, `“${item.name}” is a finished product and can't be purchased`))
         await postMovement(db, item, {
           date: input.date,
           type: 'purchase',
@@ -72,7 +73,7 @@ export async function createPurchase(db: FactoryDB, input: PurchaseInput): Promi
  */
 export async function deletePurchase(db: FactoryDB, id: ID): Promise<void> {
   await db.transaction('rw', [db.items, db.stockMovements, db.purchases, db.supplierPayments], async () => {
-    if (!(await db.purchases.get(id))) throw new UserError('فاتورة الشراء غير موجودة')
+    if (!(await db.purchases.get(id))) throw new UserError(t("فاتورة الشراء غير موجودة", "Purchase invoice not found"))
     await reverseMovements(db, 'purchase', id)
     await db.supplierPayments.where('purchaseId').equals(id).delete()
     await db.purchases.delete(id)

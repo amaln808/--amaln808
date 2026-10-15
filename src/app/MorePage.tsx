@@ -2,6 +2,7 @@ import { ChevronLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, PageHeader } from '../components/ui'
 import { ar } from '../i18n/ar'
+import { LanguageToggle } from './LanguageToggle'
 import { NAV_ITEMS } from './nav'
 
 /** Phone-only menu for sections that don't fit in the bottom bar. */
@@ -14,9 +15,10 @@ export function MorePage() {
           <Link key={to} to={to} className="flex min-h-14 items-center gap-3 rounded-xl px-3 hover:bg-stone-50">
             <Icon className="size-5 text-brand-700" />
             <span className="flex-1">{label}</span>
-            <ChevronLeft className="size-5 text-stone-400" />
+            <ChevronLeft className="size-5 text-stone-400 ltr:rotate-180" />
           </Link>
         ))}
+        <LanguageToggle className="w-full !justify-start !px-3 min-h-14" />
       </Card>
     </>
   )
