@@ -66,7 +66,6 @@ export const ar = {
   backup: {
     reminder: 'لم تُصدَّر نسخة احتياطية منذ أكثر من 7 أيام.',
     never: 'لم تُصدَّر أي نسخة احتياطية بعد.',
-    exportSoon: 'زر التصدير إلى Excel سيتوفر في المرحلة 6.',
   },
   settings: {
     business: 'بيانات المشروع',
