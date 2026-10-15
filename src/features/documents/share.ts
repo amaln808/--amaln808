@@ -29,3 +29,21 @@ export async function sharePdf(
   window.open(`https://wa.me/${number ?? ''}?text=${encodeURIComponent(opts.text)}`, '_blank')
   return 'fallback'
 }
+
+/**
+ * Shares any file through the system share sheet (on iPad: "Save to Files",
+ * AirDrop, WhatsApp…), falling back to a plain download.
+ */
+export async function shareOrDownload(blob: Blob, filename: string, mime: string): Promise<ShareResult> {
+  const file = new File([blob], filename, { type: mime })
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] })
+      return 'shared'
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return 'cancelled'
+    }
+  }
+  downloadBlob(blob, filename)
+  return 'fallback'
+}

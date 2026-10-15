@@ -1,10 +1,11 @@
-import { Check, DatabaseBackup, HardDrive, ImageUp, RotateCcw } from 'lucide-react'
+import { Check, HardDrive, ImageUp, RotateCcw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { isBackupOverdue, usePersistentStorage } from '../../app/storage'
+import { usePersistentStorage } from '../../app/storage'
 import { useSettings } from '../../app/useSettings'
 import { Field, FormError, NumberInput, TextInput } from '../../components/form'
 import { errorMessage } from '../../components/format'
-import { Badge, Button, Card, PageHeader } from '../../components/ui'
+import { Button, Card, PageHeader } from '../../components/ui'
+import { BackupCard } from '../backup/BackupCard'
 import { db } from '../../db/db'
 import { ar } from '../../i18n/ar'
 import { updateSettings } from '../../services/settings'
@@ -160,14 +161,8 @@ export function SettingsPage() {
           {persist === 'not-persisted' && ar.storage.notPersisted}
           {persist === 'unknown' && ar.storage.unknown}
         </p>
-        <h3 className="mb-2 mt-5 flex items-center gap-2 font-bold">
-          <DatabaseBackup className="size-5" /> النسخ الاحتياطي
-        </h3>
-        {settings && isBackupOverdue(settings.lastBackupAt) && (
-          <Badge tone="amber">{settings.lastBackupAt ? ar.backup.reminder : ar.backup.never}</Badge>
-        )}
-        <p className="mt-2 text-sm text-stone-500">{ar.backup.exportSoon}</p>
       </Card>
+      <BackupCard />
     </>
   )
 }

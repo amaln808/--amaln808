@@ -5,6 +5,7 @@ import { db } from '../db/db'
 import { isLowStock } from '../domain/inventory'
 import { ar } from '../i18n/ar'
 import { isNavActive, NAV_ITEMS } from './nav'
+import { BackupReminder } from './BackupReminder'
 import { StorageBanner } from './StorageBanner'
 import { LOGO_URL } from './assets'
 
@@ -99,6 +100,7 @@ export function Layout() {
       <main className="flex-1 overflow-y-auto pb-24 md:pb-8 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto max-w-6xl px-4 py-5 md:px-8 md:py-8">
           <StorageBanner />
+          <BackupReminder />
           <Outlet />
         </div>
       </main>
