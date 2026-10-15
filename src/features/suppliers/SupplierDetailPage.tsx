@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Banknote, Pencil, Phone, Power, ShoppingCart, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -25,7 +26,7 @@ export function SupplierDetailPage() {
   const { confirm, dialog } = useConfirm()
 
   if (supplier === undefined) return null
-  if (supplier === null) return <p>المورد غير موجود</p>
+  if (supplier === null) return <p>{t("المورد غير موجود", "Supplier not found")}</p>
 
   const purchaseById = new Map(purchases?.map((p) => [p.id, p]))
   const paymentById = new Map(payments?.map((p) => [p.id, p]))
@@ -34,12 +35,12 @@ export function SupplierDetailPage() {
   const totalPaid = payments?.reduce((s, p) => s + p.amountBaisa, 0) ?? 0
 
   const removePayment = async (paymentId: string) => {
-    if (!(await confirm({ title: 'حذف الدفعة', message: 'حذف هذه الدفعة؟ سيزيد المستحق للمورد بمقدارها.', confirmLabel: 'حذف', danger: true }))) return
+    if (!(await confirm({ title: t("حذف الدفعة", "Delete payment"), message: t("حذف هذه الدفعة؟ سيزيد المستحق للمورد بمقدارها.", "Delete this payment? The amount owed to the supplier will increase by it."), confirmLabel: t("حذف", "Delete"), danger: true }))) return
     await deleteSupplierPayment(db, paymentId)
   }
 
   const remove = async () => {
-    if (!(await confirm({ title: 'حذف المورد', message: `حذف «${supplier.name}»؟`, confirmLabel: 'حذف', danger: true }))) return
+    if (!(await confirm({ title: t("حذف المورد", "Delete supplier"), message: t(`حذف «${supplier.name}»؟`, `Delete “${supplier.name}”?`), confirmLabel: t("حذف", "Delete"), danger: true }))) return
     try {
       await deleteSupplier(db, supplier.id)
       navigate('/suppliers')
@@ -63,45 +64,45 @@ export function SupplierDetailPage() {
         actions={
           <>
             <LinkButton to={`/purchases/new?supplier=${supplier.id}`}>
-              <ShoppingCart className="size-4" /> فاتورة شراء
+              <ShoppingCart className="size-4" /> {t("فاتورة شراء", "Purchase invoice")}
             </LinkButton>
             <Button variant="secondary" onClick={() => setPaying(true)}>
-              <Banknote className="size-4" /> تسجيل دفعة
+              <Banknote className="size-4" /> {t("تسجيل دفعة", "Record payment")}
             </Button>
             <Button variant="secondary" onClick={() => setEditing(true)}>
-              <Pencil className="size-4" /> تعديل
+              <Pencil className="size-4" /> {t("تعديل", "Edit")}
             </Button>
           </>
         }
       />
 
       <div className="mb-5 grid grid-cols-3 gap-3">
-        <Stat label="إجمالي المشتريات" value={formatOMR(totalPurchases)} />
-        <Stat label="إجمالي المدفوع" value={formatOMR(totalPaid)} />
-        <Stat label="المستحق للمورد" value={formatOMR(balance)} tone={balance > 0 ? 'red' : 'green'} />
+        <Stat label={t("إجمالي المشتريات", "Total purchases")} value={formatOMR(totalPurchases)} />
+        <Stat label={t("إجمالي المدفوع", "Total paid")} value={formatOMR(totalPaid)} />
+        <Stat label={t("المستحق للمورد", "Owed to supplier")} value={formatOMR(balance)} tone={balance > 0 ? 'red' : 'green'} />
       </div>
 
       {(supplier.address || supplier.email || supplier.notes) && (
         <Card className="mb-5 text-sm">
-          {supplier.address && <p>العنوان: {supplier.address}</p>}
-          {supplier.email && <p>البريد: <span dir="ltr">{supplier.email}</span></p>}
+          {supplier.address && <p>{t("العنوان:", "Address:")} {supplier.address}</p>}
+          {supplier.email && <p>{t("البريد:", "Email:")} <span dir="ltr">{supplier.email}</span></p>}
           {supplier.notes && <p className="text-stone-500">{supplier.notes}</p>}
         </Card>
       )}
 
       <Card className="!p-0 overflow-hidden">
-        <h2 className="px-5 pt-4 pb-2 text-lg font-bold">كشف الحساب</h2>
-        {!statement?.length && <p className="px-5 pb-5 text-stone-500">لا توجد حركات بعد.</p>}
+        <h2 className="px-5 pt-4 pb-2 text-lg font-bold">{t("كشف الحساب", "Statement of account")}</h2>
+        {!statement?.length && <p className="px-5 pb-5 text-stone-500">{t("لا توجد حركات بعد.", "No movements yet.")}</p>}
         {!!statement?.length && (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[540px] text-sm">
               <thead className="text-stone-500">
                 <tr className="border-b border-stone-200">
-                  <th className="px-5 py-2 text-start font-medium">التاريخ</th>
-                  <th className="py-2 pe-4 text-start font-medium">البيان</th>
-                  <th className="py-2 pe-4 text-start font-medium">مشتريات</th>
-                  <th className="py-2 pe-4 text-start font-medium">مدفوع</th>
-                  <th className="py-2 pe-4 text-start font-medium">الرصيد</th>
+                  <th className="px-5 py-2 text-start font-medium">{t("التاريخ", "Date")}</th>
+                  <th className="py-2 pe-4 text-start font-medium">{t("البيان", "Description")}</th>
+                  <th className="py-2 pe-4 text-start font-medium">{t("مشتريات", "Purchases")}</th>
+                  <th className="py-2 pe-4 text-start font-medium">{t("مدفوع", "Paid")}</th>
+                  <th className="py-2 pe-4 text-start font-medium">{t("الرصيد", "Balance")}</th>
                   <th className="w-12" />
                 </tr>
               </thead>
@@ -115,10 +116,10 @@ export function SupplierDetailPage() {
                       <td className="py-3 pe-4">
                         {purchase ? (
                           <Link to={`/purchases/${purchase.id}`} className="text-brand-700">
-                            فاتورة شراء{purchase.supplierInvoiceNo && <span className="num"> #{purchase.supplierInvoiceNo}</span>}
+                            {t("فاتورة شراء", "Purchase invoice")}{purchase.supplierInvoiceNo && <span className="num"> #{purchase.supplierInvoiceNo}</span>}
                           </Link>
                         ) : (
-                          <>دفعة — {payment && ar.paymentMethods[payment.method]}</>
+                          <>{t("دفعة —", "Payment —")} {payment && ar.paymentMethods[payment.method]}</>
                         )}
                       </td>
                       <td className="py-3 pe-4"><span className="num">{row.chargeBaisa ? formatOMR(row.chargeBaisa) : ''}</span></td>
@@ -126,7 +127,7 @@ export function SupplierDetailPage() {
                       <td className="py-3 pe-4"><span className="num font-bold">{formatOMR(row.balanceBaisa)}</span></td>
                       <td className="pe-3">
                         {payment && (
-                          <button onClick={() => removePayment(payment.id)} className="flex size-10 items-center justify-center rounded-full text-stone-400 hover:bg-red-50 hover:text-red-600" aria-label="حذف الدفعة">
+                          <button onClick={() => removePayment(payment.id)} className="flex size-10 items-center justify-center rounded-full text-stone-400 hover:bg-red-50 hover:text-red-600" aria-label={t("حذف الدفعة", "Delete payment")}>
                             <Trash2 className="size-4" />
                           </button>
                         )}
@@ -142,12 +143,12 @@ export function SupplierDetailPage() {
 
       <div className="mt-6 flex flex-wrap gap-2">
         <Button variant="ghost" onClick={() => saveSupplier(db, { ...supplier, active: !supplier.active }, supplier.id)}>
-          <Power className="size-4" /> {supplier.active ? 'إيقاف المورد' : 'إعادة تفعيل المورد'}
+          <Power className="size-4" /> {supplier.active ? t("إيقاف المورد", "Deactivate supplier") : t("إعادة تفعيل المورد", "Reactivate supplier")}
         </Button>
         <Button variant="ghost" className="text-red-700" onClick={remove}>
-          <Trash2 className="size-4" /> حذف
+          <Trash2 className="size-4" /> {t("حذف", "Delete")}
         </Button>
-        {!supplier.active && <Badge>موقوف</Badge>}
+        {!supplier.active && <Badge>{t("موقوف", "Inactive")}</Badge>}
       </div>
       {error && <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 

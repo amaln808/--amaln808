@@ -19,9 +19,16 @@ export async function renderPdf(el: HTMLElement): Promise<RenderedDocument> {
   const pageH = pdf.internal.pageSize.getHeight()
   const imgH = (canvas.height * pageW) / canvas.width
   const jpeg = canvas.toDataURL('image/jpeg', 0.92)
-  for (let y = 0, page = 0; y < imgH - 1; y += pageH, page++) {
-    if (page) pdf.addPage()
-    pdf.addImage(jpeg, 'JPEG', 0, -y, pageW, imgH)
+  if (imgH <= pageH * 1.08) {
+    // Slightly taller than A4: shrink to fit one page rather than spill a sliver onto page 2
+    const h = Math.min(imgH, pageH)
+    const w = (pageW * h) / imgH
+    pdf.addImage(jpeg, 'JPEG', (pageW - w) / 2, 0, w, h)
+  } else {
+    for (let y = 0, page = 0; y < imgH - 1; y += pageH, page++) {
+      if (page) pdf.addPage()
+      pdf.addImage(jpeg, 'JPEG', 0, -y, pageW, imgH)
+    }
   }
   return { blob: pdf.output('blob'), previewUrl: canvas.toDataURL('image/png') }
 }

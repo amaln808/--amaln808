@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronLeft, FilePlus2, FileText, Phone, Plus, ReceiptText, Users } from 'lucide-react'
 import { useState } from 'react'
@@ -41,37 +42,37 @@ export function CustomersPage() {
         actions={
           <>
             <LinkButton to="/invoices/new">
-              <ReceiptText className="size-5" /> فاتورة
+              <ReceiptText className="size-5" /> {t("فاتورة", "Invoice")}
             </LinkButton>
             <LinkButton to="/quotes/new" variant="secondary">
-              <FilePlus2 className="size-5" /> عرض سعر
+              <FilePlus2 className="size-5" /> {t("عرض سعر", "Quotation")}
             </LinkButton>
             <Button variant="secondary" onClick={() => setCreating(true)}>
-              <Plus className="size-5" /> عميل
+              <Plus className="size-5" /> {t("عميل", "Customer")}
             </Button>
           </>
         }
       />
       <div className="mb-5 grid grid-cols-3 gap-3">
-        <Stat label="المستحق على العملاء" value={formatOMR(totalDue)} tone={totalDue > 0 ? 'red' : undefined} />
-        <Stat label="فواتير متأخرة" value={overdue} tone={overdue ? 'red' : 'green'} />
-        <Stat label="عروض أسعار مفتوحة" value={openQuotes} />
+        <Stat label={t("المستحق على العملاء", "Owed by customers")} value={formatOMR(totalDue)} tone={totalDue > 0 ? 'red' : undefined} />
+        <Stat label={t("فواتير متأخرة", "Overdue invoices")} value={overdue} tone={overdue ? 'red' : 'green'} />
+        <Stat label={t("عروض أسعار مفتوحة", "Open quotations")} value={openQuotes} />
       </div>
       <div className="mb-5 max-w-md">
         <Segmented
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'customers', label: 'العملاء' },
-            { value: 'invoices', label: 'الفواتير' },
-            { value: 'quotes', label: 'عروض الأسعار' },
+            { value: 'customers', label: t("العملاء", "Customers") },
+            { value: 'invoices', label: t("الفواتير", "Invoices") },
+            { value: 'quotes', label: t("عروض الأسعار", "Quotations") },
           ]}
         />
       </div>
 
       {tab === 'customers' && (
         <Card className="!p-0 overflow-hidden">
-          {customers && !customers.length && <EmptyState icon={Users} title="لا يوجد عملاء بعد" description="أضف عميلاً لإرسال عرض سعر أو فاتورة." />}
+          {customers && !customers.length && <EmptyState icon={Users} title={t("لا يوجد عملاء بعد", "No customers yet")} description={t("أضف عميلاً لإرسال عرض سعر أو فاتورة.", "Add a customer to send a quotation or invoice.")} />}
           <ul>
             {customers?.map((c) => {
               const due = balances?.get(c.id) ?? 0
@@ -80,7 +81,7 @@ export function CustomersPage() {
                   <Link to={`/customers/${c.id}`} className="flex items-center gap-3 px-5 py-4 hover:bg-stone-50">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 font-medium">
-                        {c.name} <Badge>{ar.customerTypes[c.type]}</Badge> {!c.active && <Badge>موقوف</Badge>}
+                        {c.name} <Badge>{ar.customerTypes[c.type]}</Badge> {!c.active && <Badge>{t("موقوف", "Inactive")}</Badge>}
                       </div>
                       {c.phone && (
                         <div className="mt-0.5 flex items-center gap-1 text-sm text-stone-500">
@@ -89,10 +90,10 @@ export function CustomersPage() {
                       )}
                     </div>
                     <div className="text-end">
-                      <div className="text-xs text-stone-500">المستحق</div>
+                      <div className="text-xs text-stone-500">{t("المستحق", "Balance due")}</div>
                       <div className={`num font-bold ${due > 0 ? 'text-red-700' : 'text-stone-700'}`}>{formatOMR(due)}</div>
                     </div>
-                    <ChevronLeft className="size-5 text-stone-400" />
+                    <ChevronLeft className="size-5 text-stone-400 ltr:rotate-180" />
                   </Link>
                 </li>
               )
@@ -103,7 +104,7 @@ export function CustomersPage() {
 
       {tab === 'invoices' && (
         <Card className="!p-0 overflow-hidden">
-          {invoices && !invoices.length && <EmptyState icon={ReceiptText} title="لا توجد فواتير بعد" />}
+          {invoices && !invoices.length && <EmptyState icon={ReceiptText} title={t("لا توجد فواتير بعد", "No invoices yet")} />}
           <ul>
             {invoices?.map((i) => (
               <li key={i.id} className="border-b border-stone-100 last:border-0">
@@ -116,7 +117,7 @@ export function CustomersPage() {
                     <div className="text-sm text-stone-500"><span className="num">{formatDate(i.date)}</span></div>
                   </div>
                   <div className="num font-bold">{formatOMR(i.totalBaisa)}</div>
-                  <ChevronLeft className="size-5 text-stone-400" />
+                  <ChevronLeft className="size-5 text-stone-400 ltr:rotate-180" />
                 </Link>
               </li>
             ))}
@@ -126,7 +127,7 @@ export function CustomersPage() {
 
       {tab === 'quotes' && (
         <Card className="!p-0 overflow-hidden">
-          {quotes && !quotes.length && <EmptyState icon={FileText} title="لا توجد عروض أسعار بعد" description="أرسل عرض سعر للعميل الجديد قبل الفاتورة." />}
+          {quotes && !quotes.length && <EmptyState icon={FileText} title={t("لا توجد عروض أسعار بعد", "No quotations yet")} description={t("أرسل عرض سعر للعميل الجديد قبل الفاتورة.", "Send a quotation to new customers before invoicing.")} />}
           <ul>
             {quotes?.map((q) => (
               <li key={q.id} className="border-b border-stone-100 last:border-0">
@@ -138,11 +139,11 @@ export function CustomersPage() {
                     </div>
                     <div className="text-sm text-stone-500">
                       <span className="num">{formatDate(q.date)}</span>
-                      {q.validUntil && <> · ساري حتى <span className="num">{formatDate(q.validUntil)}</span></>}
+                      {q.validUntil && <> {t("· ساري حتى", "· valid until")} <span className="num">{formatDate(q.validUntil)}</span></>}
                     </div>
                   </div>
                   <div className="num font-bold">{formatOMR(q.totalBaisa)}</div>
-                  <ChevronLeft className="size-5 text-stone-400" />
+                  <ChevronLeft className="size-5 text-stone-400 ltr:rotate-180" />
                 </Link>
               </li>
             ))}

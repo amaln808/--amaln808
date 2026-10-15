@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import type { FactoryDB } from '../db/db'
 import { newRecord, today } from '../db/records'
 import type { BaseRecord, ID, Item, MovementType, RefType, StockMovement } from '../db/types'
@@ -6,7 +7,7 @@ import { formatQty } from '../domain/quantity'
 import { UserError } from './errors'
 
 export function insufficientMessage(item: Item, available: number, requested: number): string {
-  return `الكمية غير كافية من «${item.name}»: المتوفر ${formatQty(available, item.unit)} والمطلوب ${formatQty(requested, item.unit)}`
+  return t(`الكمية غير كافية من «${item.name}»: المتوفر ${formatQty(available, item.unit)} والمطلوب ${formatQty(requested, item.unit)}`, `Not enough “${item.name}”: available ${formatQty(available, item.unit)}, needed ${formatQty(requested, item.unit)}`)
 }
 
 /** Runs a stock calculation and turns shortages into a readable Arabic error. */
@@ -21,7 +22,7 @@ export function withStockCheck(item: Item, fn: () => StockState): StockState {
 
 export async function getItemOrThrow(db: FactoryDB, id: ID): Promise<Item> {
   const item = await db.items.get(id)
-  if (!item) throw new UserError('الصنف غير موجود')
+  if (!item) throw new UserError(t("الصنف غير موجود", "Item not found"))
   return item
 }
 
@@ -77,8 +78,8 @@ export interface AdjustmentInput {
 }
 
 export async function adjustStock(db: FactoryDB, input: AdjustmentInput): Promise<void> {
-  if (!input.qty) throw new UserError('أدخل كمية صحيحة')
-  if (input.type === 'waste' && input.qty > 0) throw new UserError('التالف يُنقص المخزون فقط')
+  if (!input.qty) throw new UserError(t("أدخل كمية صحيحة", "Enter a valid quantity"))
+  if (input.type === 'waste' && input.qty > 0) throw new UserError(t("التالف يُنقص المخزون فقط", "Waste can only reduce stock"))
   await db.transaction('rw', db.items, db.stockMovements, async () => {
     const item = await getItemOrThrow(db, input.itemId)
     await postMovement(db, item, {

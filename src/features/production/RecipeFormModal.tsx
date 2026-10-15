@@ -1,3 +1,4 @@
+import { nameOf, t } from '../../i18n/index'
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Field, FormError, NumberInput, Select } from '../../components/form'
@@ -53,8 +54,8 @@ export function RecipeFormModal({
 
   const save = async () => {
     const filled = rows.filter((r) => r.itemId || r.qty)
-    if (filled.some((r) => !r.itemId)) return setError('اختر المادة في كل سطر')
-    if (filled.some((r) => !parseQty(r.qty))) return setError('أدخل كمية صحيحة لكل مادة')
+    if (filled.some((r) => !r.itemId)) return setError(t("اختر المادة في كل سطر", "Choose the material on every line"))
+    if (filled.some((r) => !parseQty(r.qty))) return setError(t("أدخل كمية صحيحة لكل مادة", "Enter a valid quantity for each material"))
     try {
       await saveRecipe(db, {
         finishedItemId: product.id,
@@ -67,41 +68,41 @@ export function RecipeFormModal({
   }
 
   const options = (type: Item['type']) =>
-    materials.filter((m) => m.type === type).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)
+    materials.filter((m) => m.type === type).map((m) => <option key={m.id} value={m.id}>{nameOf(m)}</option>)
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={`وصفة: ${product.name}`}
+      title={t(`وصفة: ${product.name}`, `Recipe: ${nameOf(product)}`)}
       footer={
         <>
-          <Button className="flex-1" onClick={save}>حفظ الوصفة</Button>
-          <Button variant="secondary" className="flex-1" onClick={onClose}>إلغاء</Button>
+          <Button className="flex-1" onClick={save}>{t("حفظ الوصفة", "Save recipe")}</Button>
+          <Button variant="secondary" className="flex-1" onClick={onClose}>{t("إلغاء", "Cancel")}</Button>
         </>
       }
     >
       <div className="flex flex-col gap-3">
-        <p className="text-sm text-stone-500">الكميات المطلوبة لإنتاج <b>عبوة واحدة</b>.</p>
+        <p className="text-sm text-stone-500">{t("الكميات المطلوبة لإنتاج", "Quantities needed to produce")} <b>{t("عبوة واحدة", "one jar")}</b>.</p>
         {rows.map((r) => {
           const item = byId.get(r.itemId)
           return (
             <div key={r.key} className="grid grid-cols-[1fr_8.5rem_auto] items-end gap-2">
-              <Field label="المادة">
+              <Field label={t("المادة", "Material")}>
                 <Select value={r.itemId} onChange={(e) => update(r.key, { itemId: e.target.value })}>
-                  <option value="">اختر…</option>
+                  <option value="">{t("اختر…", "Choose…")}</option>
                   <optgroup label={ar.itemTypes.raw}>{options('raw')}</optgroup>
                   <optgroup label={ar.itemTypes.packaging}>{options('packaging')}</optgroup>
                 </Select>
               </Field>
-              <Field label="لكل عبوة">
+              <Field label={t("لكل عبوة", "Per jar")}>
                 <NumberInput value={r.qty} onChange={(e) => update(r.key, { qty: e.target.value })} suffix={item ? UNIT_LABELS[item.unit] : undefined} />
               </Field>
               <button
                 type="button"
                 onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}
                 className="flex size-12 items-center justify-center rounded-xl text-stone-400 hover:bg-red-50 hover:text-red-600"
-                aria-label="حذف المكوّن"
+                aria-label={t("حذف المكوّن", "Remove component")}
               >
                 <Trash2 className="size-5" />
               </button>
@@ -109,10 +110,10 @@ export function RecipeFormModal({
           )
         })}
         <Button type="button" variant="ghost" className="self-start" onClick={() => setRows((rs) => [...rs, { key: nextKey++, itemId: '', qty: '' }])}>
-          <Plus className="size-5" /> إضافة مكوّن
+          <Plus className="size-5" /> {t("إضافة مكوّن", "Add component")}
         </Button>
         <div className="flex justify-between rounded-xl bg-stone-50 px-4 py-3 text-sm">
-          <span>تكلفة المواد التقديرية للعبوة (بالأسعار الحالية)</span>
+          <span>{t("تكلفة المواد التقديرية للعبوة (بالأسعار الحالية)", "Estimated material cost per jar (current prices)")}</span>
           <b className="num">{formatOMR(Math.round(estCost))}</b>
         </div>
         <FormError message={error} />

@@ -1,4 +1,7 @@
-export const ar = {
+import { getLang } from './index'
+
+/** Arabic labels (also the shape for English). */
+export const AR = {
   appName: 'زوردة',
   nav: {
     dashboard: 'لوحة المؤشرات',
@@ -13,7 +16,7 @@ export const ar = {
   },
   common: {
     comingSoon: 'قيد التطوير',
-    phase: (n: number) => `ستتوفر هذه الوحدة في المرحلة ${n}`,
+    phase: (n: number): string => `ستتوفر هذه الوحدة في المرحلة ${n}`,
     save: 'حفظ',
     cancel: 'إلغاء',
     loading: 'جارٍ التحميل…',
@@ -75,4 +78,65 @@ export const ar = {
     vat: 'ضريبة القيمة المضافة',
     vatNote: 'المشروع غير مسجّل حالياً — تظهر في الفاتورة بنسبة 0%.',
   },
-} as const
+}
+
+type Labels = typeof AR
+
+export const EN: Labels = {
+  appName: 'Zawrda',
+  nav: {
+    dashboard: 'Dashboard',
+    inventory: 'Inventory',
+    production: 'Production',
+    suppliers: 'Suppliers',
+    customers: 'Customers & sales',
+    customersShort: 'Sales',
+    expenses: 'Expenses',
+    settings: 'Settings',
+    more: 'More',
+  },
+  common: {
+    comingSoon: 'Coming soon',
+    phase: (n: number) => `Available in phase ${n}`,
+    save: 'Save',
+    cancel: 'Cancel',
+    loading: 'Loading…',
+  },
+  itemTypes: { raw: 'Raw material', packaging: 'Packaging', finished: 'Finished product' },
+  movementTypes: {
+    purchase: 'Purchase',
+    production_in: 'Production (in)',
+    production_out: 'Used in production',
+    sale: 'Sale',
+    adjustment: 'Adjustment',
+    waste: 'Waste',
+  },
+  customerTypes: { individual: 'Individual', store: 'Store', distributor: 'Distributor' },
+  invoiceStatus: { paid: 'Paid', partial: 'Partly paid', unpaid: 'Unpaid', overdue: 'Overdue' },
+  quoteStatus: { draft: 'Draft', sent: 'Sent', accepted: 'Accepted', rejected: 'Declined', expired: 'Expired', invoiced: 'Invoiced' },
+  paymentMethods: { cash: 'Cash', bank: 'Bank transfer', card: 'Card', other: 'Other' },
+  storage: {
+    title: 'Data storage',
+    persisted: 'Your data is protected from automatic deletion on this device.',
+    notPersisted:
+      'The browser may delete data automatically. Add the app to your Home Screen (Share → Add to Home Screen) and export backups regularly.',
+    unknown: "Couldn't check the storage status.",
+  },
+  backup: {
+    reminder: 'No backup exported for over 7 days.',
+    never: 'No backup exported yet.',
+  },
+  settings: {
+    business: 'Business details',
+    businessName: 'Business name',
+    currency: 'Currency',
+    currencyValue: 'Omani rial (OMR)',
+    vat: 'VAT',
+    vatNote: 'Not VAT-registered yet — invoices show VAT at 0%.',
+  },
+}
+
+/** Labels in the current UI language (read at render time). */
+export const ar: Labels = new Proxy(AR, {
+  get: (_target, key: string) => (getLang() === 'en' ? EN : AR)[key as keyof Labels],
+})

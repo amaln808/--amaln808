@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index'
 import { useEffect, useState } from 'react'
 import { Field, FormError, Select, TextInput, Textarea } from '../../components/form'
 import { errorMessage } from '../../components/format'
@@ -61,23 +62,23 @@ export function CustomerFormModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={customer ? 'تعديل العميل' : 'عميل جديد'}
+      title={customer ? t("تعديل العميل", "Edit customer") : t("عميل جديد", "New customer")}
       footer={
         <>
-          <Button className="flex-1" onClick={save}>حفظ</Button>
-          <Button variant="secondary" className="flex-1" onClick={onClose}>إلغاء</Button>
+          <Button className="flex-1" onClick={save}>{t("حفظ", "Save")}</Button>
+          <Button variant="secondary" className="flex-1" onClick={onClose}>{t("إلغاء", "Cancel")}</Button>
         </>
       }
     >
       <div className="flex flex-col gap-4">
-        <Field label="اسم العميل">
+        <Field label={t("اسم العميل", "Customer name")}>
           <TextInput value={form.name} onChange={set('name')} autoFocus />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="الهاتف" hint="يُستخدم لإرسال الفواتير عبر واتساب">
-            <TextInput value={form.phone} onChange={set('phone')} inputMode="tel" dir="ltr" className="text-end" />
+          <Field label={t("الهاتف", "Phone")} hint={t("يُستخدم لإرسال الفواتير عبر واتساب", "Used to send invoices via WhatsApp")}>
+            <TextInput value={form.phone} onChange={set('phone')} inputMode="tel" dir="ltr" className="rtl:text-right" />
           </Field>
-          <Field label="النوع">
+          <Field label={t("النوع", "Type")}>
             <Select value={form.type} onChange={set('type')}>
               {(Object.keys(ar.customerTypes) as CustomerType[]).map((t) => (
                 <option key={t} value={t}>{ar.customerTypes[t]}</option>
@@ -85,10 +86,10 @@ export function CustomerFormModal({
             </Select>
           </Field>
         </div>
-        <Field label="العنوان">
+        <Field label={t("العنوان", "Address")}>
           <TextInput value={form.address} onChange={set('address')} />
         </Field>
-        <Field label="ملاحظات">
+        <Field label={t("ملاحظات", "Notes")}>
           <Textarea value={form.notes} onChange={set('notes')} />
         </Field>
         <FormError message={error} />

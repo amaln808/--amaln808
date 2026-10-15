@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import type { FactoryDB } from '../db/db'
 import { newRecord } from '../db/records'
 import type { ID, PaymentMethod, Supplier } from '../db/types'
@@ -15,10 +16,10 @@ export interface SupplierInput {
 
 export async function saveSupplier(db: FactoryDB, input: SupplierInput, id?: ID): Promise<ID> {
   const name = input.name.trim()
-  if (!name) throw new UserError('اسم المورد مطلوب')
+  if (!name) throw new UserError(t("اسم المورد مطلوب", "Supplier name is required"))
   if (id) {
     const existing = await db.suppliers.get(id)
-    if (!existing) throw new UserError('المورد غير موجود')
+    if (!existing) throw new UserError(t("المورد غير موجود", "Supplier not found"))
     await db.suppliers.put({ ...existing, ...input, name, updatedAt: new Date().toISOString() })
     return id
   }
@@ -32,7 +33,7 @@ export async function deleteSupplier(db: FactoryDB, id: ID): Promise<void> {
     const used =
       (await db.purchases.where('supplierId').equals(id).count()) +
       (await db.supplierPayments.where('supplierId').equals(id).count())
-    if (used) throw new UserError('لا يمكن حذف مورد له مشتريات أو دفعات — يمكنك إيقافه بدلاً من ذلك')
+    if (used) throw new UserError(t("لا يمكن حذف مورد له مشتريات أو دفعات — يمكنك إيقافه بدلاً من ذلك", "A supplier with purchases or payments can't be deleted — deactivate them instead"))
     await db.suppliers.delete(id)
   })
 }
@@ -47,7 +48,7 @@ export interface SupplierPaymentInput {
 }
 
 export async function recordSupplierPayment(db: FactoryDB, input: SupplierPaymentInput): Promise<ID> {
-  if (!(input.amountBaisa > 0)) throw new UserError('أدخل مبلغاً أكبر من صفر')
+  if (!(input.amountBaisa > 0)) throw new UserError(t("أدخل مبلغاً أكبر من صفر", "Enter an amount greater than zero"))
   const p = newRecord(input)
   await db.supplierPayments.add(p)
   return p.id

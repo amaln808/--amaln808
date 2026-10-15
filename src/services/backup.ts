@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import type { FactoryDB } from '../db/db'
 import { SETTINGS_ID, seedIfEmpty, upgradeSettings } from '../db/seed'
 import type { Settings } from '../db/types'
@@ -22,7 +23,7 @@ export async function markBackedUp(db: FactoryDB, at = new Date().toISOString())
 /** Replaces every table with the backup's contents, all or nothing. */
 export async function restoreBackup(db: FactoryDB, data: BackupData): Promise<void> {
   const settings = data.settings?.[0] as Partial<Settings> | undefined
-  if (!settings) throw new UserError('النسخة لا تحتوي على الإعدادات')
+  if (!settings) throw new UserError(t("النسخة لا تحتوي على الإعدادات", "The backup has no settings"))
   await db.transaction('rw', tablesOf(db), async () => {
     for (const t of TABLES) {
       const table = db.table(t.table)

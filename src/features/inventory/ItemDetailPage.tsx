@@ -1,3 +1,4 @@
+import { nameOf, t } from '../../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Minus, Pencil, Plus, Power, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -40,10 +41,10 @@ export function ItemDetailPage() {
   const { confirm, dialog } = useConfirm()
 
   if (item === undefined) return null
-  if (item === null) return <p>الصنف غير موجود</p>
+  if (item === null) return <p>{t("الصنف غير موجود", "Item not found")}</p>
 
   const remove = async () => {
-    if (!(await confirm({ title: 'حذف الصنف', message: `حذف «${item.name}» نهائياً؟`, confirmLabel: 'حذف', danger: true }))) return
+    if (!(await confirm({ title: t("حذف الصنف", "Delete item"), message: t(`حذف «${item.name}» نهائياً؟`, `Permanently delete “${nameOf(item)}”?`), confirmLabel: t("حذف", "Delete"), danger: true }))) return
     try {
       await deleteItem(db, item.id)
       navigate('/inventory')
@@ -57,7 +58,7 @@ export function ItemDetailPage() {
   return (
     <>
       <PageHeader
-        title={item.name}
+        title={nameOf(item)}
         subtitle={
           <span className="flex items-center gap-2">
             {ar.itemTypes[item.type]} <StockBadge item={item} />
@@ -67,40 +68,40 @@ export function ItemDetailPage() {
         actions={
           <>
             <Button variant="secondary" onClick={() => setEditing(true)}>
-              <Pencil className="size-4" /> تعديل
+              <Pencil className="size-4" /> {t("تعديل", "Edit")}
             </Button>
             <Button variant="secondary" onClick={() => setAdjustMode('increase')}>
-              <Plus className="size-4" /> تسوية
+              <Plus className="size-4" /> {t("تسوية", "Adjust")}
             </Button>
             <Button variant="secondary" onClick={() => setAdjustMode('waste')}>
-              <Minus className="size-4" /> تالف
+              <Minus className="size-4" /> {t("تالف", "Waste")}
             </Button>
           </>
         }
       />
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="الرصيد الحالي" value={formatQty(item.qtyOnHand, item.unit)} tone={item.qtyOnHand <= item.minQty ? 'red' : undefined} />
-        <Stat label="الحد الأدنى" value={formatQty(item.minQty, item.unit)} />
-        <Stat label="متوسط تكلفة الوحدة" value={formatOMR(Math.round(item.avgCostBaisa))} />
-        <Stat label="قيمة الرصيد" value={formatOMR(stockValue(item))} />
+        <Stat label={t("الرصيد الحالي", "Current balance")} value={formatQty(item.qtyOnHand, item.unit)} tone={item.qtyOnHand <= item.minQty ? 'red' : undefined} />
+        <Stat label={t("الحد الأدنى", "Minimum")} value={formatQty(item.minQty, item.unit)} />
+        <Stat label={t("متوسط تكلفة الوحدة", "Average unit cost")} value={formatOMR(Math.round(item.avgCostBaisa))} />
+        <Stat label={t("قيمة الرصيد", "Balance value")} value={formatOMR(stockValue(item))} />
       </div>
       {item.type === 'finished' && (
         <Card className="mb-5">
           <div className="flex flex-wrap gap-x-8 gap-y-2">
             <span>
-              سعر البيع: <b className="num">{item.salePriceBaisa != null ? formatOMR(item.salePriceBaisa) : '—'}</b>
+              {t("سعر البيع:", "Sale price:")} <b className="num">{item.salePriceBaisa != null ? formatOMR(item.salePriceBaisa) : '—'}</b>
             </span>
             <span>
-              وزن العبوة: <b className="num">{item.packageSizeG ? `≈${item.packageSizeG} جم` : '—'}</b>
+              {t("وزن العبوة:", "Package weight:")} <b className="num">{item.packageSizeG ? t(`≈${item.packageSizeG} جم`, `≈${item.packageSizeG} g`) : '—'}</b>
             </span>
           </div>
         </Card>
       )}
 
       <Card className="!p-0 overflow-hidden">
-        <h2 className="px-5 pt-4 pb-2 text-lg font-bold">حركات المخزون</h2>
-        {!movements?.length && <p className="px-5 pb-5 text-stone-500">لا توجد حركات بعد.</p>}
+        <h2 className="px-5 pt-4 pb-2 text-lg font-bold">{t("حركات المخزون", "Stock movements")}</h2>
+        {!movements?.length && <p className="px-5 pb-5 text-stone-500">{t("لا توجد حركات بعد.", "No movements yet.")}</p>}
         <ul>
           {movements?.map((m) => {
             const link = refLink(m)
@@ -117,7 +118,7 @@ export function ItemDetailPage() {
                   <div className={`num font-bold ${m.qty > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                     {formatSignedQty(m.qty, item.unit)}
                   </div>
-                  <div className="num text-xs text-stone-500">{formatOMR(Math.round(m.unitCostBaisa))} / وحدة</div>
+                  <div className="num text-xs text-stone-500">{formatOMR(Math.round(m.unitCostBaisa))} {t("/ وحدة", "/ unit")}</div>
                 </div>
               </div>
             )
@@ -132,12 +133,12 @@ export function ItemDetailPage() {
 
       <div className="mt-6 flex flex-wrap gap-2">
         <Button variant="ghost" onClick={toggleActive}>
-          <Power className="size-4" /> {item.active ? 'إيقاف الصنف' : 'إعادة تفعيل الصنف'}
+          <Power className="size-4" /> {item.active ? t("إيقاف الصنف", "Deactivate item") : t("إعادة تفعيل الصنف", "Reactivate item")}
         </Button>
         <Button variant="ghost" className="text-red-700" onClick={remove}>
-          <Trash2 className="size-4" /> حذف
+          <Trash2 className="size-4" /> {t("حذف", "Delete")}
         </Button>
-        {!item.active && <Badge>الصنف الموقوف لا يظهر في قوائم الاختيار</Badge>}
+        {!item.active && <Badge>{t("الصنف الموقوف لا يظهر في قوائم الاختيار", "Inactive items don't appear in selection lists")}</Badge>}
       </div>
       {error && <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 

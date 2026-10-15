@@ -1,3 +1,5 @@
+import { getLang, type Lang } from '../i18n/index'
+
 /**
  * Omani Rial helpers. Amounts are stored as integer baisa (1 OMR = 1000 baisa)
  * and only converted to rials for display or input.
@@ -24,9 +26,13 @@ export function formatBaisa(baisa: number): string {
   return baisa < 0 ? ltr(s) : s
 }
 
-/** 1234500 → "1,234.500 ر.ع" */
-export function formatOMR(baisa: number): string {
-  return `${formatBaisa(baisa)} ر.ع`
+/** 1234500 → "1,234.500 ر.ع" (Arabic) or "1,234.500 OMR" (English) */
+export function formatOMR(baisa: number, lang: Lang = getLang()): string {
+  return `${formatBaisa(baisa)} ${currencyLabel(lang)}`
+}
+
+export function currencyLabel(lang: Lang = getLang()): string {
+  return lang === 'en' ? 'OMR' : 'ر.ع'
 }
 
 const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩'

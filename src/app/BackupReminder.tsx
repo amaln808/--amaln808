@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { DatabaseBackup, X } from 'lucide-react'
 import { useState } from 'react'
@@ -37,10 +38,10 @@ export function BackupReminder() {
     <div className="mb-5 flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
       <DatabaseBackup className="size-5 shrink-0" />
       <p className="flex-1">
-        {settings.lastBackupAt ? 'مرّ أكثر من أسبوع على آخر نسخة احتياطية.' : 'لم تُصدِّر أي نسخة احتياطية بعد.'}{' '}
-        <Link to="/settings" className="font-bold underline underline-offset-4">صدّر نسخة الآن</Link>
+        {settings.lastBackupAt ? t("مرّ أكثر من أسبوع على آخر نسخة احتياطية.", "It has been over a week since your last backup.") : t("لم تُصدِّر أي نسخة احتياطية بعد.", "You haven't exported a backup yet.")}{' '}
+        <Link to="/settings" className="font-bold underline underline-offset-4">{t("صدّر نسخة الآن", "Export a backup now")}</Link>
       </p>
-      <button onClick={dismiss} className="flex size-10 items-center justify-center rounded-full hover:bg-sky-100" aria-label="إخفاء التذكير">
+      <button onClick={dismiss} className="flex size-10 items-center justify-center rounded-full hover:bg-sky-100" aria-label={t("إخفاء التذكير", "Hide reminder")}>
         <X className="size-4" />
       </button>
     </div>

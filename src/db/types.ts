@@ -20,6 +20,12 @@ export interface Settings extends BaseRecord {
   /** Commercial registration number (س.ت) */
   commercialRegNo?: string
   businessAddress?: string
+  /** English address for English documents */
+  businessAddressEn?: string
+  /** UI language */
+  uiLanguage?: 'ar' | 'en'
+  /** Default language for invoices/quotations: Arabic, English or both */
+  docLanguage?: 'ar' | 'en' | 'both'
   /** Custom logo as a data URL; the bundled /logo.png is used otherwise */
   logoDataUrl?: string
   currency: 'OMR'
@@ -43,6 +49,8 @@ export type ItemType = 'raw' | 'packaging' | 'finished'
 
 export interface Item extends BaseRecord {
   name: string
+  /** English name, used in the English UI and English documents */
+  nameEn?: string
   type: ItemType
   unit: Unit
   sku?: string
@@ -217,6 +225,7 @@ export interface CustomerPayment extends BaseRecord {
 
 export interface ExpenseCategory extends BaseRecord {
   name: string
+  nameEn?: string
   color?: string
   isDefault: boolean
 }

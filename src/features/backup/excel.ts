@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index'
 import { buildBackupSheets, parseBackupSheets, type BackupData } from './format'
 
 const widthFor = (rows: unknown[][], i: number) =>
@@ -24,7 +25,7 @@ export async function backupFromFile(file: File) {
   try {
     sheets = await readXlsxFile(file)
   } catch {
-    throw Object.assign(new Error('تعذرت قراءة الملف — تأكد أنه ملف Excel صدّرته من التطبيق'), { name: 'UserError' })
+    throw Object.assign(new Error(t("تعذرت قراءة الملف — تأكد أنه ملف Excel صدّرته من التطبيق", "Couldn't read the file — make sure it's an Excel file exported from the app")), { name: 'UserError' })
   }
   return parseBackupSheets(sheets as Array<{ sheet: string; data: unknown[][] }>)
 }

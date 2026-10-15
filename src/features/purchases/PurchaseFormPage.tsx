@@ -1,3 +1,4 @@
+import { nameOf, t } from '../../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -80,16 +81,16 @@ export function PurchaseFormPage() {
   const save = async () => {
     setError(null)
     const filled = parsed.filter((l, i) => l.itemId || lines[i].qty || lines[i].cost)
-    if (filled.some((l) => !l.itemId)) return setError('اختر الصنف في كل بند')
-    if (filled.some((l) => !l.qty)) return setError('أدخل كمية صحيحة في كل بند')
-    if (filled.some((l) => l.unitCostBaisa == null)) return setError('أدخل سعر الوحدة في كل بند')
+    if (filled.some((l) => !l.itemId)) return setError(t("اختر الصنف في كل بند", "Choose the item on every line"))
+    if (filled.some((l) => !l.qty)) return setError(t("أدخل كمية صحيحة في كل بند", "Enter a valid quantity on every line"))
+    if (filled.some((l) => l.unitCostBaisa == null)) return setError(t("أدخل سعر الوحدة في كل بند", "Enter the unit price on every line"))
 
     let paidNow
     if (payMode === 'full') paidNow = { amountBaisa: total, method }
     if (payMode === 'partial') {
       const amt = parseRialToBaisa(paidAmount)
-      if (!amt || amt <= 0) return setError('أدخل المبلغ المدفوع')
-      if (amt > total) return setError('المبلغ المدفوع أكبر من إجمالي الفاتورة')
+      if (!amt || amt <= 0) return setError(t("أدخل المبلغ المدفوع", "Enter the amount paid"))
+      if (amt > total) return setError(t("المبلغ المدفوع أكبر من إجمالي الفاتورة", "Amount paid exceeds the invoice total"))
       paidNow = { amountBaisa: amt, method }
     }
 
@@ -112,40 +113,40 @@ export function PurchaseFormPage() {
 
   const itemOptions = (type: Item['type']) =>
     items?.filter((i) => i.type === type).map((i) => (
-      <option key={i.id} value={i.id}>{i.name}</option>
+      <option key={i.id} value={i.id}>{nameOf(i)}</option>
     ))
 
   return (
     <>
-      <PageHeader title="فاتورة شراء جديدة" back={{ to: '/suppliers', label: ar.nav.suppliers }} />
+      <PageHeader title={t("فاتورة شراء جديدة", "New purchase invoice")} back={{ to: '/suppliers', label: ar.nav.suppliers }} />
 
       <div className="flex flex-col gap-5">
         <Card>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="المورد" className="sm:col-span-2 lg:col-span-1">
+            <Field label={t("المورد", "Supplier")} className="sm:col-span-2 lg:col-span-1">
               <div className="flex gap-2">
                 <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-                  <option value="">اختر المورد…</option>
+                  <option value="">{t("اختر المورد…", "Choose supplier…")}</option>
                   {suppliers?.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </Select>
-                <Button type="button" variant="secondary" className="!px-3" onClick={() => setAddingSupplier(true)} aria-label="مورد جديد">
+                <Button type="button" variant="secondary" className="!px-3" onClick={() => setAddingSupplier(true)} aria-label={t("مورد جديد", "New supplier")}>
                   <Plus className="size-5" />
                 </Button>
               </div>
             </Field>
-            <Field label="التاريخ">
+            <Field label={t("التاريخ", "Date")}>
               <DateInput value={date} onChange={(e) => setDate(e.target.value)} />
             </Field>
-            <Field label="رقم فاتورة المورد (اختياري)">
+            <Field label={t("رقم فاتورة المورد (اختياري)", "Supplier invoice no. (optional)")}>
               <TextInput value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} />
             </Field>
           </div>
         </Card>
 
         <Card>
-          <h2 className="mb-3 text-lg font-bold">البنود</h2>
+          <h2 className="mb-3 text-lg font-bold">{t("البنود", "Lines")}</h2>
           <div className="flex flex-col gap-3">
             {lines.map((l, idx) => {
               const item = itemById.get(l.itemId)
@@ -153,18 +154,18 @@ export function PurchaseFormPage() {
               const lt = p.qty != null && p.unitCostBaisa != null ? lineTotal(p.qty, p.unitCostBaisa) : 0
               return (
                 <div key={l.key} className="grid grid-cols-2 items-end gap-3 rounded-2xl bg-stone-50 p-3 lg:grid-cols-[1fr_8rem_9rem_7rem_auto] lg:bg-transparent lg:p-0">
-                  <Field label="الصنف" className="col-span-2 lg:col-span-1">
+                  <Field label={t("الصنف", "Item")} className="col-span-2 lg:col-span-1">
                     <Select value={l.itemId} onChange={(e) => pickItem(l.key, e.target.value)}>
-                      <option value="">اختر الصنف…</option>
+                      <option value="">{t("اختر الصنف…", "Choose item…")}</option>
                       <optgroup label={ar.itemTypes.raw}>{itemOptions('raw')}</optgroup>
                       <optgroup label={ar.itemTypes.packaging}>{itemOptions('packaging')}</optgroup>
                     </Select>
                   </Field>
-                  <Field label="الكمية">
+                  <Field label={t("الكمية", "Quantity")}>
                     <NumberInput value={l.qty} onChange={(e) => updateLine(l.key, { qty: e.target.value })} suffix={item ? UNIT_LABELS[item.unit] : undefined} />
                   </Field>
-                  <Field label="سعر الوحدة">
-                    <NumberInput value={l.cost} onChange={(e) => updateLine(l.key, { cost: e.target.value })} suffix="ر.ع" placeholder="0.000" />
+                  <Field label={t("سعر الوحدة", "Unit price")}>
+                    <NumberInput value={l.cost} onChange={(e) => updateLine(l.key, { cost: e.target.value })} suffix={t("ر.ع", "OMR")} placeholder="0.000" />
                   </Field>
                   <div className="flex min-h-12 items-center">
                     <span className="num font-bold">{formatOMR(lt)}</span>
@@ -173,7 +174,7 @@ export function PurchaseFormPage() {
                     type="button"
                     onClick={() => setLines((ls) => (ls.length > 1 ? ls.filter((x) => x.key !== l.key) : [emptyLine()]))}
                     className="flex size-12 items-center justify-center justify-self-end rounded-xl text-stone-400 hover:bg-red-50 hover:text-red-600"
-                    aria-label="حذف البند"
+                    aria-label={t("حذف البند", "Remove line")}
                   >
                     <Trash2 className="size-5" />
                   </button>
@@ -182,34 +183,34 @@ export function PurchaseFormPage() {
             })}
           </div>
           <Button type="button" variant="ghost" className="mt-3" onClick={() => setLines((ls) => [...ls, emptyLine()])}>
-            <Plus className="size-5" /> إضافة بند
+            <Plus className="size-5" /> {t("إضافة بند", "Add line")}
           </Button>
           <div className="mt-4 flex items-center justify-between border-t border-stone-200 pt-4 text-lg">
-            <span className="font-bold">الإجمالي</span>
+            <span className="font-bold">{t("الإجمالي", "Total")}</span>
             <span className="num font-bold">{formatOMR(total)}</span>
           </div>
         </Card>
 
         <Card>
-          <h2 className="mb-3 text-lg font-bold">الدفع</h2>
+          <h2 className="mb-3 text-lg font-bold">{t("الدفع", "Payment")}</h2>
           <div className="flex flex-col gap-4">
             <Segmented
               value={payMode}
               onChange={setPayMode}
               options={[
-                { value: 'none', label: 'آجل (غير مدفوعة)' },
-                { value: 'full', label: 'مدفوعة بالكامل' },
-                { value: 'partial', label: 'دفعة جزئية' },
+                { value: 'none', label: t("آجل (غير مدفوعة)", "On credit (unpaid)") },
+                { value: 'full', label: t("مدفوعة بالكامل", "Paid in full") },
+                { value: 'partial', label: t("دفعة جزئية", "Partial payment") },
               ]}
             />
             {payMode !== 'none' && (
               <div className="grid grid-cols-2 gap-3">
                 {payMode === 'partial' && (
-                  <Field label="المبلغ المدفوع">
-                    <NumberInput value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} suffix="ر.ع" placeholder="0.000" />
+                  <Field label={t("المبلغ المدفوع", "Amount paid")}>
+                    <NumberInput value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} suffix={t("ر.ع", "OMR")} placeholder="0.000" />
                   </Field>
                 )}
-                <Field label="طريقة الدفع">
+                <Field label={t("طريقة الدفع", "Payment method")}>
                   <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
                     {(Object.keys(ar.paymentMethods) as PaymentMethod[]).map((m) => (
                       <option key={m} value={m}>{ar.paymentMethods[m]}</option>
@@ -218,7 +219,7 @@ export function PurchaseFormPage() {
                 </Field>
               </div>
             )}
-            <Field label="ملاحظات">
+            <Field label={t("ملاحظات", "Notes")}>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
             </Field>
           </div>
@@ -227,10 +228,10 @@ export function PurchaseFormPage() {
         <FormError message={error} />
         <div className="flex gap-2">
           <Button className="flex-1 sm:flex-none sm:min-w-48" onClick={save} disabled={saving}>
-            حفظ الفاتورة
+            {t("حفظ الفاتورة", "Save invoice")}
           </Button>
           <Button variant="secondary" onClick={() => navigate(-1)}>
-            إلغاء
+            {t("إلغاء", "Cancel")}
           </Button>
         </div>
       </div>

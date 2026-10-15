@@ -1,14 +1,15 @@
+import { t } from '../i18n/index'
 import { today } from '../db/records'
 import { type DateRange, type PeriodKey, periodRange } from '../domain/periods'
 import { DateInput } from './form'
 
-const OPTIONS: Array<{ key: PeriodKey; label: string }> = [
-  { key: 'thisMonth', label: 'هذا الشهر' },
-  { key: 'lastMonth', label: 'الشهر الماضي' },
-  { key: 'last3Months', label: 'آخر 3 أشهر' },
-  { key: 'thisYear', label: 'هذه السنة' },
-  { key: 'all', label: 'الكل' },
-  { key: 'custom', label: 'فترة مخصصة' },
+const options = (): Array<{ key: PeriodKey; label: string }> => [
+  { key: 'thisMonth', label: t("هذا الشهر", "This month") },
+  { key: 'lastMonth', label: t("الشهر الماضي", "Last month") },
+  { key: 'last3Months', label: t("آخر 3 أشهر", "Last 3 months") },
+  { key: 'thisYear', label: t("هذه السنة", "This year") },
+  { key: 'all', label: t("الكل", "All") },
+  { key: 'custom', label: t("فترة مخصصة", "Custom range") },
 ]
 
 export interface PeriodValue {
@@ -29,7 +30,7 @@ export function PeriodFilter({ value, onChange }: { value: PeriodValue; onChange
   return (
     <div className="flex flex-col gap-3">
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        {OPTIONS.map((o) => (
+        {options().map((o) => (
           <button
             key={o.key}
             type="button"
@@ -45,11 +46,11 @@ export function PeriodFilter({ value, onChange }: { value: PeriodValue; onChange
       {value.key === 'custom' && (
         <div className="grid max-w-md grid-cols-2 gap-3">
           <label className="flex flex-col gap-1 text-sm">
-            من
+            {t("من", "From")}
             <DateInput value={value.custom.from} onChange={(e) => onChange({ ...value, custom: { ...value.custom, from: e.target.value } })} />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            إلى
+            {t("إلى", "To")}
             <DateInput value={value.custom.to} onChange={(e) => onChange({ ...value, custom: { ...value.custom, to: e.target.value } })} />
           </label>
         </div>

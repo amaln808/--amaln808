@@ -1,3 +1,4 @@
+import { nameOf, t } from '../../i18n/index'
 import { useEffect, useState } from 'react'
 import { DateInput, Field, FormError, NumberInput, Select, Textarea } from '../../components/form'
 import { errorMessage } from '../../components/format'
@@ -40,7 +41,7 @@ export function ExpenseFormModal({
 
   const save = async (asNew = false) => {
     const amountBaisa = parseRialToBaisa(amount)
-    if (!amountBaisa || amountBaisa <= 0) return setError('أدخل مبلغاً صحيحاً')
+    if (!amountBaisa || amountBaisa <= 0) return setError(t("أدخل مبلغاً صحيحاً", "Enter a valid amount"))
     try {
       await saveExpense(db, { categoryId, date, amountBaisa, method, description }, asNew ? undefined : expense?.id)
       onClose()
@@ -59,22 +60,22 @@ export function ExpenseFormModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={expense ? 'تعديل المصروف' : 'مصروف جديد'}
+      title={expense ? t("تعديل المصروف", "Edit expense") : t("مصروف جديد", "New expense")}
       footer={
         <>
-          <Button className="flex-1" onClick={() => save()}>حفظ</Button>
+          <Button className="flex-1" onClick={() => save()}>{t("حفظ", "Save")}</Button>
           {expense ? (
-            <Button variant="secondary" className="flex-1" onClick={() => save(true)} title="يحفظ نسخة جديدة بنفس البيانات — مفيد للمصروفات الشهرية المتكررة">
-              حفظ كمصروف جديد
+            <Button variant="secondary" className="flex-1" onClick={() => save(true)} title={t("يحفظ نسخة جديدة بنفس البيانات — مفيد للمصروفات الشهرية المتكررة", "Saves a new copy with the same details — handy for recurring monthly expenses")}>
+              {t("حفظ كمصروف جديد", "Save as new expense")}
             </Button>
           ) : (
-            <Button variant="secondary" className="flex-1" onClick={onClose}>إلغاء</Button>
+            <Button variant="secondary" className="flex-1" onClick={onClose}>{t("إلغاء", "Cancel")}</Button>
           )}
         </>
       }
     >
       <div className="flex flex-col gap-4">
-        <Field label="التصنيف">
+        <Field label={t("التصنيف", "Category")}>
           <div className="flex flex-wrap gap-2">
             {categories.map((c) => (
               <button
@@ -86,33 +87,33 @@ export function ExpenseFormModal({
                 }`}
               >
                 <span className="size-2.5 rounded-full" style={{ background: c.color ?? '#a8a29e' }} />
-                {c.name}
+                {nameOf(c)}
               </button>
             ))}
           </div>
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="المبلغ">
-            <NumberInput value={amount} onChange={(e) => setAmount(e.target.value)} suffix="ر.ع" placeholder="0.000" />
+          <Field label={t("المبلغ", "Amount")}>
+            <NumberInput value={amount} onChange={(e) => setAmount(e.target.value)} suffix={t("ر.ع", "OMR")} placeholder="0.000" />
           </Field>
-          <Field label="التاريخ">
+          <Field label={t("التاريخ", "Date")}>
             <DateInput value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
         </div>
-        <Field label="طريقة الدفع">
+        <Field label={t("طريقة الدفع", "Payment method")}>
           <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
             {(Object.keys(ar.paymentMethods) as PaymentMethod[]).map((m) => (
               <option key={m} value={m}>{ar.paymentMethods[m]}</option>
             ))}
           </Select>
         </Field>
-        <Field label="الوصف (اختياري)">
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="مثال: إيجار شهر أكتوبر" />
+        <Field label={t("الوصف (اختياري)", "Description (optional)")}>
+          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("مثال: إيجار شهر أكتوبر", "e.g. October rent")} />
         </Field>
         <FormError message={error} />
         {expense && (
           <button type="button" onClick={remove} className="self-start text-sm text-red-700 underline-offset-4 hover:underline">
-            حذف هذا المصروف
+            {t("حذف هذا المصروف", "Delete this expense")}
           </button>
         )}
       </div>

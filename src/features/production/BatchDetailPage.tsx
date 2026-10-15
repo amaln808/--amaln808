@@ -1,3 +1,4 @@
+import { nameOf, t } from '../../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -20,16 +21,16 @@ export function BatchDetailPage() {
   const { confirm, dialog } = useConfirm()
 
   if (batch === undefined) return null
-  if (batch === null) return <p>الدفعة غير موجودة</p>
+  if (batch === null) return <p>{t("الدفعة غير موجودة", "Batch not found")}</p>
 
   const byId = new Map(items?.map((i) => [i.id, i]))
   const product = byId.get(batch.finishedItemId)
 
   const remove = async () => {
     const ok = await confirm({
-      title: 'حذف الدفعة',
-      message: 'ستُعاد المواد المستهلكة إلى المخزون وتُخصم العبوات المنتجة منه.\nلا يمكن التراجع عن ذلك.',
-      confirmLabel: 'حذف',
+      title: t("حذف الدفعة", "Delete payment"),
+      message: t("ستُعاد المواد المستهلكة إلى المخزون وتُخصم العبوات المنتجة منه.\nلا يمكن التراجع عن ذلك.", "Consumed materials will return to stock and the produced jars will be removed.\\nThis cannot be undone."),
+      confirmLabel: t("حذف", "Delete"),
       danger: true,
     })
     if (!ok) return
@@ -44,33 +45,33 @@ export function BatchDetailPage() {
   return (
     <>
       <PageHeader
-        title={`دفعة ${batch.batchNo}`}
+        title={t(`دفعة ${batch.batchNo}`, `Batch ${batch.batchNo}`)}
         subtitle={
           <>
-            <Link to={`/inventory/${batch.finishedItemId}`} className="text-brand-700">{product?.name}</Link>
+            <Link to={`/inventory/${batch.finishedItemId}`} className="text-brand-700">{nameOf(product)}</Link>
             {' · '}
             <span className="num">{formatDate(batch.date)}</span>
-            {batch.expiryDate && <> · ينتهي <span className="num">{formatDate(batch.expiryDate)}</span></>}
+            {batch.expiryDate && <> {t("· ينتهي", "· expires")} <span className="num">{formatDate(batch.expiryDate)}</span></>}
           </>
         }
         back={{ to: '/production', label: ar.nav.production }}
       />
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="الكمية المنتجة" value={formatQty(batch.qtyProduced, product?.unit)} />
-        <Stat label="تكلفة المواد" value={formatOMR(batch.materialsCostBaisa)} />
-        <Stat label="إجمالي التكلفة" value={formatOMR(batch.totalCostBaisa)} />
-        <Stat label="تكلفة العبوة" value={formatOMR(Math.round(batch.unitCostBaisa))} />
+        <Stat label={t("الكمية المنتجة", "Quantity produced")} value={formatQty(batch.qtyProduced, product?.unit)} />
+        <Stat label={t("تكلفة المواد", "Materials cost")} value={formatOMR(batch.materialsCostBaisa)} />
+        <Stat label={t("إجمالي التكلفة", "Total cost")} value={formatOMR(batch.totalCostBaisa)} />
+        <Stat label={t("تكلفة العبوة", "Cost per jar")} value={formatOMR(Math.round(batch.unitCostBaisa))} />
       </div>
 
       <Card className="!p-0 mb-5 overflow-hidden">
-        <h2 className="px-5 pt-4 pb-2 text-lg font-bold">المواد المستهلكة</h2>
+        <h2 className="px-5 pt-4 pb-2 text-lg font-bold">{t("المواد المستهلكة", "Materials consumed")}</h2>
         <table className="w-full text-sm">
           <thead className="text-stone-500">
             <tr className="border-b border-stone-200">
-              <th className="px-5 py-2 text-start font-medium">المادة</th>
-              <th className="py-2 pe-4 text-start font-medium">الكمية</th>
-              <th className="py-2 pe-4 text-start font-medium">تكلفة الوحدة</th>
-              <th className="py-2 pe-5 text-start font-medium">المجموع</th>
+              <th className="px-5 py-2 text-start font-medium">{t("المادة", "Material")}</th>
+              <th className="py-2 pe-4 text-start font-medium">{t("الكمية", "Quantity")}</th>
+              <th className="py-2 pe-4 text-start font-medium">{t("تكلفة الوحدة", "Unit cost")}</th>
+              <th className="py-2 pe-5 text-start font-medium">{t("المجموع", "Total")}</th>
             </tr>
           </thead>
           <tbody>
@@ -78,7 +79,7 @@ export function BatchDetailPage() {
               const m = byId.get(c.itemId)
               return (
                 <tr key={c.itemId} className="border-b border-stone-100 last:border-0">
-                  <td className="px-5 py-3"><Link to={`/inventory/${c.itemId}`} className="text-brand-700">{m?.name ?? '—'}</Link></td>
+                  <td className="px-5 py-3"><Link to={`/inventory/${c.itemId}`} className="text-brand-700">{nameOf(m)}</Link></td>
                   <td className="py-3 pe-4"><span className="num">{formatQty(c.qty, m?.unit)}</span></td>
                   <td className="py-3 pe-4"><span className="num">{formatOMR(Math.round(c.unitCostBaisa))}</span></td>
                   <td className="py-3 pe-5"><span className="num font-bold">{formatOMR(lineTotal(c.qty, c.unitCostBaisa))}</span></td>
@@ -87,7 +88,7 @@ export function BatchDetailPage() {
             })}
             {batch.extraCostBaisa > 0 && (
               <tr>
-                <td className="px-5 py-3" colSpan={3}>تكاليف مباشرة إضافية</td>
+                <td className="px-5 py-3" colSpan={3}>{t("تكاليف مباشرة إضافية", "Extra direct costs")}</td>
                 <td className="py-3 pe-5"><span className="num font-bold">{formatOMR(batch.extraCostBaisa)}</span></td>
               </tr>
             )}
@@ -98,7 +99,7 @@ export function BatchDetailPage() {
       {batch.notes && <Card className="mb-5 text-sm text-stone-600">{batch.notes}</Card>}
 
       <Button variant="ghost" className="text-red-700" onClick={remove}>
-        <Trash2 className="size-4" /> حذف الدفعة
+        <Trash2 className="size-4" /> {t("حذف الدفعة", "Delete payment")}
       </Button>
       {error && <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
       {dialog}

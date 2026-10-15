@@ -24,6 +24,8 @@ type UpgradedFields = Pick<
   | 'nextQuoteNo'
   | 'invoiceDueDays'
   | 'quoteValidityDays'
+  | 'businessAddressEn'
+  | 'docLanguage'
 >
 
 export function upgradeSettings(s: Partial<Settings>): UpgradedFields {
@@ -36,6 +38,8 @@ export function upgradeSettings(s: Partial<Settings>): UpgradedFields {
     nextQuoteNo: s.nextQuoteNo ?? 1,
     invoiceDueDays: s.invoiceDueDays ?? 15,
     quoteValidityDays: s.quoteValidityDays ?? 14,
+    businessAddressEn: s.businessAddressEn ?? (s.businessAddress === BUSINESS_DEFAULTS.businessAddress || !s.businessAddress ? 'Bawshar' : ''),
+    docLanguage: s.docLanguage ?? 'ar',
   }
 }
 
@@ -50,6 +54,27 @@ const DEFAULT_EXPENSE_CATEGORIES: Array<[string, string]> = [
   ['رسوم حكومية', '#6366f1'],
   ['أخرى', '#a3a3a3'],
 ]
+
+/** English names for the starter items and categories (matched by Arabic name). */
+export const ENGLISH_NAMES: Record<string, string> = {
+  'معجون تمر': 'Date paste',
+  'فول سوداني': 'Peanuts',
+  'علبة 250 جم': 'Jar 250 g',
+  'علبة 500 جم': 'Jar 500 g',
+  'غطاء علبة': 'Jar lid',
+  'ملصق': 'Label',
+  'معجون تمر بزبدة الفول السوداني ≈250 جم': 'Date Paste with Peanut Butter ≈250 g',
+  'معجون تمر بزبدة الفول السوداني ≈500 جم': 'Date Paste with Peanut Butter ≈500 g',
+  'إيجار': 'Rent',
+  'كهرباء': 'Electricity',
+  'ماء': 'Water',
+  'رواتب': 'Salaries',
+  'نقل': 'Transport',
+  'تسويق': 'Marketing',
+  'صيانة': 'Maintenance',
+  'رسوم حكومية': 'Government fees',
+  'أخرى': 'Other',
+}
 
 type SeedItem = Pick<Item, 'name' | 'type' | 'unit' | 'minQty'> & Partial<Item>
 
@@ -98,13 +123,13 @@ export async function seedIfEmpty(db: FactoryDB): Promise<void> {
 
     await db.expenseCategories.bulkAdd(
       DEFAULT_EXPENSE_CATEGORIES.map(
-        ([name, color]): ExpenseCategory => newRecord({ name, color, isDefault: true }),
+        ([name, color]): ExpenseCategory => newRecord({ name, nameEn: ENGLISH_NAMES[name], color, isDefault: true }),
       ),
     )
 
     await db.items.bulkAdd(
       DEFAULT_ITEMS.map(
-        (it): Item => newRecord({ qtyOnHand: 0, avgCostBaisa: 0, active: true, ...it }),
+        (it): Item => newRecord({ qtyOnHand: 0, avgCostBaisa: 0, active: true, nameEn: ENGLISH_NAMES[it.name], ...it }),
       ),
     )
   })

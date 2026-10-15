@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, type LinkProps } from 'react-router-dom'
+import { isRTL } from '../i18n/index'
 
 export function PageHeader({
   title,
@@ -17,7 +18,7 @@ export function PageHeader({
     <div className="mb-6">
       {back && (
         <Link to={back.to} className="mb-2 inline-flex min-h-9 items-center text-sm text-brand-700">
-          → {back.label}
+          {isRTL() ? '→' : '←'} {back.label}
         </Link>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -98,7 +99,7 @@ export function Stat({ label, value, tone }: { label: string; value: ReactNode; 
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
       <div className="text-sm text-stone-500">{label}</div>
-      <div className={`num mt-1 text-xl font-bold ${color}`}>{value}</div>
+      <div className={`num mt-1 text-lg font-bold sm:text-xl ${color}`} style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{value}</div>
     </div>
   )
 }

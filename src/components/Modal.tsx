@@ -1,3 +1,4 @@
+import { t } from '../i18n/index'
 import { X } from 'lucide-react'
 import { type ReactNode, useEffect } from 'react'
 import { createPortal } from 'react-dom'
@@ -30,7 +31,7 @@ export function Modal({
       <div className="relative flex max-h-[92dvh] w-full flex-col rounded-t-3xl bg-white shadow-xl sm:max-w-lg sm:rounded-3xl">
         <header className="flex items-center justify-between gap-3 border-b border-stone-100 px-5 py-4">
           <h2 className="text-lg font-bold">{title}</h2>
-          <button onClick={onClose} className="-me-2 flex size-11 items-center justify-center rounded-full hover:bg-stone-100" aria-label="إغلاق">
+          <button onClick={onClose} className="-me-2 flex size-11 items-center justify-center rounded-full hover:bg-stone-100" aria-label={t("إغلاق", "Close")}>
             <X className="size-5" />
           </button>
         </header>

@@ -17,7 +17,7 @@ const LOGO_SHEET = 'الشعار'
 const CHUNK = 30000
 
 import { UNIT_LABELS } from '../../domain/quantity'
-import { ar } from '../../i18n/ar'
+import { AR as ar } from '../../i18n/ar'
 
 type Rec = Record<string, unknown>
 type Display = (r: Rec, ctx: Lookups) => string | number | boolean | null | undefined

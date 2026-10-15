@@ -1,3 +1,5 @@
+import { getLang, type Lang } from '../i18n/index'
+
 /** Date ranges for filters. All dates are ISO `YYYY-MM-DD`, inclusive. */
 
 export type PeriodKey = 'thisMonth' | 'lastMonth' | 'last3Months' | 'thisYear' | 'all' | 'custom'
@@ -59,9 +61,10 @@ export function totalsBy<T>(rows: T[], key: (r: T) => string, amount: (r: T) => 
 }
 
 const MONTHS_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-/** "2026-10" → "أكتوبر 2026" */
-export function monthLabel(ym: string): string {
+/** "2026-10" → "أكتوبر 2026" / "Oct 2026" */
+export function monthLabel(ym: string, lang: Lang = getLang()): string {
   const [y, m] = ym.split('-').map(Number)
-  return `${MONTHS_AR[m - 1]} ${y}`
+  return `${(lang === 'en' ? MONTHS_EN : MONTHS_AR)[m - 1]} ${y}`
 }

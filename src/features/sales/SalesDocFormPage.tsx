@@ -1,3 +1,4 @@
+import { nameOf, t } from '../../i18n/index'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -93,11 +94,11 @@ export function SalesDocFormPage({ kind }: { kind: 'invoice' | 'quote' }) {
   const save = async () => {
     setError(null)
     const filled = lines.filter((l) => l.itemId || l.qty || l.price)
-    if (filled.some((l) => !l.itemId)) return setError('اختر المنتج في كل بند')
-    if (filled.some((l) => !parseQty(l.qty))) return setError('أدخل كمية صحيحة في كل بند')
-    if (filled.some((l) => parseRialToBaisa(l.price) == null)) return setError('أدخل السعر في كل بند')
-    if (discountBaisa == null) return setError('الخصم غير صحيح')
-    if (discountBaisa > totals.subtotalBaisa) return setError('الخصم أكبر من المجموع')
+    if (filled.some((l) => !l.itemId)) return setError(t("اختر المنتج في كل بند", "Choose the product on every line"))
+    if (filled.some((l) => !parseQty(l.qty))) return setError(t("أدخل كمية صحيحة في كل بند", "Enter a valid quantity on every line"))
+    if (filled.some((l) => parseRialToBaisa(l.price) == null)) return setError(t("أدخل السعر في كل بند", "Enter the price on every line"))
+    if (discountBaisa == null) return setError(t("الخصم غير صحيح", "Invalid discount"))
+    if (discountBaisa > totals.subtotalBaisa) return setError(t("الخصم أكبر من المجموع", "Discount exceeds the subtotal"))
 
     const docLines = filled.map((l) => ({ itemId: l.itemId, qty: parseQty(l.qty)!, unitPriceBaisa: parseRialToBaisa(l.price)! }))
     setSaving(true)
@@ -110,7 +111,7 @@ export function SalesDocFormPage({ kind }: { kind: 'invoice' | 'quote' }) {
         if (payMode === 'full') paidNow = { amountBaisa: totals.totalBaisa, method }
         if (payMode === 'partial') {
           const amt = parseRialToBaisa(paidAmount)
-          if (!amt || amt <= 0) throw new UserError('أدخل المبلغ المدفوع')
+          if (!amt || amt <= 0) throw new UserError(t("أدخل المبلغ المدفوع", "Enter the amount paid"))
           paidNow = { amountBaisa: amt, method }
         }
         const id = await createInvoice(db, { customerId, date, dueDate: until, lines: docLines, discountBaisa, notes, quoteId, paidNow })
@@ -122,7 +123,7 @@ export function SalesDocFormPage({ kind }: { kind: 'invoice' | 'quote' }) {
     }
   }
 
-  const title = kind === 'quote' ? 'عرض سعر جديد' : sourceQuote ? `فاتورة من عرض ${sourceQuote.quoteNo}` : 'فاتورة بيع جديدة'
+  const title = kind === 'quote' ? t("عرض سعر جديد", "New quotation") : sourceQuote ? t(`فاتورة من عرض ${sourceQuote.quoteNo}`, `Invoice from quotation ${sourceQuote.quoteNo}`) : t("فاتورة بيع جديدة", "New sales invoice")
 
   return (
     <>
@@ -130,23 +131,23 @@ export function SalesDocFormPage({ kind }: { kind: 'invoice' | 'quote' }) {
       <div className="flex flex-col gap-5">
         <Card>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="العميل" className="sm:col-span-2 lg:col-span-1">
+            <Field label={t("العميل", "Customer")} className="sm:col-span-2 lg:col-span-1">
               <div className="flex gap-2">
                 <Select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-                  <option value="">اختر العميل…</option>
+                  <option value="">{t("اختر العميل…", "Choose customer…")}</option>
                   {customers?.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </Select>
-                <Button type="button" variant="secondary" className="!px-3" onClick={() => setAddingCustomer(true)} aria-label="عميل جديد">
+                <Button type="button" variant="secondary" className="!px-3" onClick={() => setAddingCustomer(true)} aria-label={t("عميل جديد", "New customer")}>
                   <Plus className="size-5" />
                 </Button>
               </div>
             </Field>
-            <Field label="التاريخ">
+            <Field label={t("التاريخ", "Date")}>
               <DateInput value={date} onChange={(e) => setDate(e.target.value)} />
             </Field>
-            <Field label={kind === 'invoice' ? 'تاريخ الاستحقاق' : 'ساري حتى'}>
+            <Field label={kind === 'invoice' ? t("تاريخ الاستحقاق", "Due date") : t("ساري حتى", "Valid until")}>
               <DateInput
                 value={until}
                 onChange={(e) => {
@@ -159,7 +160,7 @@ export function SalesDocFormPage({ kind }: { kind: 'invoice' | 'quote' }) {
         </Card>
 
         <Card>
-          <h2 className="mb-3 text-lg font-bold">المنتجات</h2>
+          <h2 className="mb-3 text-lg font-bold">{t("المنتجات", "Products")}</h2>
           <div className="flex flex-col gap-3">
             {lines.map((l, idx) => {
               const p = byId.get(l.itemId)
@@ -171,25 +172,25 @@ export function SalesDocFormPage({ kind }: { kind: 'invoice' | 'quote' }) {
                   key={l.key}
                   className={`grid grid-cols-2 items-end gap-3 rounded-2xl p-3 sm:grid-cols-[8rem_9rem_1fr_auto] lg:grid-cols-[1fr_8rem_9rem_8rem_auto] ${short ? 'bg-red-50 ring-1 ring-red-200' : 'bg-stone-50'}`}
                 >
-                  <Field label="المنتج" className="col-span-2 sm:col-span-4 lg:col-span-1">
+                  <Field label={t("المنتج", "Product")} className="col-span-2 sm:col-span-4 lg:col-span-1">
                     <Select value={l.itemId} onChange={(e) => pickItem(l.key, e.target.value)}>
-                      <option value="">اختر المنتج…</option>
+                      <option value="">{t("اختر المنتج…", "Choose product…")}</option>
                       {products?.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
+                        <option key={p.id} value={p.id}>{nameOf(p)}</option>
                       ))}
                     </Select>
                   </Field>
-                  <Field label="الكمية">
-                    <NumberInput value={l.qty} onChange={(e) => updateLine(l.key, { qty: e.target.value })} suffix="عبوة" />
+                  <Field label={t("الكمية", "Quantity")}>
+                    <NumberInput value={l.qty} onChange={(e) => updateLine(l.key, { qty: e.target.value })} suffix={t("عبوة", "jars")} />
                   </Field>
-                  <Field label="سعر العبوة">
-                    <NumberInput value={l.price} onChange={(e) => updateLine(l.key, { price: e.target.value })} suffix="ر.ع" placeholder="0.000" />
+                  <Field label={t("سعر العبوة", "Price per jar")}>
+                    <NumberInput value={l.price} onChange={(e) => updateLine(l.key, { price: e.target.value })} suffix={t("ر.ع", "OMR")} placeholder="0.000" />
                   </Field>
                   <div className="flex min-h-12 flex-col justify-center">
                     <span className="num font-bold">{formatOMR(lt)}</span>
                     {kind === 'invoice' && p && (
                       <span className={`text-xs ${short ? 'font-bold text-red-700' : 'text-stone-500'}`}>
-                        المتوفر: <span className="num">{formatQty(p.qtyOnHand)}</span>
+                        {t("المتوفر:", "Available:")} <span className="num">{formatQty(p.qtyOnHand)}</span>
                       </span>
                     )}
                   </div>
@@ -197,7 +198,7 @@ export function SalesDocFormPage({ kind }: { kind: 'invoice' | 'quote' }) {
                     type="button"
                     onClick={() => setLines((ls) => (ls.length > 1 ? ls.filter((x) => x.key !== l.key) : [emptyLine()]))}
                     className="flex size-12 items-center justify-center justify-self-end rounded-xl text-stone-400 hover:bg-red-100 hover:text-red-600"
-                    aria-label="حذف البند"
+                    aria-label={t("حذف البند", "Remove line")}
                   >
                     <Trash2 className="size-5" />
                   </button>
@@ -206,26 +207,26 @@ export function SalesDocFormPage({ kind }: { kind: 'invoice' | 'quote' }) {
             })}
           </div>
           <Button type="button" variant="ghost" className="mt-3" onClick={() => setLines((ls) => [...ls, emptyLine()])}>
-            <Plus className="size-5" /> إضافة منتج
+            <Plus className="size-5" /> {t("إضافة منتج", "Add product")}
           </Button>
           {shortages.length > 0 && (
             <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-              الكمية المطلوبة أكبر من المتوفر في المخزون. سجّل دفعة إنتاج أولاً أو قلّل الكمية.
+              {t("الكمية المطلوبة أكبر من المتوفر في المخزون. سجّل دفعة إنتاج أولاً أو قلّل الكمية.", "Requested quantity exceeds stock. Record a production batch first or reduce the quantity.")}
             </p>
           )}
 
           <div className="mt-5 grid gap-4 border-t border-stone-200 pt-4 sm:grid-cols-2">
-            <Field label="الخصم (اختياري)">
-              <NumberInput value={discount} onChange={(e) => setDiscount(e.target.value)} suffix="ر.ع" placeholder="0.000" />
+            <Field label={t("الخصم (اختياري)", "Discount (optional)")}>
+              <NumberInput value={discount} onChange={(e) => setDiscount(e.target.value)} suffix={t("ر.ع", "OMR")} placeholder="0.000" />
             </Field>
             <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 self-end text-sm">
-              <dt className="text-stone-500">المجموع</dt>
+              <dt className="text-stone-500">{t("المجموع", "Total")}</dt>
               <dd className="num">{formatOMR(totals.subtotalBaisa)}</dd>
-              <dt className="text-stone-500">الخصم</dt>
+              <dt className="text-stone-500">{t("الخصم", "Discount")}</dt>
               <dd className="num">{formatOMR(totals.discountBaisa)}</dd>
-              <dt className="text-stone-500">ضريبة القيمة المضافة ({ltr(`${totals.vatRatePercent}%`)})</dt>
+              <dt className="text-stone-500">{t("ضريبة القيمة المضافة (", "VAT (")}{ltr(`${totals.vatRatePercent}%`)})</dt>
               <dd className="num">{formatOMR(totals.vatBaisa)}</dd>
-              <dt className="text-base font-bold">الإجمالي</dt>
+              <dt className="text-base font-bold">{t("الإجمالي", "Total")}</dt>
               <dd className="num text-base font-bold text-brand-800">{formatOMR(totals.totalBaisa)}</dd>
             </dl>
           </div>
@@ -235,24 +236,24 @@ export function SalesDocFormPage({ kind }: { kind: 'invoice' | 'quote' }) {
           <div className="flex flex-col gap-4">
             {kind === 'invoice' && (
               <>
-                <h2 className="text-lg font-bold">الدفع</h2>
+                <h2 className="text-lg font-bold">{t("الدفع", "Payment")}</h2>
                 <Segmented
                   value={payMode}
                   onChange={setPayMode}
                   options={[
-                    { value: 'none', label: 'آجل' },
-                    { value: 'full', label: 'مدفوعة بالكامل' },
-                    { value: 'partial', label: 'دفعة جزئية' },
+                    { value: 'none', label: t("آجل", "On credit") },
+                    { value: 'full', label: t("مدفوعة بالكامل", "Paid in full") },
+                    { value: 'partial', label: t("دفعة جزئية", "Partial payment") },
                   ]}
                 />
                 {payMode !== 'none' && (
                   <div className="grid grid-cols-2 gap-3">
                     {payMode === 'partial' && (
-                      <Field label="المبلغ المدفوع">
-                        <NumberInput value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} suffix="ر.ع" placeholder="0.000" />
+                      <Field label={t("المبلغ المدفوع", "Amount paid")}>
+                        <NumberInput value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} suffix={t("ر.ع", "OMR")} placeholder="0.000" />
                       </Field>
                     )}
-                    <Field label="طريقة الدفع">
+                    <Field label={t("طريقة الدفع", "Payment method")}>
                       <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
                         {(Object.keys(ar.paymentMethods) as PaymentMethod[]).map((m) => (
                           <option key={m} value={m}>{ar.paymentMethods[m]}</option>
@@ -263,7 +264,7 @@ export function SalesDocFormPage({ kind }: { kind: 'invoice' | 'quote' }) {
                 )}
               </>
             )}
-            <Field label="ملاحظات (تظهر في المستند)">
+            <Field label={t("ملاحظات (تظهر في المستند)", "Notes (shown on the document)")}>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
             </Field>
           </div>
@@ -272,9 +273,9 @@ export function SalesDocFormPage({ kind }: { kind: 'invoice' | 'quote' }) {
         <FormError message={error} />
         <div className="flex gap-2">
           <Button className="flex-1 sm:min-w-48 sm:flex-none" onClick={save} disabled={saving || shortages.length > 0}>
-            {kind === 'quote' ? 'حفظ عرض السعر' : 'حفظ الفاتورة'}
+            {kind === 'quote' ? t("حفظ عرض السعر", "Save quotation") : t("حفظ الفاتورة", "Save invoice")}
           </Button>
-          <Button variant="secondary" onClick={() => navigate(-1)}>إلغاء</Button>
+          <Button variant="secondary" onClick={() => navigate(-1)}>{t("إلغاء", "Cancel")}</Button>
         </div>
       </div>
       <CustomerFormModal open={addingCustomer} onClose={() => setAddingCustomer(false)} onSaved={setCustomerId} />

@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index'
 import { CheckCircle2, DatabaseBackup, Download, FileUp, Loader2, Share2, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { isBackupOverdue } from '../../app/storage'
@@ -83,47 +84,47 @@ export function BackupCard() {
       <Card className="mt-5" >
         <div id="backup" className="mb-1 flex flex-wrap items-center gap-2">
           <h2 className="flex items-center gap-2 text-lg font-bold">
-            <DatabaseBackup className="size-5" /> النسخ الاحتياطي
+            <DatabaseBackup className="size-5" /> {t("النسخ الاحتياطي", "Backup")}
           </h2>
-          {overdue && <Badge tone="amber">{settings?.lastBackupAt ? 'مرّ أكثر من 7 أيام' : 'لم تُصدَّر نسخة بعد'}</Badge>}
+          {overdue && <Badge tone="amber">{settings?.lastBackupAt ? t("مرّ أكثر من 7 أيام", "Over 7 days ago") : t("لم تُصدَّر نسخة بعد", "No backup yet")}</Badge>}
         </div>
         <p className="mb-4 text-sm text-stone-500">
-          بياناتك محفوظة على هذا الآيباد فقط. صدّر نسخة Excel أسبوعياً واحفظها في «الملفات» أو iCloud.
-          {settings?.lastBackupAt && <> آخر نسخة: <span className="num">{formatDate(settings.lastBackupAt)}</span>.</>}
+          {t("بياناتك محفوظة على هذا الآيباد فقط. صدّر نسخة Excel أسبوعياً واحفظها في «الملفات» أو iCloud.", "Your data is stored on this iPad only. Export an Excel backup weekly and save it in Files or iCloud.")}
+          {settings?.lastBackupAt && <> {t("آخر نسخة:", "Last backup:")} <span className="num">{formatDate(settings.lastBackupAt)}</span>.</>}
         </p>
 
         {!prepared ? (
           <Button onClick={prepare} disabled={busy}>
             {busy ? <Loader2 className="size-5 animate-spin" /> : <DatabaseBackup className="size-5" />}
-            تصدير نسخة احتياطية (Excel)
+            {t("تصدير نسخة احتياطية (Excel)", "Export backup (Excel)")}
           </Button>
         ) : (
           <div className="flex flex-col gap-3 rounded-2xl bg-emerald-50 p-4">
             <p className="flex items-center gap-2 text-sm text-emerald-800">
-              <CheckCircle2 className="size-5" /> الملف جاهز: <span className="num" dir="ltr">{prepared.name}</span>
+              <CheckCircle2 className="size-5" /> {t("الملف جاهز:", "File ready:")} <span className="num" dir="ltr">{prepared.name}</span>
             </p>
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => deliver('share')}>
-                <Share2 className="size-5" /> حفظ في الملفات / مشاركة
+                <Share2 className="size-5" /> {t("حفظ في الملفات / مشاركة", "Save to Files / Share")}
               </Button>
               <Button variant="secondary" onClick={() => deliver('download')}>
-                <Download className="size-5" /> تنزيل
+                <Download className="size-5" /> {t("تنزيل", "Download")}
               </Button>
-              <Button variant="ghost" onClick={() => setPrepared(null)}>إغلاق</Button>
+              <Button variant="ghost" onClick={() => setPrepared(null)}>{t("إغلاق", "Close")}</Button>
             </div>
           </div>
         )}
 
         <div className="mt-6 border-t border-stone-100 pt-4">
-          <h3 className="mb-1 font-bold">استعادة من نسخة</h3>
-          <p className="mb-3 text-sm text-stone-500">اختر ملف Excel صدّرته سابقاً من التطبيق. ستحلّ بياناته محل كل البيانات الحالية.</p>
+          <h3 className="mb-1 font-bold">{t("استعادة من نسخة", "Restore from backup")}</h3>
+          <p className="mb-3 text-sm text-stone-500">{t("اختر ملف Excel صدّرته سابقاً من التطبيق. ستحلّ بياناته محل كل البيانات الحالية.", "Choose an Excel file previously exported from the app. Its data will replace all current data.")}</p>
           <Button variant="secondary" onClick={() => fileRef.current?.click()} disabled={busy}>
-            <FileUp className="size-5" /> اختيار ملف النسخة
+            <FileUp className="size-5" /> {t("اختيار ملف النسخة", "Choose backup file")}
           </Button>
           <input ref={fileRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={(e) => pickFile(e.target.files?.[0])} />
           {restored && (
             <p className="mt-3 flex items-center gap-2 text-sm text-emerald-700">
-              <CheckCircle2 className="size-4" /> تمت الاستعادة بنجاح.
+              <CheckCircle2 className="size-4" /> {t("تمت الاستعادة بنجاح.", "Restored successfully.")}
             </p>
           )}
         </div>
@@ -131,23 +132,23 @@ export function BackupCard() {
       </Card>
 
       <Card className="mt-5 border-red-200">
-        <h2 className="mb-1 text-lg font-bold text-red-800">منطقة الخطر</h2>
+        <h2 className="mb-1 text-lg font-bold text-red-800">{t("منطقة الخطر", "Danger zone")}</h2>
         <p className="mb-3 text-sm text-stone-500">
-          مسح كل البيانات (مثلاً بعد التجربة وقبل البدء الفعلي). يعود التطبيق إلى بدايته مع الأصناف والتصنيفات الافتراضية.
+          {t("مسح كل البيانات (مثلاً بعد التجربة وقبل البدء الفعلي). يعود التطبيق إلى بدايته مع الأصناف والتصنيفات الافتراضية.", "Erase all data (e.g. after testing, before real use). The app returns to its starting state with the default items and categories.")}
         </p>
         <Button variant="secondary" className="!border-red-300 !text-red-700" onClick={() => setClearing(true)}>
-          <Trash2 className="size-5" /> مسح كل البيانات
+          <Trash2 className="size-5" /> {t("مسح كل البيانات", "Erase all data")}
         </Button>
       </Card>
 
       <Modal
         open={!!restore}
         onClose={() => setRestore(null)}
-        title="تأكيد الاستعادة"
+        title={t("تأكيد الاستعادة", "Confirm restore")}
         footer={
           <>
-            <Button className="flex-1 !bg-red-600 hover:!bg-red-700" onClick={doRestore} disabled={busy}>استعادة واستبدال البيانات</Button>
-            <Button variant="secondary" className="flex-1" onClick={() => setRestore(null)}>إلغاء</Button>
+            <Button className="flex-1 !bg-red-600 hover:!bg-red-700" onClick={doRestore} disabled={busy}>{t("استعادة واستبدال البيانات", "Restore and replace data")}</Button>
+            <Button variant="secondary" className="flex-1" onClick={() => setRestore(null)}>{t("إلغاء", "Cancel")}</Button>
           </>
         }
       >
@@ -155,7 +156,7 @@ export function BackupCard() {
           <div className="flex flex-col gap-3 text-sm">
             {restore.exportedAt && (
               <p>
-                نسخة بتاريخ <b className="num">{formatDate(restore.exportedAt)}</b> وتحتوي على:
+                {t("نسخة بتاريخ", "Backup dated")} <b className="num">{formatDate(restore.exportedAt)}</b> {t("وتحتوي على:", "containing:")}
               </p>
             )}
             <ul className="grid grid-cols-2 gap-x-4 gap-y-1">
@@ -167,7 +168,7 @@ export function BackupCard() {
               ))}
             </ul>
             <p className="rounded-xl bg-amber-50 p-3 text-amber-900">
-              ⚠️ ستُحذف كل البيانات الحالية على هذا الجهاز وتحلّ محلها بيانات النسخة. إن لم تكن متأكداً، صدّر نسخة من بياناتك الحالية أولاً.
+              {t("⚠️ ستُحذف كل البيانات الحالية على هذا الجهاز وتحلّ محلها بيانات النسخة. إن لم تكن متأكداً، صدّر نسخة من بياناتك الحالية أولاً.", "⚠️ All current data on this device will be deleted and replaced by the backup. If unsure, export a backup of your current data first.")}
             </p>
           </div>
         )}
@@ -176,20 +177,20 @@ export function BackupCard() {
       <Modal
         open={clearing}
         onClose={() => setClearing(false)}
-        title="مسح كل البيانات"
+        title={t("مسح كل البيانات", "Erase all data")}
         footer={
           <>
-            <Button className="flex-1 !bg-red-600 hover:!bg-red-700" disabled={confirmText.trim() !== 'حذف' || busy} onClick={doClear}>
-              مسح نهائي
+            <Button className="flex-1 !bg-red-600 hover:!bg-red-700" disabled={confirmText.trim() !== t("حذف", "Delete") || busy} onClick={doClear}>
+              {t("مسح نهائي", "Erase permanently")}
             </Button>
-            <Button variant="secondary" className="flex-1" onClick={() => setClearing(false)}>إلغاء</Button>
+            <Button variant="secondary" className="flex-1" onClick={() => setClearing(false)}>{t("إلغاء", "Cancel")}</Button>
           </>
         }
       >
         <div className="flex flex-col gap-3 text-sm">
-          <p>سيتم حذف كل الأصناف والحركات والموردين والعملاء والفواتير والمصروفات نهائياً. لا يمكن التراجع إلا من نسخة احتياطية.</p>
+          <p>{t("سيتم حذف كل الأصناف والحركات والموردين والعملاء والفواتير والمصروفات نهائياً. لا يمكن التراجع إلا من نسخة احتياطية.", "All items, movements, suppliers, customers, invoices and expenses will be permanently deleted. This can only be undone from a backup.")}</p>
           <label className="flex flex-col gap-1.5">
-            للتأكيد اكتب كلمة <b>حذف</b>
+            {t("للتأكيد اكتب كلمة", "To confirm, type the word")} <b>{t("حذف", "Delete")}</b>
             <TextInput value={confirmText} onChange={(e) => setConfirmText(e.target.value)} />
           </label>
         </div>
