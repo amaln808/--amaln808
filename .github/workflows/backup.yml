@@ -22,8 +22,9 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          if [ -z "$SUPABASE_DB_URL$SUPABASE_DB_PASSWORD" ]; then echo "::warning::Backup secrets not set yet"; echo "skip=1" >> "$GITHUB_OUTPUT"; fi
+          if [ -z "$SUPABASE_DB_URL$SUPABASE_DB_PASSWORD$SUPABASE_ACCESS_TOKEN" ]; then echo "::warning::Backup secrets not set yet"; echo "skip=1" >> "$GITHUB_OUTPUT"; fi
       - name: Install PostgreSQL 18 client (pg_dump must be at least the server version)
         if: steps.check.outputs.skip != '1'
         run: |
@@ -44,6 +45,7 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: scripts/backup.sh

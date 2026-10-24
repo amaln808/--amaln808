@@ -1,123 +1,72 @@
-import { t } from '../../i18n/index'
-import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronLeft, Phone, Plus, ShoppingCart, Truck } from 'lucide-react'
+import { ChevronLeft, Plus, Truck } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { formatDate } from '../../components/format'
-import { Segmented } from '../../components/form'
-import { Badge, Button, Card, EmptyState, LinkButton, PageHeader, Stat } from '../../components/ui'
-import { db } from '../../db/db'
+import { Link, useNavigate } from 'react-router-dom'
+import { FormError } from '../../components/form'
+import { Button, Card, EmptyState, PageHeader, Stat } from '../../components/ui'
+import { serverError } from '../../data/errors'
+import { fetchSuppliers, SUPPLIERS_KEY } from '../../data/inventory'
+import { useQuery } from '../../data/useQuery'
 import { formatOMR } from '../../domain/money'
-import { ar } from '../../i18n/ar'
-import { supplierBalances } from '../../services/suppliers'
+import { t } from '../../i18n/index'
+import { supplierKindLabel } from '../inventory/labels'
 import { SupplierFormModal } from './SupplierFormModal'
 
 export function SuppliersPage() {
-  const [tab, setTab] = useState<'suppliers' | 'purchases'>('suppliers')
-  const [creating, setCreating] = useState(false)
-  const suppliers = useLiveQuery(
-    async () => (await db.suppliers.toArray()).sort((a, b) => a.name.localeCompare(b.name, 'ar')),
-    [],
-  )
-  const balances = useLiveQuery(() => supplierBalances(db), [])
-  const purchases = useLiveQuery(
-    async () =>
-      (await db.purchases.toArray()).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)),
-    [],
-  )
-  const names = new Map(suppliers?.map((s) => [s.id, s.name]))
-  const totalDue = [...(balances?.values() ?? [])].reduce((a, b) => a + b, 0)
+  const q = useQuery(SUPPLIERS_KEY, fetchSuppliers)
+  const [adding, setAdding] = useState(false)
+  const navigate = useNavigate()
+  const list = q.data ?? []
+  const active = list.filter((s) => s.active)
+  const due = list.reduce((s, x) => s + x.dueBaisa, 0)
 
   return (
     <>
       <PageHeader
-        title={ar.nav.suppliers}
+        title={t('الموردون', 'Suppliers')}
         actions={
           <>
-            <LinkButton to="/purchases/new">
-              <ShoppingCart className="size-5" /> {t("فاتورة شراء", "Purchase invoice")}
-            </LinkButton>
-            <Button variant="secondary" onClick={() => setCreating(true)}>
-              <Plus className="size-5" /> {t("مورد جديد", "New supplier")}
+            <Link to="/purchases/new" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-4">
+              {t('فاتورة شراء', 'Purchase')}
+            </Link>
+            <Button onClick={() => setAdding(true)}>
+              <Plus className="size-5" />
+              {t('مورد جديد', 'New supplier')}
             </Button>
           </>
         }
       />
-      <div className="mb-5 grid grid-cols-2 gap-3">
-        <Stat label={t("إجمالي المستحق للموردين", "Total owed to suppliers")} value={formatOMR(totalDue)} tone={totalDue > 0 ? 'red' : undefined} />
-        <Stat label={t("عدد الموردين", "Number of suppliers")} value={suppliers?.length ?? 0} />
+      <div className="mb-5 grid grid-cols-2 gap-3 md:max-w-lg">
+        <Stat label={t('المستحق للموردين', 'Owed to suppliers')} value={formatOMR(due)} tone={due > 0 ? 'red' : undefined} />
+        <Stat label={t('عدد الموردين', 'Suppliers')} value={active.length} />
       </div>
-      <div className="mb-5 max-w-xs">
-        <Segmented
-          value={tab}
-          onChange={setTab}
-          options={[
-            { value: 'suppliers', label: t("الموردون", "Suppliers") },
-            { value: 'purchases', label: t("المشتريات", "Purchases") },
-          ]}
-        />
-      </div>
-
-      {tab === 'suppliers' && (
-        <Card className="!p-0 overflow-hidden">
-          {suppliers && !suppliers.length && (
-            <EmptyState icon={Truck} title={t("لا يوجد موردون بعد", "No suppliers yet")} description={t("أضف أول مورد لتسجيل المشتريات.", "Add your first supplier to record purchases.")} />
-          )}
-          <ul>
-            {suppliers?.map((s) => {
-              const due = balances?.get(s.id) ?? 0
-              return (
-                <li key={s.id} className="border-b border-stone-100 last:border-0">
-                  <Link to={`/suppliers/${s.id}`} className="flex items-center gap-3 px-5 py-4 hover:bg-stone-50">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 font-medium">
-                        {s.name} {!s.active && <Badge>{t("موقوف", "Inactive")}</Badge>}
-                      </div>
-                      {s.phone && (
-                        <div className="mt-0.5 flex items-center gap-1 text-sm text-stone-500">
-                          <Phone className="size-3.5" /> <span className="num">{s.phone}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-end">
-                      <div className="text-xs text-stone-500">{t("المستحق", "Balance due")}</div>
-                      <div className={`num font-bold ${due > 0 ? 'text-red-700' : 'text-stone-700'}`}>{formatOMR(due)}</div>
-                    </div>
-                    <ChevronLeft className="size-5 text-stone-400 ltr:rotate-180" />
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </Card>
-      )}
-
-      {tab === 'purchases' && (
-        <Card className="!p-0 overflow-hidden">
-          {purchases && !purchases.length && <EmptyState icon={ShoppingCart} title={t("لا توجد مشتريات بعد", "No purchases yet")} />}
-          <ul>
-            {purchases?.map((p) => (
-              <li key={p.id} className="border-b border-stone-100 last:border-0">
-                <Link to={`/purchases/${p.id}`} className="flex items-center gap-3 px-5 py-4 hover:bg-stone-50">
-                  <div className="flex-1">
-                    <div className="font-medium">{names.get(p.supplierId) ?? '—'}</div>
-                    <div className="text-sm text-stone-500">
-                      <span className="num">{formatDate(p.date)}</span>
-                      {p.supplierInvoiceNo && <> {t("· فاتورة", "· invoice")} <span className="num">#{p.supplierInvoiceNo}</span></>}
-                      {' · '}
-                      {p.lines.length} {t("بند", "lines")}
+      {q.error && !q.data && <FormError message={serverError(q.error)} />}
+      <Card className="p-0">
+        {!active.length ? (
+          <EmptyState icon={Truck} title={q.loading ? t('جارٍ التحميل…', 'Loading…') : t('لا يوجد موردون بعد', 'No suppliers yet')} />
+        ) : (
+          <ul className="divide-y divide-line">
+            {active.map((s) => (
+              <li key={s.id}>
+                <Link to={`/suppliers/${s.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-brand-50">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">{s.name}</div>
+                    <div className="text-sm text-muted">
+                      {supplierKindLabel(s.kind)}
+                      {s.phone ? ` · ${s.phone}` : ''}
                     </div>
                   </div>
-                  <div className="num font-bold">{formatOMR(p.totalBaisa)}</div>
-                  <ChevronLeft className="size-5 text-stone-400 ltr:rotate-180" />
+                  <div className="text-end">
+                    <div className={`num font-bold ${s.dueBaisa > 0 ? 'text-red-700' : ''}`}>{formatOMR(s.dueBaisa)}</div>
+                    <div className="text-xs text-muted">{t('مستحق', 'due')}</div>
+                  </div>
+                  <ChevronLeft className="size-5 text-muted ltr:rotate-180" />
                 </Link>
               </li>
             ))}
           </ul>
-        </Card>
-      )}
-
-      <SupplierFormModal open={creating} onClose={() => setCreating(false)} />
+        )}
+      </Card>
+      {adding && <SupplierFormModal onClose={(id) => (setAdding(false), id && navigate(`/suppliers/${id}`))} />}
     </>
   )
 }

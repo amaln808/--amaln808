@@ -1,160 +1,159 @@
-import { t } from '../../i18n/index'
-import { useEffect, useState } from 'react'
-import { Field, FormError, NumberInput, Select, TextInput } from '../../components/form'
-import { errorMessage } from '../../components/format'
+import { useState } from 'react'
+import { DateInput, Field, FormError, NumberInput, Segmented, Select, TextInput } from '../../components/form'
 import { Modal } from '../../components/Modal'
 import { Button } from '../../components/ui'
-import { db } from '../../db/db'
-import type { Item, ItemType } from '../../db/types'
-import { baisaToInput, parseRialToBaisa } from '../../domain/money'
-import { parseQty, UNIT_LABELS, type Unit } from '../../domain/quantity'
-import { ar } from '../../i18n/ar'
-import { createItem, updateItem } from '../../services/items'
+import { serverError } from '../../data/errors'
+import { addOpeningStock, type Item, type ItemDraft, saveItem } from '../../data/inventory'
+import { todayIso } from '../../data/schedule'
+import { parseRialToBaisa } from '../../domain/money'
+import { parseQty, type Unit, unitLabel } from '../../domain/quantity'
+import { t } from '../../i18n/index'
 
-interface Props {
-  open: boolean
-  onClose: () => void
-  /** Item to edit; omit to create */
-  item?: Item
-  defaultType?: ItemType
-}
+const UNITS: Unit[] = ['kg', 'g', 'piece', 'liter']
 
-export function ItemFormModal({ open, onClose, item, defaultType = 'raw' }: Props) {
-  const [name, setName] = useState('')
-  const [nameEn, setNameEn] = useState('')
-  const [type, setType] = useState<ItemType>(defaultType)
-  const [unit, setUnit] = useState<Unit>('kg')
-  const [minQty, setMinQty] = useState('0')
-  const [salePrice, setSalePrice] = useState('')
-  const [packageSize, setPackageSize] = useState('')
-  const [openingQty, setOpeningQty] = useState('')
-  const [openingCost, setOpeningCost] = useState('')
+/** Add or edit a raw material / packaging item, optionally with stock already on hand. */
+export function ItemFormModal({ item, onClose }: { item?: Item; onClose: (savedId?: string) => void }) {
+  const [f, setF] = useState<ItemDraft>(
+    item ?? {
+      type: 'raw',
+      name: '',
+      nameEn: null,
+      unit: 'kg',
+      sku: null,
+      minQty: 0,
+      requiresExpiry: true,
+      description: null,
+      weightG: null,
+      photoPath: null,
+      shelfLifeDays: null,
+      vatRate: null,
+      active: true,
+    },
+  )
+  const [minQty, setMinQty] = useState(item ? String(item.minQty) : '')
+  const [opening, setOpening] = useState({ qty: '', cost: '', expiry: '', lot: '' })
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (!open) return
-    setName(item?.name ?? '')
-    setNameEn(item?.nameEn ?? '')
-    setType(item?.type ?? defaultType)
-    setUnit(item?.unit ?? (defaultType === 'raw' ? 'kg' : 'piece'))
-    setMinQty(String(item?.minQty ?? 0))
-    setSalePrice(item?.salePriceBaisa != null ? baisaToInput(item.salePriceBaisa) : '')
-    setPackageSize(item?.packageSizeG != null ? String(item.packageSizeG) : '')
-    setOpeningQty('')
-    setOpeningCost('')
-    setError(null)
-  }, [open, item, defaultType])
+  const set = <K extends keyof ItemDraft>(k: K, v: ItemDraft[K]) => setF((x) => ({ ...x, [k]: v }))
 
   const save = async () => {
+    const min = minQty.trim() ? parseQty(minQty) : 0
+    if (!f.name.trim()) return setError(t('اسم الصنف مطلوب.', 'The item name is required.'))
+    if (min === null) return setError(t('الحد الأدنى غير صحيح.', 'Invalid minimum.'))
+    const oQty = opening.qty.trim() ? parseQty(opening.qty) : null
+    const oCost = opening.cost.trim() ? parseRialToBaisa(opening.cost) : 0
+    if (!item && opening.qty.trim()) {
+      if (!oQty) return setError(t('كمية الرصيد الافتتاحي غير صحيحة.', 'Invalid opening quantity.'))
+      if (oCost === null || oCost < 0) return setError(t('تكلفة الوحدة غير صحيحة.', 'Invalid unit cost.'))
+      if (f.requiresExpiry && !opening.expiry) return setError(t('تاريخ الانتهاء مطلوب للرصيد الافتتاحي.', 'Expiry date is required for the opening stock.'))
+    }
+    setBusy(true)
     setError(null)
-    const min = parseQty(minQty || '0')
-    if (min == null) return setError(t("الحد الأدنى غير صحيح", "Invalid minimum"))
-    const price = salePrice ? parseRialToBaisa(salePrice) : undefined
-    if (price === null) return setError(t("سعر البيع غير صحيح", "Invalid sale price"))
-    const pkg = packageSize ? parseQty(packageSize) : undefined
-    if (pkg === null) return setError(t("وزن العبوة غير صحيح", "Invalid package weight"))
-
-    const input = {
-      name,
-      nameEn,
-      type,
-      unit,
-      minQty: min,
-      salePriceBaisa: type === 'finished' ? price : undefined,
-      packageSizeG: type === 'finished' ? pkg : undefined,
-    }
-
-    let opening
-    if (!item && openingQty) {
-      const q = parseQty(openingQty)
-      const c = parseRialToBaisa(openingCost || '0')
-      if (q == null || c == null) return setError(t("الرصيد الافتتاحي غير صحيح", "Invalid opening balance"))
-      opening = { qty: q, unitCostBaisa: c }
-    }
-
-    setSaving(true)
     try {
-      if (item) await updateItem(db, item.id, { ...input, active: item.active })
-      else await createItem(db, input, opening)
-      onClose()
+      const id = await saveItem({ ...f, name: f.name.trim(), nameEn: f.nameEn?.trim() || null, minQty: min })
+      if (!item && oQty) {
+        await addOpeningStock({
+          itemId: id,
+          qty: oQty,
+          unitCostBaisa: oCost ?? 0,
+          date: todayIso(),
+          expiryDate: opening.expiry || null,
+          lotCode: opening.lot.trim() || null,
+        })
+      }
+      onClose(id)
     } catch (e) {
-      setError(errorMessage(e))
-    } finally {
-      setSaving(false)
+      setError(serverError(e))
+      setBusy(false)
+    }
+  }
+
+  const toggleActive = async () => {
+    if (!item) return
+    setBusy(true)
+    try {
+      await saveItem({ ...item, active: !item.active })
+      onClose(item.id)
+    } catch (e) {
+      setError(serverError(e))
+      setBusy(false)
     }
   }
 
   return (
     <Modal
-      open={open}
-      onClose={onClose}
-      title={item ? t("تعديل الصنف", "Edit item") : t("صنف جديد", "New item")}
+      open
+      onClose={() => onClose()}
+      title={item ? t('تعديل الصنف', 'Edit item') : t('صنف جديد', 'New item')}
       footer={
         <>
-          <Button className="flex-1" onClick={save} disabled={saving}>
-            {ar.common.save}
+          <Button onClick={save} disabled={busy} className="flex-1">
+            {busy ? t('جارٍ الحفظ…', 'Saving…') : t('حفظ', 'Save')}
           </Button>
-          <Button variant="secondary" className="flex-1" onClick={onClose}>
-            {ar.common.cancel}
-          </Button>
+          {item && (
+            <Button variant="secondary" onClick={toggleActive} disabled={busy}>
+              {item.active ? t('إيقاف الصنف', 'Deactivate') : t('إعادة تفعيل', 'Reactivate')}
+            </Button>
+          )}
         </>
       }
     >
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-3">
-          <Field label={t("اسم الصنف (عربي)", "Item name (Arabic)")}>
-            <TextInput value={name} onChange={(e) => setName(e.target.value)} autoFocus dir="rtl" />
-          </Field>
-          <Field label={t("الاسم بالإنجليزية", "Item name (English)")} hint={t("يظهر في الواجهة والمستندات الإنجليزية", "Used in the English UI and documents")}>
-            <TextInput value={nameEn} onChange={(e) => setNameEn(e.target.value)} dir="ltr" />
-          </Field>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label={t("النوع", "Type")}>
-            <Select value={type} onChange={(e) => setType(e.target.value as ItemType)}>
-              {(Object.keys(ar.itemTypes) as ItemType[]).map((t) => (
-                <option key={t} value={t}>
-                  {ar.itemTypes[t]}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label={t("وحدة القياس", "Unit")}>
-            <Select value={unit} onChange={(e) => setUnit(e.target.value as Unit)}>
-              {(Object.keys(UNIT_LABELS) as Unit[]).map((u) => (
-                <option key={u} value={u}>
-                  {UNIT_LABELS[u]}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-        <Field label={t("الحد الأدنى للتنبيه", "Alert minimum")} hint={t("يظهر تنبيه عندما يصل الرصيد إلى هذا الحد أو أقل", "An alert appears when stock reaches this level or below")}>
-          <NumberInput value={minQty} onChange={(e) => setMinQty(e.target.value)} suffix={UNIT_LABELS[unit]} />
-        </Field>
-        {type === 'finished' && (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label={t("سعر البيع", "Sale price")}>
-              <NumberInput value={salePrice} onChange={(e) => setSalePrice(e.target.value)} suffix={t("ر.ع", "OMR")} placeholder="0.000" />
-            </Field>
-            <Field label={t("وزن العبوة (تقريبي)", "Package weight (approx.)")}>
-              <NumberInput value={packageSize} onChange={(e) => setPackageSize(e.target.value)} suffix={t("جم", "g")} />
-            </Field>
-          </div>
-        )}
         {!item && (
-          <div className="rounded-2xl bg-stone-50 p-4">
-            <p className="mb-3 text-sm font-medium">{t("رصيد افتتاحي (اختياري)", "Opening balance (optional)")}</p>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t("الكمية الموجودة", "Quantity on hand")}>
-                <NumberInput value={openingQty} onChange={(e) => setOpeningQty(e.target.value)} suffix={UNIT_LABELS[unit]} />
+          <Field label={t('النوع', 'Type')}>
+            <Segmented
+              value={f.type === 'packaging' ? 'packaging' : 'raw'}
+              onChange={(v) => setF((x) => ({ ...x, type: v, requiresExpiry: v === 'raw', unit: v === 'raw' ? 'kg' : 'piece' }))}
+              options={[
+                { value: 'raw', label: t('مادة خام', 'Raw material') },
+                { value: 'packaging', label: t('تغليف', 'Packaging') },
+              ]}
+            />
+          </Field>
+        )}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={t('الاسم', 'Name')}>
+            <TextInput value={f.name} onChange={(e) => set('name', e.target.value)} placeholder={t('مثال: معجون تمر', 'e.g. Date paste')} />
+          </Field>
+          <Field label={t('الاسم بالإنجليزية (اختياري)', 'English name (optional)')}>
+            <TextInput dir="ltr" value={f.nameEn ?? ''} onChange={(e) => set('nameEn', e.target.value)} />
+          </Field>
+          <Field label={t('الوحدة', 'Unit')}>
+            <Select value={f.unit} onChange={(e) => set('unit', e.target.value as Unit)}>
+              {UNITS.map((u) => (
+                <option key={u} value={u}>
+                  {unitLabel(u)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t('الحد الأدنى للتنبيه', 'Alert below')} hint={t('يظهر تنبيه عندما يصل الرصيد لهذا الحد.', 'An alert shows when stock reaches this level.')}>
+            <NumberInput value={minQty} onChange={(e) => setMinQty(e.target.value)} suffix={unitLabel(f.unit)} />
+          </Field>
+        </div>
+        <label className="flex min-h-11 items-center gap-3">
+          <input type="checkbox" className="size-5 accent-[var(--brand)]" checked={f.requiresExpiry} onChange={(e) => set('requiresExpiry', e.target.checked)} />
+          {t('تاريخ الانتهاء إلزامي عند الشراء', 'Expiry date required when buying')}
+        </label>
+
+        {!item && (
+          <fieldset className="rounded-xl border border-line p-4">
+            <legend className="px-2 text-sm font-medium">{t('رصيد موجود الآن (اختياري)', 'Stock on hand now (optional)')}</legend>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={t('الكمية', 'Quantity')}>
+                <NumberInput value={opening.qty} onChange={(e) => setOpening((o) => ({ ...o, qty: e.target.value }))} suffix={unitLabel(f.unit)} />
               </Field>
-              <Field label={t("تكلفة الوحدة", "Unit cost")}>
-                <NumberInput value={openingCost} onChange={(e) => setOpeningCost(e.target.value)} suffix={t("ر.ع", "OMR")} placeholder="0.000" />
+              <Field label={t('تكلفة الوحدة', 'Unit cost')}>
+                <NumberInput value={opening.cost} onChange={(e) => setOpening((o) => ({ ...o, cost: e.target.value }))} suffix={t('ر.ع', 'OMR')} placeholder="0.000" />
+              </Field>
+              <Field label={t('تاريخ الانتهاء', 'Expiry date')}>
+                <DateInput value={opening.expiry} onChange={(e) => setOpening((o) => ({ ...o, expiry: e.target.value }))} />
+              </Field>
+              <Field label={t('رقم الدفعة (اختياري)', 'Lot no. (optional)')}>
+                <TextInput dir="ltr" value={opening.lot} onChange={(e) => setOpening((o) => ({ ...o, lot: e.target.value }))} />
               </Field>
             </div>
-          </div>
+          </fieldset>
         )}
         <FormError message={error} />
       </div>

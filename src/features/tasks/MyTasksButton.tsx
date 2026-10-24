@@ -1,12 +1,15 @@
 import { CalendarCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { t } from '../../i18n/index'
+import { useStock } from '../inventory/useStock'
 import { useSchedule } from './useSchedule'
 
-/** Always-visible "My tasks" icon; the badge counts what is open today plus agreement alerts. */
+/** Always-visible "My tasks" icon; the badge counts what is open today plus agreement and expiry alerts. */
 export function MyTasksButton() {
-  const { openCount, alerts } = useSchedule()
-  const urgent = alerts.some((a) => a.status === 'expired')
+  const { openCount: taskCount, alerts } = useSchedule()
+  const stock = useStock()
+  const openCount = taskCount + stock.alerts.expiredLots.length + stock.alerts.expiringLots.length
+  const urgent = alerts.some((a) => a.status === 'expired') || stock.alerts.expiredLots.length > 0
   return (
     <Link
       to="/tasks"

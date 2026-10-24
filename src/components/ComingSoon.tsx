@@ -10,7 +10,7 @@ export function ComingSoon({ title, phase }: { title: string; phase: number }) {
         <EmptyState
           icon={Hammer}
           title={t('قيد البناء', 'Being built')}
-          description={t(`ستتوفر هذه الوحدة في المرحلة ${phase} من الإصدار الجديد.`, `This module arrives in phase ${phase} of the new version.`)}
+          description={t(`ستتوفر هذه الوحدة في الجولة ${phase} من البناء.`, `This module arrives in build round ${phase}.`)}
         />
       </Card>
     </>

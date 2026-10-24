@@ -41,7 +41,7 @@ export function applyLang(lang: Lang) {
 }
 
 /** Shows a bilingual record name (items, categories) in the current language. */
-export function nameOf(x: { name: string; nameEn?: string } | undefined | null, lang: Lang = current): string {
+export function nameOf(x: { name: string; nameEn?: string | null } | undefined | null, lang: Lang = current): string {
   if (!x) return '—'
   return lang === 'en' && x.nameEn ? x.nameEn : x.name
 }
