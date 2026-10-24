@@ -1,15 +1,22 @@
-import { t } from '../i18n/index'
 import {
+  BadgePercent,
   Boxes,
+  Calculator,
+  ClipboardCheck,
   Factory,
+  HandCoins,
+  History,
   LayoutDashboard,
+  ListChecks,
   type LucideIcon,
+  Package,
   ReceiptText,
+  ScrollText,
   Settings,
   Truck,
   Users,
 } from 'lucide-react'
-import { ar } from '../i18n/ar'
+import { t } from '../i18n/index'
 
 export interface NavItem {
   to: string
@@ -18,6 +25,8 @@ export interface NavItem {
   icon: LucideIcon
   /** Shown in the phone bottom bar; the rest live under "More". */
   primary: boolean
+  /** v2 phase that builds this module; 0 = available now */
+  phase: number
   /** Extra path prefixes that belong to this section */
   also?: string[]
 }
@@ -27,12 +36,23 @@ export function isNavActive(item: NavItem, pathname: string): boolean {
   return [item.to, ...(item.also ?? [])].some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
 
-export const NAV_ITEMS: NavItem[] = [
-  { to: '/', get label() { return ar.nav.dashboard }, get shortLabel() { return t("المؤشرات", "Dashboard") }, icon: LayoutDashboard, primary: true },
-  { to: '/inventory', get label() { return ar.nav.inventory }, icon: Boxes, primary: true },
-  { to: '/production', get label() { return ar.nav.production }, icon: Factory, primary: true },
-  { to: '/customers', get label() { return ar.nav.customers }, get shortLabel() { return ar.nav.customersShort }, icon: Users, primary: true, also: ['/invoices', '/quotes'] },
-  { to: '/suppliers', get label() { return ar.nav.suppliers }, icon: Truck, primary: false, also: ['/purchases'] },
-  { to: '/expenses', get label() { return ar.nav.expenses }, icon: ReceiptText, primary: false },
-  { to: '/settings', get label() { return ar.nav.settings }, icon: Settings, primary: false },
-]
+/** Built on demand so labels follow the current language. */
+export function navItems(): NavItem[] {
+  return [
+    { to: '/', label: t('لوحة المؤشرات', 'Dashboard'), shortLabel: t('المؤشرات', 'Dashboard'), icon: LayoutDashboard, primary: true, phase: 7 },
+    { to: '/inventory', label: t('المخزون', 'Inventory'), icon: Boxes, primary: true, phase: 1 },
+    { to: '/suppliers', label: t('الموردون', 'Suppliers'), icon: Truck, primary: false, phase: 1, also: ['/purchases'] },
+    { to: '/products', label: t('المنتجات', 'Products'), icon: Package, primary: false, phase: 2 },
+    { to: '/production', label: t('التصنيع', 'Production'), icon: Factory, primary: true, phase: 2 },
+    { to: '/quality', label: t('الجودة', 'Quality'), icon: ClipboardCheck, primary: false, phase: 3 },
+    { to: '/sales', label: t('العملاء والمبيعات', 'Customers & sales'), shortLabel: t('المبيعات', 'Sales'), icon: Users, primary: true, phase: 4, also: ['/customers', '/invoices', '/quotes'] },
+    { to: '/expenses', label: t('المصروفات', 'Expenses'), icon: ReceiptText, primary: false, phase: 5 },
+    { to: '/receivables', label: t('المستحقات', 'Receivables'), icon: HandCoins, primary: false, phase: 6 },
+    { to: '/pricing', label: t('حاسبة التسعير', 'Pricing calculator'), icon: Calculator, primary: false, phase: 6 },
+    { to: '/vat', label: t('الضريبة', 'VAT'), icon: BadgePercent, primary: false, phase: 6 },
+    { to: '/tasks', label: t('مهامي', 'My tasks'), icon: ListChecks, primary: false, phase: 0 },
+    { to: '/agreements', label: t('الاتفاقيات والتصاريح', 'Agreements & permits'), icon: ScrollText, primary: false, phase: 0 },
+    { to: '/audit', label: t('سجل التعديلات', 'Change history'), icon: History, primary: false, phase: 0 },
+    { to: '/settings', label: t('الإعدادات', 'Settings'), icon: Settings, primary: false, phase: 0 },
+  ]
+}

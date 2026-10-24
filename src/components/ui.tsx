@@ -17,14 +17,14 @@ export function PageHeader({
   return (
     <div className="mb-6">
       {back && (
-        <Link to={back.to} className="mb-2 inline-flex min-h-9 items-center text-sm text-brand-700">
+        <Link to={back.to} className="mb-2 inline-flex min-h-9 items-center text-sm text-brand-800">
           {isRTL() ? '→' : '←'} {back.label}
         </Link>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900">{title}</h1>
-          {subtitle && <div className="mt-1 text-stone-500">{subtitle}</div>}
+          <h1 className="text-2xl font-bold text-ink">{title}</h1>
+          {subtitle && <div className="mt-1 text-muted">{subtitle}</div>}
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
@@ -34,7 +34,7 @@ export function PageHeader({
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-2xl border border-stone-200 bg-white p-5 shadow-sm ${className}`}>
+    <section className={`rounded-2xl border border-line bg-card p-5 ${className}`}>
       {children}
     </section>
   )
@@ -55,7 +55,7 @@ export function EmptyState({
         <Icon className="size-8" />
       </div>
       <h2 className="text-lg font-bold">{title}</h2>
-      {description && <p className="max-w-sm text-stone-500">{description}</p>}
+      {description && <p className="max-w-sm text-muted">{description}</p>}
     </div>
   )
 }
@@ -63,8 +63,8 @@ export function EmptyState({
 type ButtonVariant = 'primary' | 'secondary' | 'ghost'
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-700 text-white hover:bg-brand-800',
-  secondary: 'bg-white text-stone-800 border border-stone-300 hover:bg-stone-50',
+  primary: 'bg-brand-700 text-on-brand hover:bg-brand-800',
+  secondary: 'bg-card text-ink border border-line hover:bg-stone-50',
   ghost: 'text-stone-700 hover:bg-stone-100',
 }
 
@@ -95,10 +95,10 @@ export function LinkButton({
 }
 
 export function Stat({ label, value, tone }: { label: string; value: ReactNode; tone?: 'red' | 'green' }) {
-  const color = tone === 'red' ? 'text-red-700' : tone === 'green' ? 'text-emerald-700' : 'text-stone-900'
+  const color = tone === 'red' ? 'text-red-700' : tone === 'green' ? 'text-emerald-700' : 'text-ink'
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-      <div className="text-sm text-stone-500">{label}</div>
+    <div className="rounded-2xl border border-line bg-card p-4">
+      <div className="text-sm text-muted">{label}</div>
       <div className={`num mt-1 text-lg font-bold sm:text-xl ${color}`} style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{value}</div>
     </div>
   )
@@ -111,5 +111,5 @@ export function Badge({ children, tone = 'stone' }: { children: ReactNode; tone?
     green: 'bg-emerald-100 text-emerald-700',
     amber: 'bg-amber-100 text-amber-800',
   }
-  return <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>
+  return <span className={`inline-flex shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>
 }

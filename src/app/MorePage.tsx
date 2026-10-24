@@ -1,24 +1,27 @@
 import { ChevronLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, PageHeader } from '../components/ui'
-import { ar } from '../i18n/ar'
+import { t } from '../i18n/index'
 import { LanguageToggle } from './LanguageToggle'
-import { NAV_ITEMS } from './nav'
+import { navItems } from './nav'
 
 /** Phone-only menu for sections that don't fit in the bottom bar. */
 export function MorePage() {
   return (
     <>
-      <PageHeader title={ar.nav.more} />
+      <PageHeader title={t('المزيد', 'More')} />
       <Card className="p-2">
-        {NAV_ITEMS.filter((n) => !n.primary).map(({ to, label, icon: Icon }) => (
-          <Link key={to} to={to} className="flex min-h-14 items-center gap-3 rounded-xl px-3 hover:bg-stone-50">
-            <Icon className="size-5 text-brand-700" />
-            <span className="flex-1">{label}</span>
-            <ChevronLeft className="size-5 text-stone-400 ltr:rotate-180" />
-          </Link>
-        ))}
-        <LanguageToggle className="w-full !justify-start !px-3 min-h-14" />
+        {navItems()
+          .filter((n) => !n.primary)
+          .map(({ to, label, icon: Icon, phase }) => (
+            <Link key={to} to={to} className="flex min-h-14 items-center gap-3 rounded-xl px-3 hover:bg-brand-50">
+              <Icon className="size-5 text-brand-800" />
+              <span className="flex-1">{label}</span>
+              {phase > 0 && <span className="text-xs text-muted">{t(`المرحلة ${phase}`, `Phase ${phase}`)}</span>}
+              <ChevronLeft className="size-5 text-muted ltr:rotate-180" />
+            </Link>
+          ))}
+        <LanguageToggle className="w-full !justify-start !px-3 min-h-14 hover:bg-brand-50" />
       </Card>
     </>
   )

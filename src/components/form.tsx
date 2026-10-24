@@ -13,7 +13,7 @@ const FieldId = createContext<string | undefined>(undefined)
 const useFieldId = (id?: string) => id ?? useContext(FieldId)
 
 const inputCls =
-  'w-full min-h-12 rounded-xl border border-stone-300 bg-white px-3 text-base outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50'
+  'w-full min-h-12 rounded-xl border border-line bg-card px-3 text-base outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50'
 
 export function Field({
   label,
@@ -33,7 +33,7 @@ export function Field({
         {label}
       </label>
       <FieldId.Provider value={id}>{children}</FieldId.Provider>
-      {hint && <span className="text-xs text-stone-500">{hint}</span>}
+      {hint && <span className="text-xs text-muted">{hint}</span>}
     </div>
   )
 }
@@ -60,7 +60,7 @@ export function NumberInput({ suffix, ...props }: InputHTMLAttributes<HTMLInputE
         className={`${inputCls} num ${suffix ? 'pe-14' : ''} ${props.className ?? ''}`}
       />
       {suffix && (
-        <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-sm text-stone-500">
+        <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-sm text-muted">
           {suffix}
         </span>
       )}
@@ -106,7 +106,7 @@ export function Segmented<T extends string>({
           type="button"
           onClick={() => onChange(o.value)}
           className={`min-h-10 flex-1 rounded-lg px-3 text-sm transition ${
-            value === o.value ? 'bg-white font-bold text-brand-800 shadow-sm' : 'text-stone-600'
+            value === o.value ? 'bg-card font-bold text-brand-800' : 'text-muted'
           }`}
         >
           {o.label}

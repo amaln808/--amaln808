@@ -1,207 +1,249 @@
-import { getLang, t } from '../../i18n/index'
-import { Check, HardDrive, ImageUp, Languages, RotateCcw } from 'lucide-react'
-import { setLanguage } from '../../app/language'
-import { useEffect, useRef, useState } from 'react'
-import { usePersistentStorage } from '../../app/storage'
-import { useSettings } from '../../app/useSettings'
-import { Field, FormError, NumberInput, Segmented, TextInput } from '../../components/form'
-import { errorMessage } from '../../components/format'
+import { Check, LogOut } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useSettingsQuery } from '../../app/settingsContext'
+import { applyTheme, BRAND_SWATCHES } from '../../app/theme'
+import { Field, FormError, Segmented, TextInput } from '../../components/form'
+import { useConfirm } from '../../components/useConfirm'
 import { Button, Card, PageHeader } from '../../components/ui'
-import { BackupCard } from '../backup/BackupCard'
-import { db } from '../../db/db'
-import { ar } from '../../i18n/ar'
-import { updateSettings } from '../../services/settings'
-import { LOGO_URL } from '../../app/assets'
+import { useAuth } from '../../data/auth'
+import { serverError } from '../../data/errors'
+import { type FontScale, type Settings, type ThemeMode, updateSettings } from '../../data/settings'
+import { useOutboxCounts } from '../../data/useOnline'
+import { t } from '../../i18n/index'
+import { BrandingCard } from './BrandingCard'
+import { PendingChangesCard } from './PendingChangesCard'
+import { SectionTitle } from './SectionTitle'
+import { UsageCard } from './UsageCard'
 
-/** Scales an uploaded image down so it stays small inside the database. */
-async function imageToDataUrl(file: File, maxSide = 600): Promise<string> {
-  const bitmap = await createImageBitmap(file)
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height))
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.round(bitmap.width * scale)
-  canvas.height = Math.round(bitmap.height * scale)
-  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-  return canvas.toDataURL('image/png')
-}
+type CompanyFields = Pick<Settings, 'companyName' | 'companyNameEn' | 'phone' | 'email' | 'crNo' | 'address' | 'addressEn' | 'vatNo'>
+const COMPANY_KEYS: (keyof CompanyFields)[] = ['companyName', 'companyNameEn', 'phone', 'email', 'crNo', 'address', 'addressEn', 'vatNo']
 
-export function SettingsPage() {
-  const settings = useSettings()
-  const persist = usePersistentStorage()
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [form, setForm] = useState({ businessName: '', businessPhone: '', commercialRegNo: '', businessAddress: '', businessAddressEn: '', vat: '0', dueDays: '15', validityDays: '14' })
-  const [error, setError] = useState<string | null>(null)
+function CompanyCard({ settings }: { settings: Settings }) {
+  const pick = (s: Settings) => Object.fromEntries(COMPANY_KEYS.map((k) => [k, s[k] ?? ''])) as Record<keyof CompanyFields, string>
+  const [form, setForm] = useState(() => pick(settings))
+  const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!settings) return
-    setForm({
-      businessName: settings.businessName,
-      businessPhone: settings.businessPhone ?? '',
-      commercialRegNo: settings.commercialRegNo ?? '',
-      businessAddress: settings.businessAddress ?? '',
-      businessAddressEn: settings.businessAddressEn ?? '',
-      vat: String(settings.vatRatePercent),
-      dueDays: String(settings.invoiceDueDays),
-      validityDays: String(settings.quoteValidityDays),
-    })
-  }, [settings?.updatedAt]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => setForm(pick(settings)), [settings.updatedAt]) // reload after a save elsewhere
 
-  const set = (k: keyof typeof form) => (e: { target: { value: string } }) => {
+  const dirty = COMPANY_KEYS.some((k) => (settings[k] ?? '') !== form[k])
+  const set = (k: keyof CompanyFields) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setSaved(false)
-    setForm({ ...form, [k]: e.target.value })
+    setForm((f) => ({ ...f, [k]: e.target.value }))
   }
 
   const save = async () => {
+    if (!form.companyName.trim()) return setError(t('اسم المنشأة مطلوب.', 'The business name is required.'))
+    setSaving(true)
     setError(null)
-    const vat = Number(form.vat)
-    const due = parseInt(form.dueDays, 10)
-    const validity = parseInt(form.validityDays, 10)
-    if (!Number.isFinite(vat)) return setError(t("نسبة الضريبة غير صحيحة", "Invalid VAT rate"))
-    if (!(due >= 0) || !(validity >= 0)) return setError(t("عدد الأيام غير صحيح", "Invalid number of days"))
     try {
-      await updateSettings(db, {
-        businessName: form.businessName.trim(),
-        businessPhone: form.businessPhone.trim(),
-        commercialRegNo: form.commercialRegNo.trim(),
-        businessAddress: form.businessAddress.trim(),
-        businessAddressEn: form.businessAddressEn.trim(),
-        vatRatePercent: vat,
-        invoiceDueDays: due,
-        quoteValidityDays: validity,
-      })
+      const patch = Object.fromEntries(COMPANY_KEYS.map((k) => [k, form[k].trim() || null]))
+      await updateSettings(patch)
       setSaved(true)
     } catch (e) {
-      setError(errorMessage(e))
-    }
-  }
-
-  const uploadLogo = async (file?: File) => {
-    if (!file) return
-    try {
-      await updateSettings(db, { logoDataUrl: await imageToDataUrl(file) })
-    } catch (e) {
-      setError(errorMessage(e))
+      setError(serverError(e))
+    } finally {
+      setSaving(false)
     }
   }
 
   return (
-    <>
-      <PageHeader title={ar.nav.settings} />
-      <Card className="mb-5">
-        <h2 className="mb-1 flex items-center gap-2 text-lg font-bold">
-          <Languages className="size-5" /> {t("اللغة", "Language")} <span className="text-sm font-normal text-stone-500">Language / اللغة</span>
-        </h2>
-        <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <div>
-            <div className="mb-1.5 text-sm font-medium text-stone-700">{t("لغة التطبيق", "App language")}</div>
-            <Segmented
-              value={getLang()}
-              onChange={(l) => setLanguage(l)}
-              options={[
-                { value: 'ar', label: 'العربية' },
-                { value: 'en', label: 'English' },
-              ]}
-            />
-          </div>
-          <div>
-            <div className="mb-1.5 text-sm font-medium text-stone-700">{t("اللغة الافتراضية للفواتير وعروض الأسعار", "Default language for invoices & quotations")}</div>
-            <Segmented
-              value={settings?.docLanguage ?? 'ar'}
-              onChange={(l) => updateSettings(db, { docLanguage: l })}
-              options={[
-                { value: 'ar', label: 'العربية' },
-                { value: 'en', label: 'English' },
-                { value: 'both', label: 'عربي + English' },
-              ]}
-            />
-          </div>
-        </div>
-      </Card>
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card>
-          <h2 className="mb-1 text-lg font-bold">{ar.settings.business}</h2>
-          <p className="mb-4 text-sm text-stone-500">{t("تظهر هذه البيانات في رأس الفواتير وعروض الأسعار.", "These details appear in the header of invoices and quotations.")}</p>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex size-24 items-center justify-center rounded-2xl border border-stone-200 bg-white p-2">
-                <img src={settings?.logoDataUrl || LOGO_URL} alt={t("الشعار", "Logo")} className="max-h-full max-w-full" />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Button variant="secondary" onClick={() => fileRef.current?.click()}>
-                  <ImageUp className="size-4" /> {t("تغيير الشعار", "Change logo")}
-                </Button>
-                {settings?.logoDataUrl && (
-                  <Button variant="ghost" onClick={() => updateSettings(db, { logoDataUrl: undefined })}>
-                    <RotateCcw className="size-4" /> {t("الشعار الأصلي", "Original logo")}
-                  </Button>
-                )}
-              </div>
-              <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => uploadLogo(e.target.files?.[0])} />
-            </div>
-            <Field label={ar.settings.businessName}>
-              <TextInput value={form.businessName} onChange={set('businessName')} />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t("الهاتف", "Phone")}>
-                <TextInput value={form.businessPhone} onChange={set('businessPhone')} inputMode="tel" dir="ltr" className="rtl:text-right" />
-              </Field>
-              <Field label={t("السجل التجاري (س.ت)", "Commercial registration (CR)")}>
-                <TextInput value={form.commercialRegNo} onChange={set('commercialRegNo')} inputMode="numeric" dir="ltr" className="rtl:text-right" />
-              </Field>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t("العنوان", "Address")}>
-              <TextInput value={form.businessAddress} onChange={set('businessAddress')} dir="rtl" />
-            </Field>
-              <Field label={t("العنوان بالإنجليزية", "Address (English)")}>
-                <TextInput value={form.businessAddressEn} onChange={set('businessAddressEn')} dir="ltr" placeholder="Bawshar" />
-              </Field>
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <h2 className="mb-4 text-lg font-bold">{t("الفواتير وعروض الأسعار", "Invoices and quotations")}</h2>
-          <div className="flex flex-col gap-4">
-            <Field label={ar.settings.vat} hint={ar.settings.vatNote}>
-              <NumberInput value={form.vat} onChange={set('vat')} suffix="%" />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t("مدة استحقاق الفاتورة", "Invoice due period")}>
-                <NumberInput value={form.dueDays} onChange={set('dueDays')} suffix={t("يوم", "days")} inputMode="numeric" />
-              </Field>
-              <Field label={t("صلاحية عرض السعر", "Quotation validity")}>
-                <NumberInput value={form.validityDays} onChange={set('validityDays')} suffix={t("يوم", "days")} inputMode="numeric" />
-              </Field>
-            </div>
-            <p className="text-sm text-stone-500">
-              {ar.settings.currency}: {ar.settings.currencyValue}
-            </p>
-          </div>
-        </Card>
+    <Card>
+      <SectionTitle note={t('تظهر في رأس الفواتير وعروض الأسعار.', 'Shown at the top of invoices and quotations.')}>
+        {t('بيانات المنشأة', 'Business details')}
+      </SectionTitle>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={t('الاسم', 'Name')}>
+          <TextInput value={form.companyName} onChange={set('companyName')} />
+        </Field>
+        <Field label={t('الاسم بالإنجليزية', 'Name in English')}>
+          <TextInput dir="ltr" value={form.companyNameEn} onChange={set('companyNameEn')} />
+        </Field>
+        <Field label={t('الهاتف', 'Phone')}>
+          <TextInput dir="ltr" inputMode="tel" value={form.phone} onChange={set('phone')} />
+        </Field>
+        <Field label={t('البريد الإلكتروني', 'Email')}>
+          <TextInput dir="ltr" type="email" value={form.email} onChange={set('email')} />
+        </Field>
+        <Field label={t('السجل التجاري', 'Commercial registration')}>
+          <TextInput dir="ltr" inputMode="numeric" value={form.crNo} onChange={set('crNo')} />
+        </Field>
+        <Field label={t('الرقم الضريبي', 'VAT number')} hint={t('يُترك فارغاً حتى التسجيل الضريبي.', 'Leave empty until VAT registration.')}>
+          <TextInput dir="ltr" value={form.vatNo} onChange={set('vatNo')} />
+        </Field>
+        <Field label={t('العنوان', 'Address')}>
+          <TextInput value={form.address} onChange={set('address')} />
+        </Field>
+        <Field label={t('العنوان بالإنجليزية', 'Address in English')}>
+          <TextInput dir="ltr" value={form.addressEn} onChange={set('addressEn')} />
+        </Field>
       </div>
-
+      <div className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-sm leading-relaxed">
+        <b>{t('ضريبة القيمة المضافة: 0%', 'VAT: 0%')}</b>
+        {' — '}
+        {t(
+          'المنشأة غير مسجّلة ضريبياً، فلا تُضاف ضريبة على الفواتير. بعد التسجيل يُضاف الرقم الضريبي وتُفعَّل الضريبة.',
+          'Not VAT-registered, so invoices carry no VAT. After registration the VAT number is added and VAT is turned on.',
+        )}
+      </div>
+      <FormError message={error} />
       <div className="mt-5 flex items-center gap-3">
-        <Button onClick={save} className="min-w-40">{t("حفظ الإعدادات", "Save settings")}</Button>
-        {saved && (
-          <span className="flex items-center gap-1 text-sm text-emerald-700">
-            <Check className="size-4" /> {t("تم الحفظ", "Saved")}
+        <Button onClick={save} disabled={!dirty || saving}>
+          {saving ? t('جارٍ الحفظ…', 'Saving…') : t('حفظ', 'Save')}
+        </Button>
+        {saved && !dirty && (
+          <span className="inline-flex items-center gap-1 text-sm text-palm">
+            <Check className="size-4" />
+            {t('تم الحفظ', 'Saved')}
           </span>
         )}
       </div>
-      <div className="mt-3"><FormError message={error} /></div>
+    </Card>
+  )
+}
 
-      <Card className="mt-5">
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-bold">
-          <HardDrive className="size-5" /> {ar.storage.title}
-        </h2>
-        <p className="text-sm">
-          {persist === 'persisted' && ar.storage.persisted}
-          {persist === 'not-persisted' && ar.storage.notPersisted}
-          {persist === 'unknown' && ar.storage.unknown}
-        </p>
-      </Card>
-      <BackupCard />
+function AppearanceCard({ settings }: { settings: Settings }) {
+  const [error, setError] = useState<string | null>(null)
+  const theme = { primary: settings.themePrimary, mode: settings.themeMode, fontScale: settings.fontScale }
+
+  // Applies at once on this iPad, then saves; if saving fails the look stays until reload
+  const change = async (patch: Partial<Pick<Settings, 'themePrimary' | 'themeMode' | 'fontScale'>>) => {
+    const next = {
+      primary: patch.themePrimary ?? theme.primary,
+      mode: patch.themeMode ?? theme.mode,
+      fontScale: patch.fontScale ?? theme.fontScale,
+    }
+    applyTheme(next)
+    setError(null)
+    try {
+      await updateSettings(patch)
+    } catch (e) {
+      setError(serverError(e))
+    }
+  }
+
+  const current = theme.primary.toLowerCase()
+  return (
+    <Card>
+      <SectionTitle>{t('المظهر', 'Appearance')}</SectionTitle>
+      <div className="flex flex-col gap-6">
+        <Field label={t('اللون الأساسي', 'Main colour')}>
+          <div className="flex flex-wrap items-center gap-3">
+            {BRAND_SWATCHES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => change({ themePrimary: c })}
+                className={`size-11 rounded-full ring-offset-2 ring-offset-card transition ${current === c ? 'ring-2 ring-ink' : ''}`}
+                style={{ background: c }}
+                aria-label={c}
+                aria-pressed={current === c}
+              />
+            ))}
+            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line px-3 text-sm">
+              <input
+                type="color"
+                value={theme.primary}
+                onChange={(e) => change({ themePrimary: e.target.value })}
+                className="size-7 cursor-pointer rounded-full border-0 bg-transparent p-0"
+              />
+              {t('لون آخر', 'Other colour')}
+            </label>
+          </div>
+        </Field>
+        <Field label={t('الوضع', 'Mode')}>
+          <Segmented<ThemeMode>
+            value={theme.mode}
+            onChange={(v) => change({ themeMode: v })}
+            options={[
+              { value: 'light', label: t('فاتح', 'Light') },
+              { value: 'dark', label: t('ليلي', 'Dark') },
+              { value: 'system', label: t('حسب الجهاز', 'Device') },
+            ]}
+          />
+        </Field>
+        <Field label={t('حجم الخط', 'Text size')}>
+          <Segmented<FontScale>
+            value={theme.fontScale}
+            onChange={(v) => change({ fontScale: v })}
+            options={[
+              { value: 'sm', label: t('صغير', 'Small') },
+              { value: 'md', label: t('عادي', 'Normal') },
+              { value: 'lg', label: t('كبير', 'Large') },
+              { value: 'xl', label: t('أكبر', 'Larger') },
+            ]}
+          />
+        </Field>
+      </div>
+      <FormError message={error} />
+    </Card>
+  )
+}
+
+function AccountCard() {
+  const { session, signOut } = useAuth()
+  const { pending, failed } = useOutboxCounts()
+  const { confirm, dialog } = useConfirm()
+
+  const out = async () => {
+    const waiting = pending + failed
+    const ok = await confirm({
+      title: t('تسجيل الخروج', 'Sign out'),
+      message: waiting
+        ? t(
+            `توجد ${waiting} عملية لم تصل للخادم بعد وستُحذف من هذا الجهاز عند الخروج.\nيُفضَّل الاتصال بالإنترنت أولاً حتى تُرسل.`,
+            `${waiting} change(s) have not reached the server and will be deleted from this device.\nConnect to the internet first so they are sent.`,
+          )
+        : t('سيلزم إدخال كلمة المرور للدخول مرة أخرى.', 'You will need your password to sign in again.'),
+      confirmLabel: t('خروج', 'Sign out'),
+      danger: waiting > 0,
+    })
+    if (ok) await signOut()
+  }
+
+  return (
+    <Card>
+      <SectionTitle>{t('الحساب', 'Account')}</SectionTitle>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span dir="ltr" className="text-muted">
+          {session?.user.email}
+        </span>
+        <Button variant="secondary" onClick={out}>
+          <LogOut className="size-5 ltr:rotate-180" />
+          {t('تسجيل الخروج', 'Sign out')}
+        </Button>
+      </div>
+      {dialog}
+    </Card>
+  )
+}
+
+export function SettingsPage() {
+  const q = useSettingsQuery()
+  const s = q.data
+  return (
+    <>
+      <PageHeader title={t('الإعدادات', 'Settings')} />
+      {!s ? (
+        <Card>
+          {q.error ? <FormError message={serverError(q.error)} /> : <p className="text-muted">{t('جارٍ التحميل…', 'Loading…')}</p>}
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-5">
+          {q.fromCache && (
+            <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {t('غير متصل — تُعرض آخر نسخة محفوظة، والتعديل يحتاج اتصالاً.', 'Offline — showing the last saved copy; changes need a connection.')}
+            </p>
+          )}
+          <PendingChangesCard />
+          <CompanyCard settings={s} />
+          <BrandingCard settings={s} />
+          <AppearanceCard settings={s} />
+          <UsageCard />
+          <AccountCard />
+        </div>
+      )}
     </>
   )
 }
