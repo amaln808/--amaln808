@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 const target = process.argv[2]
 const { url } = JSON.parse(await readFile('src/data/supabase.config.json', 'utf8'))
 const supabase = createClient(url, process.env.SUPABASE_SECRET_KEY, { auth: { persistSession: false } })
-const BUCKETS = ['products', 'lab-certificates', 'receipts', 'branding']
+const BUCKETS = ['products', 'lab-certificates', 'receipts', 'branding', 'documents']
 
 async function listAll(bucket, prefix = '') {
   const files = []

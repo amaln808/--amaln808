@@ -1,6 +1,7 @@
 import { Ellipsis } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { MyTasksButton } from '../features/tasks/MyTasksButton'
 import { t } from '../i18n/index'
 import { LOGO_URL } from './assets'
 import { ConnectionBadge } from './ConnectionBadge'
@@ -87,9 +88,12 @@ export function Layout() {
       <Rail />
       <main className="flex-1 overflow-y-auto pb-24 md:pb-8 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto max-w-6xl px-4 py-5 md:px-8 md:py-8">
-          <div className="md:hidden mb-3 flex items-center justify-between">
-            <LogoMark className="h-12 w-6 text-brand-800" />
-            <ConnectionBadge />
+          <div className="mb-3 flex items-center gap-3">
+            <LogoMark className="h-12 w-6 text-brand-800 md:hidden" />
+            <ConnectionBadge className="md:hidden" />
+            <div className="ms-auto">
+              <MyTasksButton />
+            </div>
           </div>
           <Outlet />
         </div>

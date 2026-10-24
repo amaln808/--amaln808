@@ -1,6 +1,6 @@
 import { db } from './client'
 
-export type Bucket = 'products' | 'lab-certificates' | 'receipts' | 'branding'
+export type Bucket = 'products' | 'lab-certificates' | 'receipts' | 'branding' | 'documents'
 
 /** New size that fits inside max×max, never enlarging. */
 export function fitWithin(width: number, height: number, max: number): { width: number; height: number } {

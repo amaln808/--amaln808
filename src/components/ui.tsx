@@ -111,5 +111,5 @@ export function Badge({ children, tone = 'stone' }: { children: ReactNode; tone?
     green: 'bg-emerald-100 text-emerald-700',
     amber: 'bg-amber-100 text-amber-800',
   }
-  return <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>
+  return <span className={`inline-flex shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>
 }

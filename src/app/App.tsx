@@ -4,8 +4,10 @@ import { ComingSoon } from '../components/ComingSoon'
 import { AuthProvider, useAuth } from '../data/auth'
 import { isConfigured } from '../data/client'
 import { startOutboxSync } from '../data/outbox'
+import { AgreementsPage } from '../features/agreements/AgreementsPage'
 import { AuditPage } from '../features/audit/AuditPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
+import { TasksPage } from '../features/tasks/TasksPage'
 import { getLang } from '../i18n/index'
 import { LoadingScreen, LoginScreen, NotMemberScreen, SetupScreen } from './Gate'
 import { onLanguageChange } from './language'
@@ -35,6 +37,8 @@ function makeRouter() {
         ...placeholderRoutes(),
         { path: '/settings', element: <SettingsPage /> },
         { path: '/audit', element: <AuditPage /> },
+        { path: '/tasks', element: <TasksPage /> },
+        { path: '/agreements', element: <AgreementsPage /> },
         { path: '/more', element: <MorePage /> },
         { path: '*', element: <Navigate to="/" replace /> },
       ],

@@ -135,10 +135,11 @@ describe('audit log', () => {
 })
 
 describe('storage', () => {
-  it('creates four private buckets', async () => {
+  it('creates five private buckets', async () => {
     const rows = await queryAs(db, { role: 'admin' }, 'select id, public from storage.buckets order by id')
     expect(rows).toEqual([
       { id: 'branding', public: false },
+      { id: 'documents', public: false },
       { id: 'lab-certificates', public: false },
       { id: 'products', public: false },
       { id: 'receipts', public: false },
@@ -159,5 +160,47 @@ describe('storage', () => {
     const [u] = await queryAs<{ files_bytes: string; files_count: string }>(db, owner, 'select * from public.storage_usage()')
     expect(Number(u.files_bytes)).toBe(1000)
     expect(Number(u.files_count)).toBe(1)
+  })
+})
+
+describe('tasks and agreements', () => {
+  it('a product is sellable only while its permit is valid', async () => {
+    const [p] = await queryAs<{ id: string }>(
+      db,
+      owner,
+      `insert into items (type, name, unit) values ('finished', 'معجون 250 جم', 'piece') returning id`,
+    )
+    const valid = (date: string) =>
+      queryAs<{ ok: boolean }>(db, owner, 'select public.product_permit_valid($1, $2) as ok', [p.id, date]).then((r) => r[0].ok)
+
+    expect(await valid('2026-11-01')).toBe(false) // no permit yet
+    await queryAs(
+      db,
+      owner,
+      `insert into agreements (kind, title, product_id, start_date, end_date) values ('product_permit', 'تصريح', $1, '2026-01-01', '2026-12-31')`,
+      [p.id],
+    )
+    expect(await valid('2026-11-01')).toBe(true)
+    expect(await valid('2027-01-01')).toBe(false) // expired
+    expect(await valid('2025-12-31')).toBe(false) // not started
+  })
+
+  it('a product permit must name its product', async () => {
+    await expect(
+      queryAs(db, owner, `insert into agreements (kind, title, end_date) values ('product_permit', 'x', '2027-01-01')`),
+    ).rejects.toThrow(/check/)
+  })
+
+  it('records each occurrence of a task once', async () => {
+    const [task] = await queryAs<{ id: string }>(
+      db,
+      owner,
+      `insert into tasks (title, recurrence, start_date) values ('تنظيف الخط', 'daily', '2026-10-01') returning id`,
+    )
+    await queryAs(db, owner, `insert into task_completions (task_id, due_date) values ($1, '2026-10-24')`, [task.id])
+    await expect(
+      queryAs(db, owner, `insert into task_completions (task_id, due_date) values ($1, '2026-10-24')`, [task.id]),
+    ).rejects.toThrow(/duplicate/)
+    expect(await queryAs(db, stranger, 'select * from tasks')).toEqual([])
   })
 })

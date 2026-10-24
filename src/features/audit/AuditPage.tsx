@@ -46,6 +46,9 @@ function tableLabel(name: string): string {
     customer_payments: ['المقبوضات', 'Customer payments'],
     expense_categories: ['تصنيفات المصروفات', 'Expense categories'],
     expenses: ['المصروفات', 'Expenses'],
+    agreements: ['الاتفاقيات والتصاريح', 'Agreements & permits'],
+    tasks: ['المهام', 'Tasks'],
+    task_completions: ['إنجاز المهام', 'Task completions'],
   }
   const l = labels[name]
   return l ? t(l[0], l[1]) : name
@@ -91,7 +94,7 @@ export function AuditPage() {
   const tables = [
     'settings', 'suppliers', 'items', 'stock_lots', 'purchases', 'supplier_payments', 'recipes', 'production_batches',
     'quality_checks', 'channels', 'channel_prices', 'customers', 'quotations', 'sales_invoices', 'customer_payments',
-    'expense_categories', 'expenses',
+    'expense_categories', 'expenses', 'agreements', 'tasks', 'task_completions',
   ]
 
   return (
