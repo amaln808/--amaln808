@@ -15,7 +15,7 @@
 3. إذا طُلب إنشاء «Organization»: الاسم `Zawrda`، والنوع **Personal**، والخطة **Free** ← **Create organization**.
 4. في صفحة **New project**:
    - **Project name:** `zawrda`
-   - **Database Password:** اضغطي **Generate a password**، ثم انسخيها والصقيها في الملاحظات بعنوان «كلمة مرور قاعدة البيانات».
+   - **Database Password:** اضغطي **Generate a password**، ثم انسخيها والصقيها في الملاحظات بعنوان «كلمة مرور قاعدة البيانات». ⚠️ يجب أن تكون **حروفاً إنجليزية وأرقاماً فقط**، دون رموز مثل `@` أو `:` أو `/` أو `#`، لأنها توضع داخل رابط.
    - **Region:** اختاري أقرب منطقة للشرق الأوسط إن ظهرت، وإلا **Central EU (Frankfurt)**.
    - اضغطي **Create new project**.
 5. انتظري دقيقة أو دقيقتين حتى تختفي عبارة «Setting up project».

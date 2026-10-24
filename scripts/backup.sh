@@ -8,6 +8,13 @@ for v in SUPABASE_DB_URL SUPABASE_SECRET_KEY BACKUP_PASSPHRASE; do
   if [ -z "${!v:-}" ]; then echo "::error::$v secret is missing"; exit 1; fi
 done
 
+# Same safety check as db-migrate.sh: never let psql/pg_dump echo a broken URL
+rest=${SUPABASE_DB_URL#*://}
+if [ "${rest//[^@]/}" != "@" ]; then
+  echo "::error::SUPABASE_DB_URL is not valid: the database password must contain only letters and numbers."
+  exit 1
+fi
+
 day=$(date -u +%F)
 work=$(mktemp -d)
 mkdir -p "$work/zawrda-backup-$day"
