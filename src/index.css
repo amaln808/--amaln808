@@ -3,16 +3,98 @@
 @import '@fontsource/ibm-plex-sans-arabic/500.css';
 @import '@fontsource/ibm-plex-sans-arabic/700.css';
 
-@theme {
+/* Dark mode follows <html data-theme="dark"> (set from settings: light / dark / device) */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+ * Zawrda design tokens.
+ * --brand is the owner's chosen main colour (settings); everything brand-tinted is
+ * mixed from it, so one setting recolours the app. Ground is a dusty palm-frond
+ * grey, not cream, so white cards and the date-brown brand both stand out.
+ */
+:root {
+  --brand: #6b5433;
+  --on-brand: #fbf8f2;
+  --ground: #eceee8;
+  --card: #ffffff;
+  --ink: #1f1d19;
+  --muted: #67635a;
+  --line: #d8dad2;
+  --palm: #2f6b4f;
+  --brand-ink: color-mix(in oklab, var(--brand) 82%, black);
+  --rail: var(--brand);
+  --on-rail: #f3eee4;
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --ground: #14130f;
+  --card: #1e1c17;
+  --ink: #ecebe6;
+  --muted: #a7a39a;
+  --line: #36332b;
+  --palm: #6fbf94;
+  --brand-ink: color-mix(in oklab, var(--brand) 40%, white);
+  --rail: color-mix(in oklab, var(--brand) 38%, #14130f);
+  color-scheme: dark;
+
+  /* Older screens still use the stone scale and white; flip them too */
+  --color-white: var(--card);
+  --color-stone-50: #1a1814;
+  --color-stone-100: #24221d;
+  --color-stone-200: #34312a;
+  --color-stone-300: #45413a;
+  --color-stone-400: #6d685f;
+  --color-stone-500: #9a958b;
+  --color-stone-600: #b7b2a8;
+  --color-stone-700: #d0ccc3;
+  --color-stone-800: #e4e1da;
+  --color-stone-900: #f1efe9;
+  --color-red-50: #2a1513;
+  --color-red-100: #3a1a17;
+  --color-red-700: #f19a8e;
+  --color-amber-50: #2a2010;
+  --color-amber-100: #3a2c12;
+  --color-amber-300: #6b5320;
+  --color-amber-800: #f0c674;
+  --color-amber-900: #f5d79a;
+  --color-emerald-100: #12301f;
+  --color-emerald-700: #7fd1a3;
+}
+
+@theme inline {
   --font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  --color-brand-50: #faf5ef;
-  --color-brand-100: #f2e6d6;
-  --color-brand-200: #e4c9a6;
-  --color-brand-500: #a8672e;
-  --color-brand-600: #8f5524;
-  --color-brand-700: #7c4a1e;
-  --color-brand-800: #5e3816;
-  --color-surface: #faf7f2;
+  --color-ground: var(--ground);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-palm: var(--palm);
+  --color-rail: var(--rail);
+  --color-on-rail: var(--on-rail);
+  --color-on-brand: var(--on-brand);
+  --color-brand-50: color-mix(in oklab, var(--brand) 7%, var(--card));
+  --color-brand-100: color-mix(in oklab, var(--brand) 15%, var(--card));
+  --color-brand-200: color-mix(in oklab, var(--brand) 30%, var(--card));
+  --color-brand-500: color-mix(in oklab, var(--brand) 70%, var(--card));
+  --color-brand-600: var(--brand);
+  --color-brand-700: var(--brand);
+  --color-brand-800: var(--brand-ink);
+  --color-surface: var(--ground);
+}
+
+/* Text size setting: everything is in rem, so the root size scales the whole app */
+html {
+  font-size: 16px;
+}
+html[data-font='sm'] {
+  font-size: 15px;
+}
+html[data-font='lg'] {
+  font-size: 17.5px;
+}
+html[data-font='xl'] {
+  font-size: 19px;
 }
 
 html,
@@ -22,13 +104,32 @@ body,
 }
 
 body {
-  @apply bg-surface text-stone-800 antialiased;
+  @apply bg-ground text-ink antialiased;
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 /* Amounts and quantities: aligned digits, never split across lines */
 .num {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* The calligraphic logo as a mask, so it can take any colour (cream on the brand rail) */
+.logo-mark {
+  background-color: currentColor;
+  -webkit-mask: var(--logo-url) center / contain no-repeat;
+  mask: var(--logo-url) center / contain no-repeat;
 }

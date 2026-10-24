@@ -1,9 +1,17 @@
-import { db } from '../db/db'
-import { SETTINGS_ID } from '../db/seed'
+import { updateSettings } from '../data/settings'
 import { applyLang, type Lang } from '../i18n/index'
 
-/** Switches the UI language; the app remounts once settings update. */
-export async function setLanguage(lang: Lang) {
+const listeners = new Set<(lang: Lang) => void>()
+
+export function onLanguageChange(fn: (lang: Lang) => void) {
+  listeners.add(fn)
+  return () => void listeners.delete(fn)
+}
+
+/** Switches the UI language; the app remounts so every t() call re-evaluates. */
+export function setLanguage(lang: Lang) {
   applyLang(lang)
-  await db.settings.update(SETTINGS_ID, { uiLanguage: lang })
+  listeners.forEach((fn) => fn(lang))
+  // Saved to the server too, without blocking (works offline)
+  updateSettings({ uiLanguage: lang }).catch(() => {})
 }
