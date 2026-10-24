@@ -9,6 +9,14 @@ if [ -z "${SUPABASE_DB_URL:-}" ]; then
   exit 0
 fi
 
+# A password containing @ : / ? # breaks the URL, and psql would then print part of
+# the password in the (public) log. Refuse early with a safe message instead.
+rest=${SUPABASE_DB_URL#*://}
+if [ "${rest//[^@]/}" != "@" ]; then
+  echo "::error::SUPABASE_DB_URL is not valid: the database password must contain only letters and numbers (no @ : / ? #). Reset it in Supabase and update the secret."
+  exit 1
+fi
+
 psql_q() { psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -X -q "$@"; }
 
 psql_q -c "create table if not exists public.schema_migrations (name text primary key, applied_at timestamptz not null default now()); alter table public.schema_migrations enable row level security;"
