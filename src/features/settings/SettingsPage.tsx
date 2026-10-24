@@ -11,6 +11,7 @@ import { type FontScale, type Settings, type ThemeMode, updateSettings } from '.
 import { useOutboxCounts } from '../../data/useOnline'
 import { t } from '../../i18n/index'
 import { BrandingCard } from './BrandingCard'
+import { DemoDataCard } from './DemoDataCard'
 import { PendingChangesCard } from './PendingChangesCard'
 import { SectionTitle } from './SectionTitle'
 import { UsageCard } from './UsageCard'
@@ -241,6 +242,7 @@ export function SettingsPage() {
           <BrandingCard settings={s} />
           <AppearanceCard settings={s} />
           <UsageCard />
+          <DemoDataCard />
           <AccountCard />
         </div>
       )}

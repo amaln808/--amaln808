@@ -1,91 +1,88 @@
-import { t } from '../../i18n/index'
-import { useEffect, useState } from 'react'
-import { Field, FormError, TextInput, Textarea } from '../../components/form'
-import { errorMessage } from '../../components/format'
+import { useState } from 'react'
+import { Field, FormError, Select, Textarea, TextInput } from '../../components/form'
 import { Modal } from '../../components/Modal'
 import { Button } from '../../components/ui'
-import { db } from '../../db/db'
-import type { Supplier } from '../../db/types'
-import { saveSupplier } from '../../services/suppliers'
+import { serverError } from '../../data/errors'
+import { saveSupplier, type Supplier, type SupplierDraft } from '../../data/inventory'
+import { t } from '../../i18n/index'
+import { supplierKindLabel } from '../inventory/labels'
 
-export function SupplierFormModal({
-  open,
-  onClose,
-  supplier,
-  onSaved,
-}: {
-  open: boolean
-  onClose: () => void
-  supplier?: Supplier
-  onSaved?: (id: string) => void
-}) {
-  const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', notes: '' })
+export function SupplierFormModal({ supplier, onClose }: { supplier?: Supplier; onClose: (savedId?: string) => void }) {
+  const [f, setF] = useState<SupplierDraft>(
+    supplier ?? { name: '', phone: null, email: null, address: null, vatNo: null, kind: 'materials', notes: null, active: true },
+  )
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const set = <K extends keyof SupplierDraft>(k: K, v: SupplierDraft[K]) => setF((x) => ({ ...x, [k]: v }))
+  const clean = (v: string | null) => v?.trim() || null
 
-  useEffect(() => {
-    if (!open) return
-    setForm({
-      name: supplier?.name ?? '',
-      phone: supplier?.phone ?? '',
-      email: supplier?.email ?? '',
-      address: supplier?.address ?? '',
-      notes: supplier?.notes ?? '',
-    })
+  const save = async (patch: Partial<SupplierDraft> = {}) => {
+    if (!f.name.trim()) return setError(t('اسم المورد مطلوب.', 'The supplier name is required.'))
+    setBusy(true)
     setError(null)
-  }, [open, supplier])
-
-  const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [k]: e.target.value })
-
-  const save = async () => {
     try {
-      const id = await saveSupplier(
-        db,
-        {
-          name: form.name,
-          phone: form.phone.trim(),
-          email: form.email.trim() || undefined,
-          address: form.address.trim() || undefined,
-          notes: form.notes.trim() || undefined,
-          active: supplier?.active ?? true,
-        },
-        supplier?.id,
-      )
-      onSaved?.(id)
-      onClose()
+      const id = await saveSupplier({
+        ...f,
+        name: f.name.trim(),
+        phone: clean(f.phone),
+        email: clean(f.email),
+        address: clean(f.address),
+        vatNo: clean(f.vatNo),
+        notes: clean(f.notes),
+        ...patch,
+      })
+      onClose(id)
     } catch (e) {
-      setError(errorMessage(e))
+      setError(serverError(e))
+      setBusy(false)
     }
   }
 
   return (
     <Modal
-      open={open}
-      onClose={onClose}
-      title={supplier ? t("تعديل المورد", "Edit supplier") : t("مورد جديد", "New supplier")}
+      open
+      onClose={() => onClose()}
+      title={supplier ? t('تعديل المورد', 'Edit supplier') : t('مورد جديد', 'New supplier')}
       footer={
         <>
-          <Button className="flex-1" onClick={save}>{t("حفظ", "Save")}</Button>
-          <Button variant="secondary" className="flex-1" onClick={onClose}>{t("إلغاء", "Cancel")}</Button>
+          <Button onClick={() => save()} disabled={busy} className="flex-1">
+            {busy ? t('جارٍ الحفظ…', 'Saving…') : t('حفظ', 'Save')}
+          </Button>
+          {supplier && (
+            <Button variant="secondary" disabled={busy} onClick={() => save({ active: !supplier.active })}>
+              {supplier.active ? t('إيقاف', 'Deactivate') : t('إعادة تفعيل', 'Reactivate')}
+            </Button>
+          )}
         </>
       }
     >
-      <div className="flex flex-col gap-4">
-        <Field label={t("اسم المورد", "Supplier name")}>
-          <TextInput value={form.name} onChange={set('name')} autoFocus />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={t('الاسم', 'Name')} className="sm:col-span-2">
+          <TextInput value={f.name} onChange={(e) => set('name', e.target.value)} />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label={t("الهاتف", "Phone")}>
-            <TextInput value={form.phone} onChange={set('phone')} inputMode="tel" dir="ltr" className="rtl:text-right" />
-          </Field>
-          <Field label={t("البريد الإلكتروني", "Email")}>
-            <TextInput value={form.email} onChange={set('email')} inputMode="email" dir="ltr" className="rtl:text-right" />
-          </Field>
-        </div>
-        <Field label={t("العنوان", "Address")}>
-          <TextInput value={form.address} onChange={set('address')} />
+        <Field label={t('الهاتف', 'Phone')}>
+          <TextInput dir="ltr" inputMode="tel" value={f.phone ?? ''} onChange={(e) => set('phone', e.target.value)} />
         </Field>
-        <Field label={t("ملاحظات", "Notes")}>
-          <Textarea value={form.notes} onChange={set('notes')} />
+        <Field label={t('النوع', 'Kind')}>
+          <Select value={f.kind} onChange={(e) => set('kind', e.target.value as Supplier['kind'])}>
+            {(['materials', 'expenses', 'both'] as const).map((k) => (
+              <option key={k} value={k}>
+                {supplierKindLabel(k)}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label={t('البريد الإلكتروني', 'Email')}>
+          <TextInput dir="ltr" type="email" value={f.email ?? ''} onChange={(e) => set('email', e.target.value)} />
+        </Field>
+        <Field label={t('الرقم الضريبي', 'VAT number')}>
+          <TextInput dir="ltr" value={f.vatNo ?? ''} onChange={(e) => set('vatNo', e.target.value)} />
+        </Field>
+        <Field label={t('العنوان', 'Address')} className="sm:col-span-2">
+          <TextInput value={f.address ?? ''} onChange={(e) => set('address', e.target.value)} />
+        </Field>
+        <Field label={t('ملاحظات', 'Notes')} className="sm:col-span-2">
+          <Textarea value={f.notes ?? ''} onChange={(e) => set('notes', e.target.value)} />
         </Field>
         <FormError message={error} />
       </div>

@@ -10,6 +10,7 @@ import { type DueItem, nextOccurrence, type Recurrence, upcoming } from '../../d
 import { t } from '../../i18n/index'
 import { categoryLabel, daysLeftLabel, describeRule, formatDate, kindLabel, recurrenceLabel } from './labels'
 import { emptyTask, type TaskDraft, TaskFormModal } from './TaskFormModal'
+import { useStock } from '../inventory/useStock'
 import { useSchedule } from './useSchedule'
 
 type Tab = 'today' | Recurrence
@@ -68,6 +69,9 @@ function TickRow({ item, onEdit }: { item: DueItem<Task>; onEdit: (t: Task) => v
 
 export function TasksPage() {
   const s = useSchedule()
+  const stock = useStock()
+  const stockLots = [...stock.alerts.expiredLots, ...stock.alerts.expiringLots]
+  const itemName = (id: string) => stock.items.data?.find((i) => i.id === id)?.name ?? ''
   const [tab, setTab] = useState<Tab>('today')
   const [editing, setEditing] = useState<TaskDraft | null>(null)
   const data = s.data
@@ -162,6 +166,35 @@ export function TasksPage() {
             </Card>
           )}
 
+          {stockLots.length > 0 && (
+            <Card className={stock.alerts.expiredLots.length ? 'border-red-300' : 'border-amber-300'}>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-lg font-bold">{t('مواد تنتهي صلاحيتها', 'Stock expiring')}</h2>
+                <Link to="/inventory" className="inline-flex min-h-11 items-center text-sm text-brand-800">
+                  {t('المخزون', 'Inventory')}
+                  <ChevronLeft className="size-4 ltr:rotate-180" />
+                </Link>
+              </div>
+              <ul className="divide-y divide-line">
+                {stockLots.map((l) => {
+                  const expired = l.expiryDate! < s.todayDate
+                  return (
+                    <li key={l.id}>
+                      <Link to={`/inventory/${l.itemId}`} className="flex min-h-12 items-center gap-3 py-2">
+                        <span className={`size-2.5 shrink-0 rounded-full ${expired ? 'bg-red-600' : 'bg-amber-500'}`} />
+                        <span className="flex-1">
+                          {itemName(l.itemId)} <span className="text-sm text-muted" dir="ltr">{l.lotCode ?? ''}</span>
+                        </span>
+                        <span className={`text-sm font-medium ${expired ? 'text-red-700' : 'text-amber-800'}`}>
+                          {expired ? t(`انتهت ${formatDate(l.expiryDate!)}`, `Expired ${formatDate(l.expiryDate!)}`) : t(`تنتهي ${formatDate(l.expiryDate!)}`, `Expires ${formatDate(l.expiryDate!)}`)}
+                        </span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </Card>
+          )}
           <Card>
             <h2 className="mb-2 text-lg font-bold">{t('مهام اليوم', 'Today')}</h2>
             {s.today.length ? (

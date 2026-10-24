@@ -1,130 +1,183 @@
-import { nameOf, t } from '../../i18n/index'
-import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronLeft, Plus } from 'lucide-react'
+import { AlertTriangle, Boxes, ChevronLeft, Plus, Search } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Segmented } from '../../components/form'
-import { Badge, Button, Card, PageHeader, Stat } from '../../components/ui'
-import { db } from '../../db/db'
-import type { Item, ItemType } from '../../db/types'
-import { isLowStock, stockValue } from '../../domain/inventory'
+import { FormError, Segmented, TextInput } from '../../components/form'
+import { Badge, Button, Card, EmptyState, PageHeader } from '../../components/ui'
+import { serverError } from '../../data/errors'
+import type { ItemType, ItemWithStock } from '../../data/inventory'
+import { expiryState } from '../../domain/fefo'
 import { formatOMR } from '../../domain/money'
 import { formatQty } from '../../domain/quantity'
-import { ar } from '../../i18n/ar'
+import { nameOf, t } from '../../i18n/index'
+import { formatDate } from '../tasks/labels'
 import { ItemFormModal } from './ItemFormModal'
+import { itemTypeLabel } from './labels'
+import { type StockAlerts, useStock } from './useStock'
 
-const TYPE_ORDER: ItemType[] = ['raw', 'packaging', 'finished']
+type Filter = 'all' | ItemType
 
-export function StockBadge({ item }: { item: Item }) {
-  if (!item.active) return <Badge>{t("موقوف", "Inactive")}</Badge>
-  return isLowStock(item) ? <Badge tone="red">{t("منخفض", "Low")}</Badge> : <Badge tone="green">{t("متوفر", "In stock")}</Badge>
-}
-
-export function useItems() {
-  return useLiveQuery(
-    async () => (await db.items.toArray()).sort((a, b) => a.name.localeCompare(b.name, 'ar')),
-    [],
+function AlertsCard({ alerts, items }: { alerts: StockAlerts; items: ItemWithStock[] }) {
+  const byId = new Map(items.map((i) => [i.id, i]))
+  const rows = [
+    ...alerts.expiredLots.map((l) => ({
+      key: l.id,
+      to: `/inventory/${l.itemId}`,
+      tone: 'red' as const,
+      text: t(
+        `${nameOf(byId.get(l.itemId))}: دفعة ${l.lotCode ?? ''} منتهية منذ ${formatDate(l.expiryDate!)} — يُنصح بتسجيلها تالفاً`,
+        `${nameOf(byId.get(l.itemId))}: lot ${l.lotCode ?? ''} expired ${formatDate(l.expiryDate!)} — record as waste`,
+      ),
+    })),
+    ...alerts.expiringLots.map((l) => ({
+      key: l.id,
+      to: `/inventory/${l.itemId}`,
+      tone: 'amber' as const,
+      text: t(
+        `${nameOf(byId.get(l.itemId))}: دفعة ${l.lotCode ?? ''} تنتهي في ${formatDate(l.expiryDate!)}`,
+        `${nameOf(byId.get(l.itemId))}: lot ${l.lotCode ?? ''} expires ${formatDate(l.expiryDate!)}`,
+      ),
+    })),
+    ...alerts.low.map((i) => ({
+      key: i.id,
+      to: `/inventory/${i.id}`,
+      tone: 'amber' as const,
+      text: t(
+        `${nameOf(i)}: الرصيد ${formatQty(i.stock.usableQty, i.unit)} — الحد الأدنى ${formatQty(i.minQty, i.unit)}`,
+        `${nameOf(i)}: ${formatQty(i.stock.usableQty, i.unit)} left — minimum ${formatQty(i.minQty, i.unit)}`,
+      ),
+    })),
+  ]
+  if (!rows.length) return null
+  return (
+    <Card className={alerts.expiredLots.length ? 'border-red-300' : 'border-amber-300'}>
+      <h2 className="mb-2 flex items-center gap-2 text-lg font-bold">
+        <AlertTriangle className={`size-5 ${alerts.expiredLots.length ? 'text-red-700' : 'text-amber-800'}`} />
+        {t('تنبيهات المخزون', 'Stock alerts')}
+      </h2>
+      <ul className="divide-y divide-line">
+        {rows.map((r) => (
+          <li key={r.key}>
+            <Link to={r.to} className="flex min-h-12 items-center gap-3 py-2">
+              <span className={`size-2.5 shrink-0 rounded-full ${r.tone === 'red' ? 'bg-red-600' : 'bg-amber-500'}`} />
+              <span className="flex-1">{r.text}</span>
+              <ChevronLeft className="size-4 text-muted ltr:rotate-180" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Card>
   )
 }
 
 export function InventoryPage() {
-  const items = useItems()
-  const [filter, setFilter] = useState<'all' | 'low'>('all')
-  const [creating, setCreating] = useState(false)
+  const { items, alerts, alertDays, today } = useStock()
+  const [filter, setFilter] = useState<Filter>('all')
+  const [search, setSearch] = useState('')
+  const [adding, setAdding] = useState(false)
 
-  const active = items?.filter((i) => i.active) ?? []
-  const lowCount = active.filter(isLowStock).length
-  const totalValue = active.reduce((s, i) => s + stockValue(i), 0)
-  const visible = items?.filter((i) => filter === 'all' || (i.active && isLowStock(i))) ?? []
+  const all = (items.data ?? []).filter((i) => i.active)
+  const shown = all
+    .filter((i) => filter === 'all' || i.type === filter)
+    .filter((i) => !search.trim() || `${i.name} ${i.nameEn ?? ''}`.toLowerCase().includes(search.trim().toLowerCase()))
+  const value = all.reduce((s, i) => s + i.stock.valueBaisa, 0)
+  const inactive = (items.data ?? []).filter((i) => !i.active)
 
   return (
     <>
       <PageHeader
-        title={ar.nav.inventory}
+        title={t('المخزون', 'Inventory')}
+        subtitle={t(`قيمة المخزون الحالية: ${formatOMR(value)}`, `Current stock value: ${formatOMR(value)}`)}
         actions={
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="size-5" /> {t("صنف جديد", "New item")}
-          </Button>
+          <>
+            <Link to="/suppliers" className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4">
+              {t('الموردون والمشتريات', 'Suppliers & purchases')}
+            </Link>
+            <Button onClick={() => setAdding(true)}>
+              <Plus className="size-5" />
+              {t('صنف جديد', 'New item')}
+            </Button>
+          </>
         }
       />
-      <div className="mb-5 grid grid-cols-2 gap-3">
-        <Stat label={t("قيمة المخزون", "Stock value")} value={formatOMR(totalValue)} />
-        <Stat label={t("أصناف منخفضة", "Low items")} value={lowCount} tone={lowCount ? 'red' : 'green'} />
-      </div>
-      <div className="mb-5 max-w-xs">
-        <Segmented
-          value={filter}
-          onChange={setFilter}
-          options={[
-            { value: 'all', label: t("الكل", "All") },
-            { value: 'low', label: t(`المنخفضة (${lowCount})`, `Low (${lowCount})`) },
-          ]}
-        />
-      </div>
 
       <div className="flex flex-col gap-5">
-        {TYPE_ORDER.map((type) => {
-          const group = visible.filter((i) => i.type === type)
-          if (!group.length) return null
-          return (
-            <Card key={type} className="!p-0 overflow-hidden">
-              <h2 className="px-5 pt-4 pb-2 text-lg font-bold">{ar.itemTypes[type]}</h2>
+        <AlertsCard alerts={alerts} items={all} />
 
-              {/* iPad / desktop: table */}
-              <table className="hidden w-full sm:table">
-                <thead className="text-sm text-stone-500">
-                  <tr className="border-b border-stone-200">
-                    <th className="px-5 py-2 text-start font-medium">{t("الصنف", "Item")}</th>
-                    <th className="py-2 pe-4 text-start font-medium">{t("الرصيد", "Balance")}</th>
-                    <th className="py-2 pe-4 text-start font-medium">{t("الحد الأدنى", "Minimum")}</th>
-                    <th className="py-2 pe-4 text-start font-medium">{t("متوسط التكلفة", "Average cost")}</th>
-                    <th className="py-2 pe-4 text-start font-medium">{t("الحالة", "Status")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {group.map((it) => (
-                    <tr key={it.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50">
-                      <td className="px-5 py-3">
-                        <Link to={`/inventory/${it.id}`} className="font-medium text-brand-800">
-                          {nameOf(it)}
-                        </Link>
-                      </td>
-                      <td className="py-3 pe-4"><span className="num">{formatQty(it.qtyOnHand, it.unit)}</span></td>
-                      <td className="py-3 pe-4"><span className="num">{formatQty(it.minQty, it.unit)}</span></td>
-                      <td className="py-3 pe-4"><span className="num">{formatOMR(Math.round(it.avgCostBaisa))}</span></td>
-                      <td className="py-3 pe-4"><StockBadge item={it} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className="flex flex-col gap-3 md:flex-row">
+          <div className="md:w-[28rem]">
+            <Segmented<Filter>
+              value={filter}
+              onChange={setFilter}
+              options={[
+                { value: 'all', label: t('الكل', 'All') },
+                { value: 'raw', label: t('خام', 'Raw') },
+                { value: 'packaging', label: t('تغليف', 'Packaging') },
+                { value: 'finished', label: t('منتجات', 'Products') },
+              ]}
+            />
+          </div>
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute inset-y-0 start-3 my-auto size-5 text-muted" />
+            <TextInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('بحث', 'Search')} className="ps-10" />
+          </div>
+        </div>
 
-              {/* Phone: rows */}
-              <ul className="sm:hidden">
-                {group.map((it) => (
-                  <li key={it.id} className="border-t border-stone-100">
-                    <Link to={`/inventory/${it.id}`} className="flex items-center gap-3 px-5 py-3">
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="font-medium">{nameOf(it)}</span>
-                          <StockBadge item={it} />
-                        </div>
-                        <div className="mt-1 text-sm text-stone-500">
-                          {t("الرصيد:", "Balance:")} <span className="num">{formatQty(it.qtyOnHand, it.unit)}</span> {t("· الحد الأدنى:", "· Minimum:")}{' '}
-                          <span className="num">{formatQty(it.minQty, it.unit)}</span>
+        {items.error && !items.data && <FormError message={serverError(items.error)} />}
+
+        <Card className="p-0">
+          {!shown.length ? (
+            <EmptyState
+              icon={Boxes}
+              title={items.loading ? t('جارٍ التحميل…', 'Loading…') : t('لا توجد أصناف', 'No items')}
+              description={t('يمكن تحميل بيانات المصنع الوهمي من الإعدادات للتجربة.', 'You can load the demo factory from Settings to try things out.')}
+            />
+          ) : (
+            <ul className="divide-y divide-line">
+              {shown.map((i) => {
+                const exp = expiryState(i.stock.nearestExpiry, today, alertDays)
+                const low = i.minQty > 0 && i.stock.usableQty <= i.minQty
+                return (
+                  <li key={i.id}>
+                    <Link to={i.type === 'finished' ? `/products/${i.id}` : `/inventory/${i.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-brand-50">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium">{nameOf(i)}</div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
+                          <span>{itemTypeLabel(i.type)}</span>
+                          {low && <Badge tone="amber">{t('منخفض', 'Low')}</Badge>}
+                          {i.stock.expiredQty > 0 && <Badge tone="red">{t(`منتهٍ ${formatQty(i.stock.expiredQty)}`, `Expired ${formatQty(i.stock.expiredQty)}`)}</Badge>}
+                          {exp === 'soon' && <Badge tone="amber">{t(`ينتهي ${formatDate(i.stock.nearestExpiry!)}`, `Expires ${formatDate(i.stock.nearestExpiry!)}`)}</Badge>}
                         </div>
                       </div>
-                      <ChevronLeft className="size-5 text-stone-400 ltr:rotate-180" />
+                      <div className="text-end">
+                        <div className="num font-bold">{formatQty(i.stock.usableQty, i.unit)}</div>
+                        <div className="num text-sm text-muted">{formatOMR(i.stock.valueBaisa)}</div>
+                      </div>
+                      <ChevronLeft className="size-5 text-muted ltr:rotate-180" />
                     </Link>
                   </li>
-                ))}
-              </ul>
-            </Card>
-          )
-        })}
-        {items && !visible.length && <p className="text-center text-stone-500">{t("لا توجد أصناف منخفضة 👍", "No low items 👍")}</p>}
+                )
+              })}
+            </ul>
+          )}
+        </Card>
+
+        {inactive.length > 0 && (
+          <details className="text-sm text-muted">
+            <summary className="min-h-11 cursor-pointer py-2">{t(`أصناف موقوفة (${inactive.length})`, `Inactive items (${inactive.length})`)}</summary>
+            <ul className="flex flex-col gap-1 ps-4">
+              {inactive.map((i) => (
+                <li key={i.id}>
+                  <Link to={`/inventory/${i.id}`} className="underline">
+                    {nameOf(i)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </div>
 
-      <ItemFormModal open={creating} onClose={() => setCreating(false)} />
+      {adding && <ItemFormModal onClose={() => setAdding(false)} />}
     </>
   )
 }

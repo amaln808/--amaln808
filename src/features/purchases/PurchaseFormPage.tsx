@@ -1,18 +1,24 @@
-import { nameOf, t } from '../../i18n/index'
-import { useLiveQuery } from 'dexie-react-hooks'
-import { Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { Camera, Plus, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { DateInput, Field, FormError, NumberInput, Segmented, Select, TextInput, Textarea } from '../../components/form'
-import { errorMessage } from '../../components/format'
+import { DateInput, Field, FormError, NumberInput, Segmented, Select, Textarea, TextInput } from '../../components/form'
 import { Button, Card, PageHeader } from '../../components/ui'
-import { db } from '../../db/db'
-import { today } from '../../db/records'
-import type { Item, PaymentMethod } from '../../db/types'
-import { baisaToInput, formatOMR, lineTotal, parseRialToBaisa } from '../../domain/money'
-import { parseQty, UNIT_LABELS } from '../../domain/quantity'
-import { ar } from '../../i18n/ar'
-import { createPurchase } from '../../services/purchases'
+import { serverError } from '../../data/errors'
+import { compressImage, uploadFile } from '../../data/files'
+import {
+  createPurchase,
+  fetchItemsWithStock,
+  fetchSuppliers,
+  INVENTORY_KEY,
+  type PaymentMethod,
+  SUPPLIERS_KEY,
+} from '../../data/inventory'
+import { todayIso } from '../../data/schedule'
+import { useQuery } from '../../data/useQuery'
+import { formatOMR, lineTotal, parseRialToBaisa } from '../../domain/money'
+import { parseQty, unitLabel } from '../../domain/quantity'
+import { nameOf, t } from '../../i18n/index'
+import { METHODS, methodLabel } from '../inventory/labels'
 import { SupplierFormModal } from '../suppliers/SupplierFormModal'
 
 interface LineDraft {
@@ -20,223 +26,263 @@ interface LineDraft {
   itemId: string
   qty: string
   cost: string
+  vat: string
+  lot: string
+  expiry: string
 }
 
 let nextKey = 1
-const emptyLine = (): LineDraft => ({ key: nextKey++, itemId: '', qty: '', cost: '' })
-
+const emptyLine = (): LineDraft => ({ key: nextKey++, itemId: '', qty: '', cost: '', vat: '', lot: '', expiry: '' })
 type PayMode = 'none' | 'full' | 'partial'
 
 export function PurchaseFormPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const suppliers = useLiveQuery(
-    async () => (await db.suppliers.toArray()).filter((s) => s.active).sort((a, b) => a.name.localeCompare(b.name, 'ar')),
-    [],
-  )
-  const items = useLiveQuery(
-    async () =>
-      (await db.items.toArray())
-        .filter((i) => i.active && i.type !== 'finished')
-        .sort((a, b) => a.name.localeCompare(b.name, 'ar')),
-    [],
-  )
-  const itemById = new Map(items?.map((i) => [i.id, i]))
+  const suppliers = useQuery(SUPPLIERS_KEY, fetchSuppliers)
+  const items = useQuery(INVENTORY_KEY, fetchItemsWithStock)
+  const buyable = (items.data ?? []).filter((i) => i.active && i.type !== 'finished')
+  const byId = new Map(buyable.map((i) => [i.id, i]))
 
   const [supplierId, setSupplierId] = useState(params.get('supplier') ?? '')
-  const [date, setDate] = useState(today())
+  const [date, setDate] = useState(todayIso())
   const [invoiceNo, setInvoiceNo] = useState('')
   const [notes, setNotes] = useState('')
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()])
   const [payMode, setPayMode] = useState<PayMode>('none')
-  const [paidAmount, setPaidAmount] = useState('')
+  const [paid, setPaid] = useState('')
   const [method, setMethod] = useState<PaymentMethod>('cash')
+  const [photo, setPhoto] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [addingSupplier, setAddingSupplier] = useState(false)
+  const camera = useRef<HTMLInputElement>(null)
 
-  const updateLine = (key: number, patch: Partial<LineDraft>) =>
-    setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)))
-
-  const pickItem = (key: number, itemId: string) => {
-    const item = itemById.get(itemId)
-    const line = lines.find((l) => l.key === key)
-    updateLine(key, {
-      itemId,
-      // Suggest the current average cost if the user hasn't typed one
-      cost: line?.cost || !item?.avgCostBaisa ? (line?.cost ?? '') : baisaToInput(item.avgCostBaisa),
-    })
-  }
-
-  const parsed = lines.map((l) => ({
-    itemId: l.itemId,
-    qty: parseQty(l.qty),
-    unitCostBaisa: parseRialToBaisa(l.cost),
-  }))
-  const total = parsed.reduce(
-    (s, l) => s + (l.qty != null && l.unitCostBaisa != null ? lineTotal(l.qty, l.unitCostBaisa) : 0),
-    0,
-  )
+  const update = (key: number, patch: Partial<LineDraft>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)))
+  const parsed = lines.map((l) => {
+    const qty = parseQty(l.qty)
+    const cost = parseRialToBaisa(l.cost)
+    const vat = l.vat.trim() ? Number(l.vat.replace('٫', '.')) : 0
+    const net = qty != null && cost != null ? lineTotal(qty, cost) : 0
+    return { qty, cost, vat, net, vatBaisa: Math.round((net * (Number.isFinite(vat) ? vat : 0)) / 100) }
+  })
+  const subtotal = parsed.reduce((s, l) => s + l.net, 0)
+  const vatTotal = parsed.reduce((s, l) => s + l.vatBaisa, 0)
+  const total = subtotal + vatTotal
 
   const save = async () => {
     setError(null)
-    const filled = parsed.filter((l, i) => l.itemId || lines[i].qty || lines[i].cost)
-    if (filled.some((l) => !l.itemId)) return setError(t("اختر الصنف في كل بند", "Choose the item on every line"))
-    if (filled.some((l) => !l.qty)) return setError(t("أدخل كمية صحيحة في كل بند", "Enter a valid quantity on every line"))
-    if (filled.some((l) => l.unitCostBaisa == null)) return setError(t("أدخل سعر الوحدة في كل بند", "Enter the unit price on every line"))
-
-    let paidNow
-    if (payMode === 'full') paidNow = { amountBaisa: total, method }
-    if (payMode === 'partial') {
-      const amt = parseRialToBaisa(paidAmount)
-      if (!amt || amt <= 0) return setError(t("أدخل المبلغ المدفوع", "Enter the amount paid"))
-      if (amt > total) return setError(t("المبلغ المدفوع أكبر من إجمالي الفاتورة", "Amount paid exceeds the invoice total"))
-      paidNow = { amountBaisa: amt, method }
+    if (!supplierId) return setError(t('اختيار المورد مطلوب.', 'Choose the supplier.'))
+    const filled = lines.map((l, i) => ({ l, p: parsed[i] })).filter(({ l }) => l.itemId || l.qty || l.cost)
+    if (!filled.length) return setError(t('يجب إضافة بند واحد على الأقل.', 'Add at least one line.'))
+    for (const { l, p } of filled) {
+      const item = byId.get(l.itemId)
+      if (!item) return setError(t('اختيار الصنف مطلوب في كل بند.', 'Choose the item on every line.'))
+      if (!p.qty) return setError(t(`الكمية غير صحيحة في «${nameOf(item)}».`, `Invalid quantity for «${nameOf(item)}».`))
+      if (p.cost == null) return setError(t(`سعر الوحدة مطلوب في «${nameOf(item)}».`, `Unit price needed for «${nameOf(item)}».`))
+      if (!Number.isFinite(p.vat) || p.vat < 0 || p.vat > 100) return setError(t('نسبة الضريبة غير صحيحة.', 'Invalid VAT rate.'))
+      if (item.requiresExpiry && !l.expiry) return setError(t(`تاريخ الانتهاء مطلوب في «${nameOf(item)}».`, `Expiry date needed for «${nameOf(item)}».`))
     }
-
+    let paidBaisa = 0
+    if (payMode === 'full') paidBaisa = total
+    if (payMode === 'partial') {
+      const a = parseRialToBaisa(paid)
+      if (!a || a <= 0) return setError(t('المبلغ المدفوع غير صحيح.', 'Invalid amount paid.'))
+      if (a > total) return setError(t('المبلغ المدفوع أكبر من الإجمالي.', 'Amount paid exceeds the total.'))
+      paidBaisa = a
+    }
     setSaving(true)
     try {
-      const id = await createPurchase(db, {
+      let attachmentPath: string | null = null
+      if (photo) attachmentPath = await uploadFile('receipts', `purchases/${crypto.randomUUID()}.jpg`, await compressImage(photo))
+      const id = await createPurchase({
         supplierId,
         date,
-        supplierInvoiceNo: invoiceNo,
-        notes,
-        lines: filled.map((l) => ({ itemId: l.itemId, qty: l.qty!, unitCostBaisa: l.unitCostBaisa! })),
-        paidNow,
+        supplierInvoiceNo: invoiceNo.trim() || null,
+        notes: notes.trim() || null,
+        attachmentPath,
+        paidBaisa,
+        method,
+        lines: filled.map(({ l, p }) => ({
+          itemId: l.itemId,
+          qty: p.qty!,
+          unitCostBaisa: p.cost!,
+          vatRate: p.vat,
+          supplierLotCode: l.lot.trim() || null,
+          expiryDate: l.expiry || null,
+        })),
       })
       navigate(`/purchases/${id}`, { replace: true })
     } catch (e) {
-      setError(errorMessage(e))
+      setError(serverError(e))
       setSaving(false)
     }
   }
 
-  const itemOptions = (type: Item['type']) =>
-    items?.filter((i) => i.type === type).map((i) => (
-      <option key={i.id} value={i.id}>{nameOf(i)}</option>
-    ))
+  const options = (type: 'raw' | 'packaging') =>
+    buyable
+      .filter((i) => i.type === type)
+      .map((i) => (
+        <option key={i.id} value={i.id}>
+          {nameOf(i)}
+        </option>
+      ))
 
   return (
     <>
-      <PageHeader title={t("فاتورة شراء جديدة", "New purchase invoice")} back={{ to: '/suppliers', label: ar.nav.suppliers }} />
-
+      <PageHeader title={t('فاتورة شراء جديدة', 'New purchase')} back={{ to: supplierId ? `/suppliers/${supplierId}` : '/suppliers', label: t('الموردون', 'Suppliers') }} />
       <div className="flex flex-col gap-5">
         <Card>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label={t("المورد", "Supplier")} className="sm:col-span-2 lg:col-span-1">
+            <Field label={t('المورد', 'Supplier')}>
               <div className="flex gap-2">
                 <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-                  <option value="">{t("اختر المورد…", "Choose supplier…")}</option>
-                  {suppliers?.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
+                  <option value="">{t('اختيار المورد…', 'Choose supplier…')}</option>
+                  {(suppliers.data ?? [])
+                    .filter((s) => s.active && s.kind !== 'expenses')
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
                 </Select>
-                <Button type="button" variant="secondary" className="!px-3" onClick={() => setAddingSupplier(true)} aria-label={t("مورد جديد", "New supplier")}>
+                <Button variant="secondary" className="!px-3" onClick={() => setAddingSupplier(true)} aria-label={t('مورد جديد', 'New supplier')}>
                   <Plus className="size-5" />
                 </Button>
               </div>
             </Field>
-            <Field label={t("التاريخ", "Date")}>
+            <Field label={t('التاريخ', 'Date')}>
               <DateInput value={date} onChange={(e) => setDate(e.target.value)} />
             </Field>
-            <Field label={t("رقم فاتورة المورد (اختياري)", "Supplier invoice no. (optional)")}>
-              <TextInput value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} />
+            <Field label={t('رقم فاتورة المورد', 'Supplier invoice no.')}>
+              <TextInput dir="ltr" value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} />
             </Field>
           </div>
         </Card>
 
         <Card>
-          <h2 className="mb-3 text-lg font-bold">{t("البنود", "Lines")}</h2>
-          <div className="flex flex-col gap-3">
+          <h2 className="mb-3 text-lg font-bold">{t('البنود', 'Lines')}</h2>
+          <div className="flex flex-col gap-4">
             {lines.map((l, idx) => {
-              const item = itemById.get(l.itemId)
+              const item = byId.get(l.itemId)
               const p = parsed[idx]
-              const lt = p.qty != null && p.unitCostBaisa != null ? lineTotal(p.qty, p.unitCostBaisa) : 0
               return (
-                <div key={l.key} className="grid grid-cols-2 items-end gap-3 rounded-2xl bg-stone-50 p-3 lg:grid-cols-[1fr_8rem_9rem_7rem_auto] lg:bg-transparent lg:p-0">
-                  <Field label={t("الصنف", "Item")} className="col-span-2 lg:col-span-1">
-                    <Select value={l.itemId} onChange={(e) => pickItem(l.key, e.target.value)}>
-                      <option value="">{t("اختر الصنف…", "Choose item…")}</option>
-                      <optgroup label={ar.itemTypes.raw}>{itemOptions('raw')}</optgroup>
-                      <optgroup label={ar.itemTypes.packaging}>{itemOptions('packaging')}</optgroup>
-                    </Select>
-                  </Field>
-                  <Field label={t("الكمية", "Quantity")}>
-                    <NumberInput value={l.qty} onChange={(e) => updateLine(l.key, { qty: e.target.value })} suffix={item ? UNIT_LABELS[item.unit] : undefined} />
-                  </Field>
-                  <Field label={t("سعر الوحدة", "Unit price")}>
-                    <NumberInput value={l.cost} onChange={(e) => updateLine(l.key, { cost: e.target.value })} suffix={t("ر.ع", "OMR")} placeholder="0.000" />
-                  </Field>
-                  <div className="flex min-h-12 items-center">
-                    <span className="num font-bold">{formatOMR(lt)}</span>
+                <div key={l.key} className="rounded-xl border border-line p-3">
+                  <div className="grid grid-cols-2 gap-3 lg:grid-cols-[2fr_1fr_1fr_6rem]">
+                    <Field label={t('الصنف', 'Item')} className="col-span-2 lg:col-span-1">
+                      <Select value={l.itemId} onChange={(e) => update(l.key, { itemId: e.target.value })}>
+                        <option value="">{t('اختيار الصنف…', 'Choose item…')}</option>
+                        <optgroup label={t('مواد خام', 'Raw materials')}>{options('raw')}</optgroup>
+                        <optgroup label={t('تغليف', 'Packaging')}>{options('packaging')}</optgroup>
+                      </Select>
+                    </Field>
+                    <Field label={t('الكمية', 'Quantity')}>
+                      <NumberInput value={l.qty} onChange={(e) => update(l.key, { qty: e.target.value })} suffix={item ? unitLabel(item.unit) : undefined} />
+                    </Field>
+                    <Field label={t('سعر الوحدة (قبل الضريبة)', 'Unit price (before VAT)')}>
+                      <NumberInput value={l.cost} onChange={(e) => update(l.key, { cost: e.target.value })} suffix={t('ر.ع', 'OMR')} placeholder="0.000" />
+                    </Field>
+                    <Field label={t('ضريبة %', 'VAT %')}>
+                      <NumberInput value={l.vat} onChange={(e) => update(l.key, { vat: e.target.value })} placeholder="0" />
+                    </Field>
+                    <Field label={t('رقم دفعة المورد', 'Supplier lot no.')}>
+                      <TextInput dir="ltr" value={l.lot} onChange={(e) => update(l.key, { lot: e.target.value })} />
+                    </Field>
+                    <Field label={item?.requiresExpiry === false ? t('الانتهاء (اختياري)', 'Expiry (optional)') : t('تاريخ الانتهاء', 'Expiry date')}>
+                      <DateInput value={l.expiry} onChange={(e) => update(l.key, { expiry: e.target.value })} />
+                    </Field>
+                    <div className="flex items-end justify-between gap-2 lg:col-span-2">
+                      <span className="num flex min-h-12 items-center font-bold">{formatOMR(p.net + p.vatBaisa)}</span>
+                      <button
+                        type="button"
+                        onClick={() => setLines((ls) => (ls.length > 1 ? ls.filter((x) => x.key !== l.key) : [emptyLine()]))}
+                        className="flex size-12 items-center justify-center rounded-xl text-muted hover:bg-red-50 hover:text-red-700"
+                        aria-label={t('حذف البند', 'Remove line')}
+                      >
+                        <Trash2 className="size-5" />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setLines((ls) => (ls.length > 1 ? ls.filter((x) => x.key !== l.key) : [emptyLine()]))}
-                    className="flex size-12 items-center justify-center justify-self-end rounded-xl text-stone-400 hover:bg-red-50 hover:text-red-600"
-                    aria-label={t("حذف البند", "Remove line")}
-                  >
-                    <Trash2 className="size-5" />
-                  </button>
                 </div>
               )
             })}
           </div>
-          <Button type="button" variant="ghost" className="mt-3" onClick={() => setLines((ls) => [...ls, emptyLine()])}>
-            <Plus className="size-5" /> {t("إضافة بند", "Add line")}
+          <Button variant="ghost" className="mt-3" onClick={() => setLines((ls) => [...ls, emptyLine()])}>
+            <Plus className="size-5" /> {t('إضافة بند', 'Add line')}
           </Button>
-          <div className="mt-4 flex items-center justify-between border-t border-stone-200 pt-4 text-lg">
-            <span className="font-bold">{t("الإجمالي", "Total")}</span>
-            <span className="num font-bold">{formatOMR(total)}</span>
-          </div>
+          <dl className="mt-4 flex flex-col gap-1 border-t border-line pt-4">
+            {vatTotal > 0 && (
+              <>
+                <div className="flex justify-between">
+                  <dt className="text-muted">{t('قبل الضريبة', 'Before VAT')}</dt>
+                  <dd className="num">{formatOMR(subtotal)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted">{t('الضريبة المدفوعة', 'VAT paid')}</dt>
+                  <dd className="num">{formatOMR(vatTotal)}</dd>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between text-lg font-bold">
+              <dt>{t('الإجمالي', 'Total')}</dt>
+              <dd className="num">{formatOMR(total)}</dd>
+            </div>
+          </dl>
         </Card>
 
         <Card>
-          <h2 className="mb-3 text-lg font-bold">{t("الدفع", "Payment")}</h2>
+          <h2 className="mb-3 text-lg font-bold">{t('الدفع', 'Payment')}</h2>
           <div className="flex flex-col gap-4">
-            <Segmented
+            <Segmented<PayMode>
               value={payMode}
               onChange={setPayMode}
               options={[
-                { value: 'none', label: t("آجل (غير مدفوعة)", "On credit (unpaid)") },
-                { value: 'full', label: t("مدفوعة بالكامل", "Paid in full") },
-                { value: 'partial', label: t("دفعة جزئية", "Partial payment") },
+                { value: 'none', label: t('آجل', 'On credit') },
+                { value: 'full', label: t('مدفوعة بالكامل', 'Paid in full') },
+                { value: 'partial', label: t('دفعة جزئية', 'Part paid') },
               ]}
             />
             {payMode !== 'none' && (
               <div className="grid grid-cols-2 gap-3">
                 {payMode === 'partial' && (
-                  <Field label={t("المبلغ المدفوع", "Amount paid")}>
-                    <NumberInput value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} suffix={t("ر.ع", "OMR")} placeholder="0.000" />
+                  <Field label={t('المبلغ المدفوع', 'Amount paid')}>
+                    <NumberInput value={paid} onChange={(e) => setPaid(e.target.value)} suffix={t('ر.ع', 'OMR')} />
                   </Field>
                 )}
-                <Field label={t("طريقة الدفع", "Payment method")}>
+                <Field label={t('طريقة الدفع', 'Method')}>
                   <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-                    {(Object.keys(ar.paymentMethods) as PaymentMethod[]).map((m) => (
-                      <option key={m} value={m}>{ar.paymentMethods[m]}</option>
+                    {METHODS.map((m) => (
+                      <option key={m} value={m}>
+                        {methodLabel(m)}
+                      </option>
                     ))}
                   </Select>
                 </Field>
               </div>
             )}
-            <Field label={t("ملاحظات", "Notes")}>
+            <Field label={t('ملاحظات', 'Notes')}>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
             </Field>
+            <div>
+              <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
+              <Button variant="secondary" onClick={() => camera.current?.click()}>
+                <Camera className="size-5" />
+                {photo ? t('تم إرفاق صورة الفاتورة ✓', 'Invoice photo attached ✓') : t('تصوير فاتورة المورد (اختياري)', 'Photo of the invoice (optional)')}
+              </Button>
+            </div>
           </div>
         </Card>
 
         <FormError message={error} />
         <div className="flex gap-2">
           <Button className="flex-1 sm:flex-none sm:min-w-48" onClick={save} disabled={saving}>
-            {t("حفظ الفاتورة", "Save invoice")}
+            {saving ? t('جارٍ الحفظ…', 'Saving…') : t('حفظ الفاتورة', 'Save purchase')}
           </Button>
           <Button variant="secondary" onClick={() => navigate(-1)}>
-            {t("إلغاء", "Cancel")}
+            {t('إلغاء', 'Cancel')}
           </Button>
         </div>
       </div>
-
-      <SupplierFormModal open={addingSupplier} onClose={() => setAddingSupplier(false)} onSaved={setSupplierId} />
+      {addingSupplier && <SupplierFormModal onClose={(id) => (setAddingSupplier(false), id && setSupplierId(id))} />}
     </>
   )
 }

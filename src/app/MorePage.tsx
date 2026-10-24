@@ -17,7 +17,7 @@ export function MorePage() {
             <Link key={to} to={to} className="flex min-h-14 items-center gap-3 rounded-xl px-3 hover:bg-brand-50">
               <Icon className="size-5 text-brand-800" />
               <span className="flex-1">{label}</span>
-              {phase > 0 && <span className="text-xs text-muted">{t(`المرحلة ${phase}`, `Phase ${phase}`)}</span>}
+              {phase > 0 && <span className="text-xs text-muted">{t(`الجولة ${phase}`, `Round ${phase}`)}</span>}
               <ChevronLeft className="size-5 text-muted ltr:rotate-180" />
             </Link>
           ))}

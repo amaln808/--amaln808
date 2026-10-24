@@ -5,6 +5,18 @@ import { AuthProvider, useAuth } from '../data/auth'
 import { isConfigured } from '../data/client'
 import { startOutboxSync } from '../data/outbox'
 import { AgreementsPage } from '../features/agreements/AgreementsPage'
+import { InventoryPage } from '../features/inventory/InventoryPage'
+import { ItemPage } from '../features/inventory/ItemPage'
+import { BatchFormPage } from '../features/production/BatchFormPage'
+import { BatchPage } from '../features/production/BatchPage'
+import { CalculatorPage } from '../features/production/CalculatorPage'
+import { ProductionPage } from '../features/production/ProductionPage'
+import { ProductPage } from '../features/products/ProductPage'
+import { ProductsPage } from '../features/products/ProductsPage'
+import { PurchaseFormPage } from '../features/purchases/PurchaseFormPage'
+import { PurchasePage } from '../features/purchases/PurchasePage'
+import { SupplierPage } from '../features/suppliers/SupplierPage'
+import { SuppliersPage } from '../features/suppliers/SuppliersPage'
 import { AuditPage } from '../features/audit/AuditPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { TasksPage } from '../features/tasks/TasksPage'
@@ -35,6 +47,18 @@ function makeRouter() {
       element: <Layout />,
       children: [
         ...placeholderRoutes(),
+        { path: '/inventory', element: <InventoryPage /> },
+        { path: '/inventory/:id', element: <ItemPage /> },
+        { path: '/suppliers', element: <SuppliersPage /> },
+        { path: '/suppliers/:id', element: <SupplierPage /> },
+        { path: '/purchases/new', element: <PurchaseFormPage /> },
+        { path: '/purchases/:id', element: <PurchasePage /> },
+        { path: '/products', element: <ProductsPage /> },
+        { path: '/products/:id', element: <ProductPage /> },
+        { path: '/production', element: <ProductionPage /> },
+        { path: '/production/new', element: <BatchFormPage /> },
+        { path: '/production/calculator', element: <CalculatorPage /> },
+        { path: '/production/:id', element: <BatchPage /> },
         { path: '/settings', element: <SettingsPage /> },
         { path: '/audit', element: <AuditPage /> },
         { path: '/tasks', element: <TasksPage /> },
