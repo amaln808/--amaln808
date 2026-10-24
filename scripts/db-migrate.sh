@@ -4,6 +4,11 @@
 # Needs SUPABASE_DB_URL (Supabase → Connect → Session pooler).
 set -euo pipefail
 
+# Preferred: the Supabase access token (no database password involved)
+if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+  exec python3 "$(dirname "$0")/db-migrate-api.py"
+fi
+
 source "$(dirname "$0")/db-url.sh"
 
 if [ -z "${SUPABASE_DB_URL:-}" ]; then
