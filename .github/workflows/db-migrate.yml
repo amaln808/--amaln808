@@ -1,5 +1,5 @@
 # Applies new database changes (supabase/migrations) to Supabase after each merge to main.
-# Requires the repository secret SUPABASE_DB_URL; without it the job does nothing.
+# Requires the repository secret SUPABASE_DB_PASSWORD (or a full SUPABASE_DB_URL); without it the job does nothing.
 name: Apply database changes
 
 on:
@@ -25,4 +25,5 @@ jobs:
       - name: Apply migrations
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: scripts/db-migrate.sh

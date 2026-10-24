@@ -4,8 +4,10 @@
 # Needs SUPABASE_DB_URL (Supabase → Connect → Session pooler).
 set -euo pipefail
 
+source "$(dirname "$0")/db-url.sh"
+
 if [ -z "${SUPABASE_DB_URL:-}" ]; then
-  echo "::warning::SUPABASE_DB_URL secret is not set yet — nothing applied."
+  echo "::warning::SUPABASE_DB_PASSWORD secret is not set yet — nothing applied."
   exit 0
 fi
 
