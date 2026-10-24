@@ -44,10 +44,9 @@
 ## (هـ) ثلاثة أسرار في GitHub (للنسخ الاحتياطي وتحديث قاعدة البيانات تلقائياً)
 افتحي **github.com/amaln808/--amaln808** ثم **Settings** ثم **Secrets and variables** ثم **Actions** ثم **New repository secret**. أضيفي كل سرّ مما يلي ثم اضغطي **Add secret**:
 
-1. **الاسم:** `SUPABASE_DB_URL`
-   - في Supabase اضغطي **Connect** أعلى الصفحة ثم **Connection String**.
-   - اختاري **Method: Session pooler**، وانسخي الرابط الذي يبدأ بـ `postgresql://`.
-   - في GitHub ألصقيه، ثم احذفي `[YOUR-PASSWORD]` مع القوسين، وضعي مكانها كلمة مرور قاعدة البيانات من الملاحظات.
+1. **الاسم:** `SUPABASE_DB_PASSWORD`
+   - **القيمة:** كلمة مرور قاعدة البيانات **وحدها**، كما نسختِها من Supabase (لا رابط ولا تعديل).
+   - إن لم تكن معك: افتحي https://supabase.com/dashboard/project/ekgykjfbodyylyozgqft/database/settings ← **Reset database password** ← **Generate a password** ← زر النسخ ← **Reset password**.
 2. **الاسم:** `SUPABASE_SECRET_KEY`
    - في Supabase: **Project Settings** ثم **API Keys** ثم **Secret keys**.
    - اضغطي العين أو **Reveal**، وانسخي المفتاح الذي يبدأ بـ `sb_secret_`. إن لم يظهر فانسخي **service_role**.

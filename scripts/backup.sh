@@ -4,6 +4,8 @@
 # Needs SUPABASE_DB_URL, SUPABASE_SECRET_KEY, BACKUP_PASSPHRASE and the URL in src/data/supabase.config.json.
 set -euo pipefail
 
+source "$(dirname "$0")/db-url.sh"
+
 for v in SUPABASE_DB_URL SUPABASE_SECRET_KEY BACKUP_PASSPHRASE; do
   if [ -z "${!v:-}" ]; then echo "::error::$v secret is missing"; exit 1; fi
 done

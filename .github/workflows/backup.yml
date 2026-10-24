@@ -1,7 +1,7 @@
 # Weekly encrypted backup of the whole database and every stored file.
 # The file is encrypted with BACKUP_PASSPHRASE (the repository is public) and
 # kept as a downloadable artifact for 90 days (~13 weekly copies).
-# Secrets: SUPABASE_DB_URL, SUPABASE_SECRET_KEY, BACKUP_PASSPHRASE.
+# Secrets: SUPABASE_DB_PASSWORD (or SUPABASE_DB_URL), SUPABASE_SECRET_KEY, BACKUP_PASSPHRASE.
 name: Weekly backup
 
 on:
@@ -21,8 +21,9 @@ jobs:
         id: check
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
-          if [ -z "$SUPABASE_DB_URL" ]; then echo "::warning::Backup secrets not set yet"; echo "skip=1" >> "$GITHUB_OUTPUT"; fi
+          if [ -z "$SUPABASE_DB_URL$SUPABASE_DB_PASSWORD" ]; then echo "::warning::Backup secrets not set yet"; echo "skip=1" >> "$GITHUB_OUTPUT"; fi
       - name: Install PostgreSQL 18 client (pg_dump must be at least the server version)
         if: steps.check.outputs.skip != '1'
         run: |
@@ -42,6 +43,7 @@ jobs:
         if: steps.check.outputs.skip != '1'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: scripts/backup.sh

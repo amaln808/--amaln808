@@ -291,7 +291,7 @@ src/
   - `db-migrate.yml`: عند الدمج في `main` يطبّق ملفات `supabase/migrations` الجديدة (`scripts/db-migrate.sh`، يسجلها في `schema_migrations`). **لا تُعدَّل ملفات ترحيل طُبّقت؛ أي تغيير = ملف جديد مرقّم.**
   - `keepalive.yml`: كل 3 أيام `rpc/ping` ويعيد تفعيل نفسه.
   - `backup.yml`: أسبوعياً (الخميس ليلاً) `scripts/backup.sh` ← ملف مشفّر `zawrda-backup-*.tar.gz.gpg` كـ Artifact لمدة 90 يوماً. الفك: `gpg -d … | tar xz`، والاستعادة: `scripts/db-restore.sh` (اختُبرت ذهاباً وإياباً على Postgres محلي).
-  - الأسرار: `SUPABASE_DB_URL` (Session pooler)، `SUPABASE_SECRET_KEY`، `BACKUP_PASSPHRASE`.
+  - الأسرار: `SUPABASE_DB_PASSWORD` (كلمة مرور قاعدة البيانات وحدها؛ المستخدم والمضيف في `supabase.config.json` ويُبنى الرابط في `scripts/db-url.sh` مع ترميز أي رمز)، `SUPABASE_SECRET_KEY`، `BACKUP_PASSPHRASE`. (`SUPABASE_DB_URL` كاملاً ما زال مقبولاً بديلاً.)
 - **الأمان في قاعدة البيانات:** أول حساب = المالكة (`bootstrap_owner`)؛ `is_member()` في كل سياسة؛ `anon` بلا أي صلاحية سوى `ping()`؛ سجل التعديلات بـ Trigger لا يُعدَّل.
 
 ### 9.1 الهوية البصرية (مهارة frontend-design)
