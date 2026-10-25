@@ -8,7 +8,7 @@ import { completeTask, type Task, uncompleteTask } from '../../data/schedule'
 import { buildIcs, openIcs } from '../../domain/ics'
 import { type DueItem, nextOccurrence, type Recurrence, upcoming } from '../../domain/schedule'
 import { t } from '../../i18n/index'
-import { categoryLabel, daysLeftLabel, describeRule, formatDate, kindLabel, recurrenceLabel } from './labels'
+import { daysLeftLabel, describeRule, formatDate, kindLabel, recurrenceLabel } from './labels'
 import { emptyTask, type TaskDraft, TaskFormModal } from './TaskFormModal'
 import { useStock } from '../inventory/useStock'
 import { useSchedule } from './useSchedule'
@@ -18,11 +18,11 @@ type Tab = 'today' | Recurrence
 /** Ready-made factory tasks offered when the list is empty. */
 function suggestions(today: string): TaskDraft[] {
   return [
-    emptyTask({ title: t('تعقيم أدوات وخط التعبئة', 'Sanitise tools and filling line'), recurrence: 'daily', category: 'cleaning', startDate: today }),
-    emptyTask({ title: t('جرد المخزون', 'Stock count'), recurrence: 'weekly', category: 'inventory', startDate: today }),
-    emptyTask({ title: t('معايرة الميزان', 'Calibrate the scale'), recurrence: 'monthly', category: 'quality', startDate: today }),
-    emptyTask({ title: t('فحص مختبر لعينة من الإنتاج', 'Lab test of a production sample'), recurrence: 'monthly', intervalN: 3, category: 'quality', startDate: today }),
-    emptyTask({ title: t('تجديد السجل التجاري', 'Renew commercial registration'), recurrence: 'yearly', category: 'admin', startDate: today }),
+    emptyTask({ title: t('تعقيم أدوات وخط التعبئة', 'Sanitise tools and filling line'), recurrence: 'daily', category: t('نظافة وتعقيم', 'Cleaning'), startDate: today }),
+    emptyTask({ title: t('جرد المخزون', 'Stock count'), recurrence: 'weekly', category: t('مخزون', 'Inventory'), startDate: today }),
+    emptyTask({ title: t('معايرة الميزان', 'Calibrate the scale'), recurrence: 'monthly', category: t('جودة', 'Quality'), startDate: today }),
+    emptyTask({ title: t('فحص مختبر لعينة من الإنتاج', 'Lab test of a production sample'), recurrence: 'monthly', intervalN: 3, category: t('جودة', 'Quality'), startDate: today }),
+    emptyTask({ title: t('تجديد السجل التجاري', 'Renew commercial registration'), recurrence: 'yearly', category: t('إدارية وتراخيص', 'Admin & licences'), startDate: today }),
   ]
 }
 
@@ -252,7 +252,7 @@ export function TasksPage() {
                         <div className="min-w-0 flex-1">
                           <div className="font-medium">{task.title}</div>
                           <div className="text-sm text-muted">
-                            {describeRule(task)} · {categoryLabel(task.category)}
+                            {[describeRule(task), task.category].filter(Boolean).join(' · ')}
                           </div>
                         </div>
                         <div className="text-end text-sm">
