@@ -61,6 +61,11 @@ describe('purchases', () => {
     expect((await q(`select 1 from suppliers union all select 1 from items`)).length).toBe(0)
   })
 
+  it('accepts any text, or none, as the task type', async () => {
+    await q(`insert into tasks (title, category, start_date) values ('تنظيف الخزان', 'نظافة الخزانات', current_date), ('مهمة', null, current_date)`)
+    expect((await q<{ category: string | null }>(`select category from tasks order by category nulls last`)).map((r) => r.category)).toEqual(['نظافة الخزانات', null])
+  })
+
   it('accepts any text as the supplier type', async () => {
     await q(`insert into suppliers (name, kind) values ('شركة الكهرباء', 'كهرباء')`)
     expect((await one<{ kind: string }>(`select kind from suppliers`)).kind).toBe('كهرباء')

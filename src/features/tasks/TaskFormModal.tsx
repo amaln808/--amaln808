@@ -1,15 +1,17 @@
 import { CalendarPlus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { DateInput, Field, FormError, NumberInput, Segmented, Select, Textarea, TextInput } from '../../components/form'
+import { Combobox, DateInput, Field, FormError, NumberInput, Segmented, Select, Textarea, TextInput } from '../../components/form'
 import { Modal } from '../../components/Modal'
 import { Button } from '../../components/ui'
 import { useConfirm } from '../../components/useConfirm'
 import { serverError } from '../../data/errors'
-import { type Agreement, deleteTask, saveTask, type Task, type TaskCategory, todayIso } from '../../data/schedule'
+import { type Agreement, deleteTask, saveTask, type Task, todayIso } from '../../data/schedule'
 import { buildIcs, openIcs } from '../../domain/ics'
 import type { Recurrence } from '../../domain/schedule'
+import { distinctNames } from '../../domain/text'
 import { t } from '../../i18n/index'
-import { CATEGORIES, categoryLabel, describeRule, recurrenceLabel, weekdayNames } from './labels'
+import { describeRule, recurrenceLabel, weekdayNames } from './labels'
+import { useSchedule } from './useSchedule'
 
 export type TaskDraft = Omit<Task, 'id'> & { id?: string }
 
@@ -17,7 +19,7 @@ export function emptyTask(over: Partial<TaskDraft> = {}): TaskDraft {
   return {
     title: '',
     notes: null,
-    category: 'general',
+    category: null,
     recurrence: 'once',
     intervalN: 1,
     startDate: todayIso(),
@@ -55,6 +57,8 @@ export function TaskFormModal({
   onClose: () => void
 }) {
   const [f, setF] = useState<TaskDraft>(initial)
+  const schedule = useSchedule()
+  const categories = distinctNames((schedule.data?.tasks ?? []).map((x) => x.category)).map((label) => ({ label }))
   const [interval, setIntervalText] = useState(String(initial.intervalN))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -69,7 +73,7 @@ export function TaskFormModal({
     setBusy(true)
     setError(null)
     try {
-      await saveTask({ ...f, title: f.title.trim(), intervalN: n, notes: f.notes?.trim() || null, endDate: f.recurrence === 'once' ? null : f.endDate })
+      await saveTask({ ...f, title: f.title.trim(), intervalN: n, notes: f.notes?.trim() || null, category: f.category?.trim() || null, endDate: f.recurrence === 'once' ? null : f.endDate })
       onClose()
     } catch (e) {
       setError(serverError(e))
@@ -173,13 +177,7 @@ export function TaskFormModal({
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t('النوع', 'Category')}>
-            <Select value={f.category} onChange={(e) => set('category', e.target.value as TaskCategory)}>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {categoryLabel(c)}
-                </option>
-              ))}
-            </Select>
+            <Combobox value={f.category ?? ''} onChange={(v) => set('category', v)} options={categories} />
           </Field>
           {agreements.length > 0 && (
             <Field label={t('مرتبطة باتفاقية (اختياري)', 'Linked agreement (optional)')}>

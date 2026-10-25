@@ -1,4 +1,4 @@
-import type { AgreementKind, Task, TaskCategory } from '../../data/schedule'
+import type { AgreementKind, Task } from '../../data/schedule'
 import { durationParts, type Recurrence } from '../../domain/schedule'
 import { t } from '../../i18n/index'
 
@@ -11,21 +11,6 @@ export function recurrenceLabel(r: Recurrence): string {
     yearly: t('سنوية', 'Yearly'),
   }[r]
 }
-
-export function categoryLabel(c: TaskCategory): string {
-  return {
-    general: t('عام', 'General'),
-    production: t('إنتاج', 'Production'),
-    quality: t('جودة', 'Quality'),
-    cleaning: t('نظافة وتعقيم', 'Cleaning'),
-    inventory: t('مخزون', 'Inventory'),
-    maintenance: t('صيانة', 'Maintenance'),
-    finance: t('مالية', 'Finance'),
-    admin: t('إدارية وتراخيص', 'Admin & licences'),
-  }[c]
-}
-
-export const CATEGORIES: TaskCategory[] = ['general', 'production', 'quality', 'cleaning', 'inventory', 'maintenance', 'finance', 'admin']
 
 export function kindLabel(k: AgreementKind): string {
   return {

@@ -5,14 +5,14 @@ import { db } from './client'
 import { enqueue, flushOutbox, registerOutboxHandler } from './outbox'
 import { invalidate } from './useQuery'
 
-export type TaskCategory = 'general' | 'production' | 'quality' | 'cleaning' | 'inventory' | 'maintenance' | 'finance' | 'admin'
 export type AgreementKind = 'product_permit' | 'contract' | 'license' | 'other'
 
 export interface Task {
   id: string
   title: string
   notes: string | null
-  category: TaskCategory
+  /** Free text the owner types (e.g. «نظافة», «صيانة»); earlier values are offered as choices. */
+  category: string | null
   recurrence: Recurrence
   intervalN: number
   startDate: string
