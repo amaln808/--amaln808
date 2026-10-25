@@ -62,9 +62,9 @@ export function BatchPage() {
         }
         back={{ to: '/production', label: t('التصنيع', 'Production') }}
         actions={
-          <Button variant="ghost" className="text-red-700" onClick={remove}>
+          <Button variant="secondary" className="!border-red-300 !text-red-700" onClick={remove}>
             <Trash2 className="size-4" />
-            {t('حذف', 'Delete')}
+            {t('حذف الدفعة', 'Delete batch')}
           </Button>
         }
       />

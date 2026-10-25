@@ -13,6 +13,7 @@ import { formatOMR } from '../../domain/money'
 import { formatQty, formatSignedQty } from '../../domain/quantity'
 import { nameOf, t } from '../../i18n/index'
 import { formatDate } from '../tasks/labels'
+import { DeleteItemButton } from './DeleteItemButton'
 import { ItemFormModal } from './ItemFormModal'
 import { itemTypeLabel, movementLabel, sourceLabel } from './labels'
 import { AddStockModal, AdjustLotModal } from './LotModals'
@@ -30,6 +31,7 @@ export function ItemPage() {
   const q = useQuery(`item:${id}`, () => fetchItemDetail(id))
   const alertDays = useSettingsQuery().data?.expiryAlertDays ?? 30
   const [editing, setEditing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [adjusting, setAdjusting] = useState<Lot | null>(null)
   const [showEmpty, setShowEmpty] = useState(false)
@@ -69,11 +71,15 @@ export function ItemPage() {
               <Plus className="size-4" />
               {t('إضافة رصيد', 'Add stock')}
             </Button>
+            {item.active && (
+              <DeleteItemButton id={item.id} name={nameOf(item)} backTo={item.type === 'finished' ? '/products' : '/inventory'} onError={setError} />
+            )}
           </>
         }
       />
 
       <div className="flex flex-col gap-5">
+        <FormError message={error} />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Stat label={t('المتاح للاستخدام', 'Usable')} value={formatQty(usable.reduce((s, l) => s + l.qtyRemaining, 0), item.unit)} />
           <Stat label={t('القيمة', 'Value')} value={formatOMR(Math.round(value))} />
