@@ -16,5 +16,7 @@ export function serverError(e: unknown): string {
   if (/payload too large|exceeded the maximum allowed size/i.test(err?.message ?? ''))
     return t('الملف أكبر من المسموح.', 'The file is too large.')
   console.error(e)
-  return t('حدث خطأ غير متوقع، حاول مرة أخرى.', 'Something went wrong, please try again.')
+  // The code helps diagnose a screenshot of the message
+  const code = err?.code ? ` (${err.code})` : ''
+  return t(`حدث خطأ غير متوقع، حاول مرة أخرى.${code}`, `Something went wrong, please try again.${code}`)
 }

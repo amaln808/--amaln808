@@ -204,3 +204,23 @@ describe('tasks and agreements', () => {
     expect(await queryAs(db, stranger, 'select * from tasks')).toEqual([])
   })
 })
+
+describe('pg-safeupdate', () => {
+  // Supabase refuses UPDATE/DELETE without WHERE on API calls, even inside functions
+  it('has no UPDATE or DELETE without a WHERE clause in any function', async () => {
+    const fns = await queryAs<{ proname: string; prosrc: string }>(
+      db,
+      { role: 'admin' },
+      `select proname, prosrc from pg_proc where pronamespace = 'public'::regnamespace`,
+    )
+    const bad = fns.flatMap(({ proname, prosrc }) =>
+      prosrc
+        .replace(/--[^\n]*/g, '')
+        .split(';')
+        .map((s) => s.trim().replace(/\s+/g, ' '))
+        .filter((s) => /^(update|delete from)\b/i.test(s) && !/\bwhere\b/i.test(s))
+        .map((s) => `${proname}: ${s}`),
+    )
+    expect(bad).toEqual([])
+  })
+})
