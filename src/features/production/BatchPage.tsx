@@ -12,6 +12,8 @@ import { formatOMR } from '../../domain/money'
 import { formatQty } from '../../domain/quantity'
 import { nameOf, t } from '../../i18n/index'
 import { QC_TONE, qcLabel, sourceLabel } from '../inventory/labels'
+import { BatchQualityCard } from '../quality/BatchQualityCard'
+import { BatchSalesCard } from '../sales/BatchSalesCard'
 import { formatDate } from '../tasks/labels'
 
 export function BatchPage() {
@@ -82,6 +84,8 @@ export function BatchPage() {
             {t(`المواد ${formatOMR(batch.materialsCostBaisa)} + إضافية ${formatOMR(batch.extraCostBaisa)}`, `Materials ${formatOMR(batch.materialsCostBaisa)} + extra ${formatOMR(batch.extraCostBaisa)}`)}
           </span>
         </Card>
+        <BatchQualityCard batchId={batch.id} batchNo={batch.batchNo} />
+        {batch.outputLotId && <BatchSalesCard lotId={batch.outputLotId} />}
         <Card className="p-0">
           <h2 className="px-5 pt-4 text-lg font-bold">{t('المواد المستهلكة ودفعاتها', 'Materials used and their lots')}</h2>
           <p className="px-5 pb-2 text-sm text-muted">{t('للتتبع: من أي دفعة مورد جاءت كل مادة.', 'Traceability: which supplier lot each material came from.')}</p>

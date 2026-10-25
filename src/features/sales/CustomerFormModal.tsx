@@ -1,96 +1,102 @@
-import { t } from '../../i18n/index'
-import { useEffect, useState } from 'react'
-import { Field, FormError, Select, TextInput, Textarea } from '../../components/form'
-import { errorMessage } from '../../components/format'
+import { useState } from 'react'
+import { Combobox, Field, FormError, Textarea, TextInput } from '../../components/form'
 import { Modal } from '../../components/Modal'
 import { Button } from '../../components/ui'
-import { db } from '../../db/db'
-import type { Customer, CustomerType } from '../../db/types'
-import { ar } from '../../i18n/ar'
-import { saveCustomer } from '../../services/customers'
+import { serverError } from '../../data/errors'
+import { type Channel, type Customer, saveCustomer } from '../../data/sales'
+import { t } from '../../i18n/index'
 
+/** New or edited customer. The channel is typed or picked; a new name becomes a new channel with its own price list. */
 export function CustomerFormModal({
-  open,
-  onClose,
   customer,
-  onSaved,
+  channels,
+  onClose,
 }: {
-  open: boolean
-  onClose: () => void
   customer?: Customer
-  onSaved?: (id: string) => void
+  channels: Channel[]
+  onClose: (savedId?: string) => void
 }) {
-  const [form, setForm] = useState({ name: '', phone: '', type: 'individual' as CustomerType, address: '', notes: '' })
+  const [f, setF] = useState({
+    name: customer?.name ?? '',
+    phone: customer?.phone ?? '',
+    email: customer?.email ?? '',
+    address: customer?.address ?? '',
+    vatNo: customer?.vatNo ?? '',
+    notes: customer?.notes ?? '',
+    channelName: channels.find((c) => c.id === customer?.channelId)?.name ?? '',
+  })
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }))
+  const clean = (v: string) => v.trim() || null
 
-  useEffect(() => {
-    if (!open) return
-    setForm({
-      name: customer?.name ?? '',
-      phone: customer?.phone ?? '',
-      type: customer?.type ?? 'individual',
-      address: customer?.address ?? '',
-      notes: customer?.notes ?? '',
-    })
+  const save = async (active = customer?.active ?? true) => {
+    if (!f.name.trim()) return setError(t('اسم العميل مطلوب.', 'The customer name is required.'))
+    setBusy(true)
     setError(null)
-  }, [open, customer])
-
-  const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [k]: e.target.value })
-
-  const save = async () => {
     try {
-      const id = await saveCustomer(
-        db,
-        {
-          name: form.name,
-          phone: form.phone.trim(),
-          type: form.type,
-          address: form.address.trim() || undefined,
-          notes: form.notes.trim() || undefined,
-          active: customer?.active ?? true,
-        },
-        customer?.id,
-      )
-      onSaved?.(id)
-      onClose()
+      const id = await saveCustomer({
+        id: customer?.id,
+        name: f.name.trim(),
+        phone: clean(f.phone),
+        email: clean(f.email),
+        address: clean(f.address),
+        vatNo: clean(f.vatNo),
+        notes: clean(f.notes),
+        channelName: f.channelName,
+        active,
+      })
+      onClose(id)
     } catch (e) {
-      setError(errorMessage(e))
+      setError(serverError(e))
+      setBusy(false)
     }
   }
 
   return (
     <Modal
-      open={open}
-      onClose={onClose}
-      title={customer ? t("تعديل العميل", "Edit customer") : t("عميل جديد", "New customer")}
+      open
+      onClose={() => onClose()}
+      title={customer ? t('تعديل العميل', 'Edit customer') : t('عميل جديد', 'New customer')}
       footer={
         <>
-          <Button className="flex-1" onClick={save}>{t("حفظ", "Save")}</Button>
-          <Button variant="secondary" className="flex-1" onClick={onClose}>{t("إلغاء", "Cancel")}</Button>
+          <Button onClick={() => save()} disabled={busy} className="flex-1">
+            {busy ? t('جارٍ الحفظ…', 'Saving…') : t('حفظ', 'Save')}
+          </Button>
+          {customer && (
+            <Button variant="secondary" disabled={busy} onClick={() => save(!customer.active)}>
+              {customer.active ? t('إيقاف', 'Deactivate') : t('إعادة تفعيل', 'Reactivate')}
+            </Button>
+          )}
         </>
       }
     >
-      <div className="flex flex-col gap-4">
-        <Field label={t("اسم العميل", "Customer name")}>
-          <TextInput value={form.name} onChange={set('name')} autoFocus />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={t('الاسم', 'Name')} className="sm:col-span-2">
+          <TextInput value={f.name} onChange={set('name')} />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label={t("الهاتف", "Phone")} hint={t("يُستخدم لإرسال الفواتير عبر واتساب", "Used to send invoices via WhatsApp")}>
-            <TextInput value={form.phone} onChange={set('phone')} inputMode="tel" dir="ltr" className="rtl:text-right" />
-          </Field>
-          <Field label={t("النوع", "Type")}>
-            <Select value={form.type} onChange={set('type')}>
-              {(Object.keys(ar.customerTypes) as CustomerType[]).map((t) => (
-                <option key={t} value={t}>{ar.customerTypes[t]}</option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-        <Field label={t("العنوان", "Address")}>
-          <TextInput value={form.address} onChange={set('address')} />
+        <Field label={t('الهاتف', 'Phone')} hint={t('لإرسال الفواتير عبر واتساب', 'To send invoices by WhatsApp')}>
+          <TextInput dir="ltr" inputMode="tel" value={f.phone} onChange={set('phone')} />
         </Field>
-        <Field label={t("ملاحظات", "Notes")}>
-          <Textarea value={form.notes} onChange={set('notes')} />
+        <Field label={t('القناة', 'Channel')} hint={t('تحدد قائمة الأسعار؛ اكتب قناة جديدة أو اختر', 'Sets the price list; type a new one or pick')}>
+          <Combobox
+            value={f.channelName}
+            onChange={(v) => setF((x) => ({ ...x, channelName: v }))}
+            options={channels.filter((c) => c.active).map((c) => ({ label: c.name }))}
+            newLabel={t('جديدة', 'New')}
+          />
+        </Field>
+        <Field label={t('البريد الإلكتروني', 'Email')}>
+          <TextInput dir="ltr" type="email" value={f.email} onChange={set('email')} />
+        </Field>
+        <Field label={t('الرقم الضريبي', 'VAT number')}>
+          <TextInput dir="ltr" value={f.vatNo} onChange={set('vatNo')} />
+        </Field>
+        <Field label={t('العنوان', 'Address')} className="sm:col-span-2">
+          <TextInput value={f.address} onChange={set('address')} />
+        </Field>
+        <Field label={t('ملاحظات', 'Notes')} className="sm:col-span-2">
+          <Textarea value={f.notes} onChange={set('notes')} />
         </Field>
         <FormError message={error} />
       </div>

@@ -20,6 +20,12 @@ import { SuppliersPage } from '../features/suppliers/SuppliersPage'
 import { AuditPage } from '../features/audit/AuditPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { TasksPage } from '../features/tasks/TasksPage'
+import { QualityPage } from '../features/quality/QualityPage'
+import { CustomerPage } from '../features/sales/CustomerPage'
+import { InvoicePage } from '../features/sales/InvoicePage'
+import { QuotePage } from '../features/sales/QuotePage'
+import { SaleFormPage } from '../features/sales/SaleFormPage'
+import { SalesPage } from '../features/sales/SalesPage'
 import { getLang } from '../i18n/index'
 import { LoadingScreen, LoginScreen, NotMemberScreen, SetupScreen } from './Gate'
 import { onLanguageChange } from './language'
@@ -59,6 +65,14 @@ function makeRouter() {
         { path: '/production/new', element: <BatchFormPage /> },
         { path: '/production/calculator', element: <CalculatorPage /> },
         { path: '/production/:id', element: <BatchPage /> },
+        { path: '/quality', element: <QualityPage /> },
+        { path: '/sales', element: <SalesPage /> },
+        { path: '/customers/:id', element: <CustomerPage /> },
+        { path: '/quotes/new', element: <SaleFormPage key="quote-new" kind="quote" /> },
+        { path: '/quotes/:id/edit', element: <SaleFormPage key="quote-edit" kind="quote" /> },
+        { path: '/quotes/:id', element: <QuotePage /> },
+        { path: '/invoices/new', element: <SaleFormPage key="invoice-new" kind="invoice" /> },
+        { path: '/invoices/:id', element: <InvoicePage /> },
         { path: '/settings', element: <SettingsPage /> },
         { path: '/audit', element: <AuditPage /> },
         { path: '/tasks', element: <TasksPage /> },

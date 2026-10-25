@@ -35,8 +35,8 @@ export function DemoDataCard() {
     <Card>
       <SectionTitle
         note={t(
-          'للتجربة قبل البدء الفعلي: موردون وأصناف بتواريخ انتهاء مختلفة ومنتجان ووصفات ومشتريات ودفعتا إنتاج. يُمسح كل شيء بعدها بزر واحد.',
-          'Practice before going live: suppliers, items with different expiry dates, two products, recipes, purchases and two batches. Wipe it all with one button afterwards.',
+          'للتجربة قبل البدء الفعلي: موردون وأصناف بتواريخ انتهاء مختلفة ومنتجان ووصفات ومشتريات ودفعتا إنتاج وفحوص جودة وعملاء وأسعار وعروض وفواتير. يُمسح كل شيء بعدها بزر واحد.',
+          'Practice before going live: suppliers, items with different expiry dates, two products, recipes, purchases, two batches, quality checks, customers, prices, quotations and invoices. Wipe it all with one button afterwards.',
         )}
       >
         {t('البيانات التجريبية', 'Demo data')}
