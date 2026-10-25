@@ -154,6 +154,28 @@ describe('FEFO', () => {
 })
 
 describe('production', () => {
+  it('a batch can use a typed new material and stock a shortage in the same save', async () => {
+    const dates = await item('raw', 'معجون تمر', 'kg', true)
+    const product = await item('finished', 'مكعبات', 'piece')
+    await rpc('add_opening_stock', dates, 2, 1000, '2026-10-01', '2027-01-01', null, null)
+    const id = await rpc('create_production_batch_named', JSON.stringify({
+      product_id: product, production_date: '2026-10-10', qty_produced: 10,
+      consumption: [
+        // 2 kg in stock, 5 needed: the missing 3 kg are added at 1.200
+        { item_id: dates, qty: 5, add_stock: { qty: 3, unit_cost_baisa: 1200, expiry_date: '2027-02-01' } },
+        { item_name: 'كاكاو', item_type: 'raw', unit: 'kg', qty: 1, add_stock: { qty: 1, unit_cost_baisa: 4000, expiry_date: '2027-03-01' } },
+      ],
+    }))
+    const b = await one<{ materials_cost_baisa: string }>(`select materials_cost_baisa::text from production_batches where id = $1`, [id])
+    expect(b.materials_cost_baisa).toBe('9600') // 2×1000 + 3×1200 + 1×4000
+    expect((await q(`select 1 from items where name = 'كاكاو'`)).length).toBe(1)
+    // Without the extra stock the same batch is refused and nothing is left behind
+    await expect(rpc('create_production_batch_named', JSON.stringify({
+      product_id: product, production_date: '2026-10-11', qty_produced: 1, consumption: [{ item_name: 'فانيلا', item_type: 'raw', qty: 1 }],
+    }))).rejects.toThrow(/غير كافية/)
+    expect((await q(`select 1 from items where name = 'فانيلا'`)).length).toBe(0)
+  })
+
   it('saves a recipe from typed material names, creating only the new ones', async () => {
     const dates = await item('raw', 'معجون تمر', 'kg', true)
     const product = await item('finished', 'مكعبات تمر', 'piece')
