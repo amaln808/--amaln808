@@ -182,7 +182,8 @@ export interface Supplier {
   email: string | null
   address: string | null
   vatNo: string | null
-  kind: 'materials' | 'expenses' | 'both'
+  /** Free text the owner types (e.g. «تمور», «عبوات»); earlier values are offered as choices. */
+  kind: string | null
   notes: string | null
   active: boolean
 }
@@ -321,7 +322,11 @@ export async function deleteSupplierPayment(id: string) {
 // ── Purchases ───────────────────────────────────────────────────────
 
 export interface PurchaseLineInput {
-  itemId: string
+  /** An existing item, or null with itemName/itemType/unit to create it in the same save. */
+  itemId: string | null
+  itemName?: string
+  itemType?: 'raw' | 'packaging'
+  unit?: Unit
   qty: number
   unitCostBaisa: number
   vatRate: number
@@ -330,7 +335,9 @@ export interface PurchaseLineInput {
 }
 
 export async function createPurchase(p: {
-  supplierId: string
+  /** An existing supplier, or null with supplierName to create it in the same save. */
+  supplierId: string | null
+  supplierName: string
   date: string
   supplierInvoiceNo: string | null
   notes: string | null
@@ -339,9 +346,10 @@ export async function createPurchase(p: {
   method: PaymentMethod
   lines: PurchaseLineInput[]
 }): Promise<string> {
-  const { data, error } = await db().rpc('create_purchase', {
+  const { data, error } = await db().rpc('create_purchase_named', {
     p: {
       supplier_id: p.supplierId,
+      supplier_name: p.supplierName,
       date: p.date,
       supplier_invoice_no: p.supplierInvoiceNo,
       notes: p.notes,
@@ -357,6 +365,19 @@ export async function createPurchase(p: {
   invalidate('supplier:')
   invalidate('item:')
   return data as string
+}
+
+/** Last unit price (before VAT) and VAT rate paid per item, to prefill the next purchase. */
+export async function fetchLastPurchasePrices(): Promise<Map<string, { unitCostBaisa: number; vatRate: number }>> {
+  const { data, error } = await db()
+    .from('purchase_lines')
+    .select('item_id, unit_cost_baisa, vat_rate')
+    .order('created_at', { ascending: false })
+    .limit(1000)
+  if (error) throw error
+  const m = new Map<string, { unitCostBaisa: number; vatRate: number }>()
+  for (const r of data) if (!m.has(r.item_id)) m.set(r.item_id, { unitCostBaisa: Number(r.unit_cost_baisa), vatRate: Number(r.vat_rate) })
+  return m
 }
 
 export async function fetchPurchaseDetail(id: string) {

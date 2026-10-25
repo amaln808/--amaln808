@@ -1,16 +1,19 @@
 import { useState } from 'react'
-import { Field, FormError, Select, Textarea, TextInput } from '../../components/form'
+import { Combobox, Field, FormError, Textarea, TextInput } from '../../components/form'
 import { Modal } from '../../components/Modal'
 import { Button } from '../../components/ui'
 import { serverError } from '../../data/errors'
-import { saveSupplier, type Supplier, type SupplierDraft } from '../../data/inventory'
+import { fetchSuppliers, saveSupplier, type Supplier, type SupplierDraft, SUPPLIERS_KEY } from '../../data/inventory'
+import { useQuery } from '../../data/useQuery'
+import { distinctNames } from '../../domain/text'
 import { t } from '../../i18n/index'
-import { supplierKindLabel } from '../inventory/labels'
 
 export function SupplierFormModal({ supplier, onClose }: { supplier?: Supplier; onClose: (savedId?: string) => void }) {
   const [f, setF] = useState<SupplierDraft>(
-    supplier ?? { name: '', phone: null, email: null, address: null, vatNo: null, kind: 'materials', notes: null, active: true },
+    supplier ?? { name: '', phone: null, email: null, address: null, vatNo: null, kind: null, notes: null, active: true },
   )
+  const suppliers = useQuery(SUPPLIERS_KEY, fetchSuppliers)
+  const kinds = distinctNames((suppliers.data ?? []).map((s) => s.kind)).map((label) => ({ label }))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const set = <K extends keyof SupplierDraft>(k: K, v: SupplierDraft[K]) => setF((x) => ({ ...x, [k]: v }))
@@ -28,6 +31,7 @@ export function SupplierFormModal({ supplier, onClose }: { supplier?: Supplier; 
         email: clean(f.email),
         address: clean(f.address),
         vatNo: clean(f.vatNo),
+        kind: clean(f.kind),
         notes: clean(f.notes),
         ...patch,
       })
@@ -63,14 +67,8 @@ export function SupplierFormModal({ supplier, onClose }: { supplier?: Supplier; 
         <Field label={t('الهاتف', 'Phone')}>
           <TextInput dir="ltr" inputMode="tel" value={f.phone ?? ''} onChange={(e) => set('phone', e.target.value)} />
         </Field>
-        <Field label={t('النوع', 'Kind')}>
-          <Select value={f.kind} onChange={(e) => set('kind', e.target.value as Supplier['kind'])}>
-            {(['materials', 'expenses', 'both'] as const).map((k) => (
-              <option key={k} value={k}>
-                {supplierKindLabel(k)}
-              </option>
-            ))}
-          </Select>
+        <Field label={t('النوع', 'Kind')} hint={kinds.length ? undefined : t('اكتب النوع، مثل: تمور أو عبوات أو كهرباء', 'Type it, e.g. dates, jars, electricity')}>
+          <Combobox value={f.kind ?? ''} onChange={(v) => set('kind', v)} options={kinds} />
         </Field>
         <Field label={t('البريد الإلكتروني', 'Email')}>
           <TextInput dir="ltr" type="email" value={f.email ?? ''} onChange={(e) => set('email', e.target.value)} />

@@ -1,13 +1,14 @@
 import { Camera, Plus, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { DateInput, Field, FormError, NumberInput, Segmented, Select, Textarea, TextInput } from '../../components/form'
+import { Combobox, DateInput, Field, FormError, NumberInput, Segmented, Select, Textarea, TextInput } from '../../components/form'
 import { Button, Card, PageHeader } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { compressImage, uploadFile } from '../../data/files'
 import {
   createPurchase,
   fetchItemsWithStock,
+  fetchLastPurchasePrices,
   fetchSuppliers,
   INVENTORY_KEY,
   type PaymentMethod,
@@ -15,15 +16,18 @@ import {
 } from '../../data/inventory'
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
-import { formatOMR, lineTotal, parseRialToBaisa } from '../../domain/money'
-import { parseQty, unitLabel } from '../../domain/quantity'
+import { baisaToInput, formatOMR, lineTotal, parseRialToBaisa } from '../../domain/money'
+import { parseQty, type Unit, unitLabel } from '../../domain/quantity'
+import { nameKey } from '../../domain/text'
 import { nameOf, t } from '../../i18n/index'
 import { METHODS, methodLabel } from '../inventory/labels'
-import { SupplierFormModal } from '../suppliers/SupplierFormModal'
 
 interface LineDraft {
   key: number
-  itemId: string
+  /** Typed or picked; an unknown name becomes a new item with newType/newUnit. */
+  itemName: string
+  newType: 'raw' | 'packaging'
+  newUnit: Unit
   qty: string
   cost: string
   vat: string
@@ -32,7 +36,7 @@ interface LineDraft {
 }
 
 let nextKey = 1
-const emptyLine = (): LineDraft => ({ key: nextKey++, itemId: '', qty: '', cost: '', vat: '', lot: '', expiry: '' })
+const emptyLine = (): LineDraft => ({ key: nextKey++, itemName: '', newType: 'raw', newUnit: 'kg', qty: '', cost: '', vat: '', lot: '', expiry: '' })
 type PayMode = 'none' | 'full' | 'partial'
 
 export function PurchaseFormPage() {
@@ -41,9 +45,18 @@ export function PurchaseFormPage() {
   const suppliers = useQuery(SUPPLIERS_KEY, fetchSuppliers)
   const items = useQuery(INVENTORY_KEY, fetchItemsWithStock)
   const buyable = (items.data ?? []).filter((i) => i.active && i.type !== 'finished')
-  const byId = new Map(buyable.map((i) => [i.id, i]))
+  const itemByName = new Map(buyable.map((i) => [nameKey(nameOf(i)), i]))
+  const lastPrices = useQuery(`${INVENTORY_KEY}:last-prices`, fetchLastPurchasePrices)
+  const activeSuppliers = (suppliers.data ?? []).filter((s) => s.active)
 
-  const [supplierId, setSupplierId] = useState(params.get('supplier') ?? '')
+  const [supplierName, setSupplierName] = useState('')
+  const supplier = activeSuppliers.find((s) => nameKey(s.name) === nameKey(supplierName))
+  // Opened from a supplier's page: start with that supplier
+  const fromSupplier = params.get('supplier')
+  useEffect(() => {
+    const s = suppliers.data?.find((x) => x.id === fromSupplier)
+    if (s) setSupplierName((v) => v || s.name)
+  }, [suppliers.data, fromSupplier])
   const [date, setDate] = useState(todayIso())
   const [invoiceNo, setInvoiceNo] = useState('')
   const [notes, setNotes] = useState('')
@@ -54,10 +67,17 @@ export function PurchaseFormPage() {
   const [photo, setPhoto] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [addingSupplier, setAddingSupplier] = useState(false)
   const camera = useRef<HTMLInputElement>(null)
 
   const update = (key: number, patch: Partial<LineDraft>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)))
+  // Picking a known item fills in the price and VAT paid last time, if still empty
+  const pickItem = (l: LineDraft, name: string) => {
+    const last = itemByName.get(nameKey(name)) && lastPrices.data?.get(itemByName.get(nameKey(name))!.id)
+    update(l.key, {
+      itemName: name,
+      ...(last && !l.cost.trim() ? { cost: baisaToInput(last.unitCostBaisa), vat: last.vatRate ? String(last.vatRate) : '' } : {}),
+    })
+  }
   const parsed = lines.map((l) => {
     const qty = parseQty(l.qty)
     const cost = parseRialToBaisa(l.cost)
@@ -71,16 +91,18 @@ export function PurchaseFormPage() {
 
   const save = async () => {
     setError(null)
-    if (!supplierId) return setError(t('اختيار المورد مطلوب.', 'Choose the supplier.'))
-    const filled = lines.map((l, i) => ({ l, p: parsed[i] })).filter(({ l }) => l.itemId || l.qty || l.cost)
+    if (!supplierName.trim()) return setError(t('اسم المورد مطلوب.', 'The supplier name is required.'))
+    const filled = lines.map((l, i) => ({ l, p: parsed[i] })).filter(({ l }) => l.itemName.trim() || l.qty || l.cost)
     if (!filled.length) return setError(t('يجب إضافة بند واحد على الأقل.', 'Add at least one line.'))
     for (const { l, p } of filled) {
-      const item = byId.get(l.itemId)
-      if (!item) return setError(t('اختيار الصنف مطلوب في كل بند.', 'Choose the item on every line.'))
-      if (!p.qty) return setError(t(`الكمية غير صحيحة في «${nameOf(item)}».`, `Invalid quantity for «${nameOf(item)}».`))
-      if (p.cost == null) return setError(t(`سعر الوحدة مطلوب في «${nameOf(item)}».`, `Unit price needed for «${nameOf(item)}».`))
+      const name = l.itemName.trim()
+      if (!name) return setError(t('اسم الصنف مطلوب في كل بند.', 'Every line needs an item.'))
+      const item = itemByName.get(nameKey(name))
+      if (!p.qty) return setError(t(`الكمية غير صحيحة في «${name}».`, `Invalid quantity for «${name}».`))
+      if (p.cost == null) return setError(t(`سعر الوحدة مطلوب في «${name}».`, `Unit price needed for «${name}».`))
       if (!Number.isFinite(p.vat) || p.vat < 0 || p.vat > 100) return setError(t('نسبة الضريبة غير صحيحة.', 'Invalid VAT rate.'))
-      if (item.requiresExpiry && !l.expiry) return setError(t(`تاريخ الانتهاء مطلوب في «${nameOf(item)}».`, `Expiry date needed for «${nameOf(item)}».`))
+      if ((item ? item.requiresExpiry : l.newType === 'raw') && !l.expiry)
+        return setError(t(`تاريخ الانتهاء مطلوب في «${name}».`, `Expiry date needed for «${name}».`))
     }
     let paidBaisa = 0
     if (payMode === 'full') paidBaisa = total
@@ -95,21 +117,26 @@ export function PurchaseFormPage() {
       let attachmentPath: string | null = null
       if (photo) attachmentPath = await uploadFile('receipts', `purchases/${crypto.randomUUID()}.jpg`, await compressImage(photo))
       const id = await createPurchase({
-        supplierId,
+        supplierId: supplier?.id ?? null,
+        supplierName: supplierName.trim(),
         date,
         supplierInvoiceNo: invoiceNo.trim() || null,
         notes: notes.trim() || null,
         attachmentPath,
         paidBaisa,
         method,
-        lines: filled.map(({ l, p }) => ({
-          itemId: l.itemId,
-          qty: p.qty!,
-          unitCostBaisa: p.cost!,
-          vatRate: p.vat,
-          supplierLotCode: l.lot.trim() || null,
-          expiryDate: l.expiry || null,
-        })),
+        lines: filled.map(({ l, p }) => {
+          const item = itemByName.get(nameKey(l.itemName))
+          return {
+            itemId: item?.id ?? null,
+            ...(item ? {} : { itemName: l.itemName.trim(), itemType: l.newType, unit: l.newUnit }),
+            qty: p.qty!,
+            unitCostBaisa: p.cost!,
+            vatRate: p.vat,
+            supplierLotCode: l.lot.trim() || null,
+            expiryDate: l.expiry || null,
+          }
+        }),
       })
       navigate(`/purchases/${id}`, { replace: true })
     } catch (e) {
@@ -118,37 +145,24 @@ export function PurchaseFormPage() {
     }
   }
 
-  const options = (type: 'raw' | 'packaging') =>
-    buyable
-      .filter((i) => i.type === type)
-      .map((i) => (
-        <option key={i.id} value={i.id}>
-          {nameOf(i)}
-        </option>
-      ))
+  const supplierOptions = activeSuppliers.map((s) => ({ label: s.name, hint: s.kind ?? undefined }))
+  const itemOptions = buyable.map((i) => ({
+    label: nameOf(i),
+    hint: `${i.type === 'raw' ? t('خام', 'Raw') : t('تغليف', 'Packaging')} · ${unitLabel(i.unit)}`,
+  }))
+  const newBadge = t('جديد', 'New')
 
   return (
     <>
-      <PageHeader title={t('فاتورة شراء جديدة', 'New purchase')} back={{ to: supplierId ? `/suppliers/${supplierId}` : '/suppliers', label: t('الموردون', 'Suppliers') }} />
+      <PageHeader title={t('فاتورة شراء جديدة', 'New purchase')} back={{ to: fromSupplier ? `/suppliers/${fromSupplier}` : '/suppliers', label: t('الموردون', 'Suppliers') }} />
       <div className="flex flex-col gap-5">
         <Card>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label={t('المورد', 'Supplier')}>
-              <div className="flex gap-2">
-                <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-                  <option value="">{t('اختيار المورد…', 'Choose supplier…')}</option>
-                  {(suppliers.data ?? [])
-                    .filter((s) => s.active && s.kind !== 'expenses')
-                    .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                </Select>
-                <Button variant="secondary" className="!px-3" onClick={() => setAddingSupplier(true)} aria-label={t('مورد جديد', 'New supplier')}>
-                  <Plus className="size-5" />
-                </Button>
-              </div>
+            <Field
+              label={t('المورد', 'Supplier')}
+              hint={supplierName.trim() && !supplier ? t('مورد جديد، سيُضاف عند الحفظ', 'New supplier, added on save') : undefined}
+            >
+              <Combobox value={supplierName} onChange={setSupplierName} options={supplierOptions} newLabel={newBadge} />
             </Field>
             <Field label={t('التاريخ', 'Date')}>
               <DateInput value={date} onChange={(e) => setDate(e.target.value)} />
@@ -163,20 +177,18 @@ export function PurchaseFormPage() {
           <h2 className="mb-3 text-lg font-bold">{t('البنود', 'Lines')}</h2>
           <div className="flex flex-col gap-4">
             {lines.map((l, idx) => {
-              const item = byId.get(l.itemId)
+              const item = itemByName.get(nameKey(l.itemName))
+              const isNew = !item && !!l.itemName.trim()
+              const unit = item?.unit ?? (isNew ? l.newUnit : undefined)
               const p = parsed[idx]
               return (
                 <div key={l.key} className="rounded-xl border border-line p-3">
                   <div className="grid grid-cols-2 gap-3 lg:grid-cols-[2fr_1fr_1fr_6rem]">
                     <Field label={t('الصنف', 'Item')} className="col-span-2 lg:col-span-1">
-                      <Select value={l.itemId} onChange={(e) => update(l.key, { itemId: e.target.value })}>
-                        <option value="">{t('اختيار الصنف…', 'Choose item…')}</option>
-                        <optgroup label={t('مواد خام', 'Raw materials')}>{options('raw')}</optgroup>
-                        <optgroup label={t('تغليف', 'Packaging')}>{options('packaging')}</optgroup>
-                      </Select>
+                      <Combobox value={l.itemName} onChange={(v) => pickItem(l, v)} options={itemOptions} newLabel={newBadge} />
                     </Field>
                     <Field label={t('الكمية', 'Quantity')}>
-                      <NumberInput value={l.qty} onChange={(e) => update(l.key, { qty: e.target.value })} suffix={item ? unitLabel(item.unit) : undefined} />
+                      <NumberInput value={l.qty} onChange={(e) => update(l.key, { qty: e.target.value })} suffix={unit ? unitLabel(unit) : undefined} />
                     </Field>
                     <Field label={t('سعر الوحدة (قبل الضريبة)', 'Unit price (before VAT)')}>
                       <NumberInput value={l.cost} onChange={(e) => update(l.key, { cost: e.target.value })} suffix={t('ر.ع', 'OMR')} placeholder="0.000" />
@@ -187,7 +199,29 @@ export function PurchaseFormPage() {
                     <Field label={t('رقم دفعة المورد', 'Supplier lot no.')}>
                       <TextInput dir="ltr" value={l.lot} onChange={(e) => update(l.key, { lot: e.target.value })} />
                     </Field>
-                    <Field label={item?.requiresExpiry === false ? t('الانتهاء (اختياري)', 'Expiry (optional)') : t('تاريخ الانتهاء', 'Expiry date')}>
+                    {isNew && (
+                      <div className="col-span-2 grid grid-cols-2 gap-3 rounded-xl bg-brand-50 p-3 lg:col-span-4">
+                        <p className="col-span-2 text-sm text-brand-800">
+                          {t('صنف جديد، سيُضاف إلى المخزون عند الحفظ:', 'New item, added to inventory on save:')}
+                        </p>
+                        <Segmented<'raw' | 'packaging'>
+                          value={l.newType}
+                          onChange={(v) => update(l.key, { newType: v, newUnit: v === 'raw' ? 'kg' : 'piece' })}
+                          options={[
+                            { value: 'raw', label: t('مادة خام', 'Raw material') },
+                            { value: 'packaging', label: t('تغليف', 'Packaging') },
+                          ]}
+                        />
+                        <Select value={l.newUnit} onChange={(e) => update(l.key, { newUnit: e.target.value as Unit })} aria-label={t('الوحدة', 'Unit')}>
+                          {(['kg', 'g', 'piece', 'liter'] as const).map((u) => (
+                            <option key={u} value={u}>
+                              {unitLabel(u)}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                    )}
+                    <Field label={(item ? !item.requiresExpiry : l.newType === 'packaging') ? t('الانتهاء (اختياري)', 'Expiry (optional)') : t('تاريخ الانتهاء', 'Expiry date')}>
                       <DateInput value={l.expiry} onChange={(e) => update(l.key, { expiry: e.target.value })} />
                     </Field>
                     <div className="flex items-end justify-between gap-2 lg:col-span-2">
@@ -282,7 +316,6 @@ export function PurchaseFormPage() {
           </Button>
         </div>
       </div>
-      {addingSupplier && <SupplierFormModal onClose={(id) => (setAddingSupplier(false), id && setSupplierId(id))} />}
     </>
   )
 }

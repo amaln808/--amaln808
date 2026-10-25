@@ -1,4 +1,4 @@
-import type { ItemType, Lot, PaymentMethod, Supplier } from '../../data/inventory'
+import type { ItemType, Lot, PaymentMethod } from '../../data/inventory'
 import { t } from '../../i18n/index'
 
 export function itemTypeLabel(type: ItemType): string {
@@ -36,10 +36,6 @@ export function methodLabel(m: PaymentMethod): string {
 }
 
 export const METHODS: PaymentMethod[] = ['cash', 'bank', 'card', 'other']
-
-export function supplierKindLabel(k: Supplier['kind']): string {
-  return { materials: t('مواد وتغليف', 'Materials'), expenses: t('مصروفات وخدمات', 'Expenses & services'), both: t('كلاهما', 'Both') }[k]
-}
 
 export function sourceLabel(s: Lot['sourceType']): string {
   return {
