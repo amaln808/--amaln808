@@ -33,37 +33,22 @@ beforeEach(async () => {
   }
 }, 60_000)
 
-const batches = () => q<{ id: string; batch_no: string }>(`select id, batch_no from production_batches order by batch_no`)
 const lotStatus = () =>
   q<{ lot_code: string; qc_status: string; qty_remaining: string }>(
     `select lot_code, qc_status, qty_remaining::text from stock_lots where item_id = $1 order by lot_code`, [product])
-const pass = async (batchId: string, result = 'pass', date = '2026-10-06') =>
-  rpc('record_quality_check', json({ batch_id: batchId, check_date: date, result, moisture_pct: 14, aflatoxin_ppb: 2 }))
 const invoice = (lines: unknown[], extra: Record<string, unknown> = {}) =>
   rpc('create_invoice', json({ customer_id: customer, date: '2026-10-10', lines, ...extra }))
 
-describe('quality release', () => {
-  it('a batch waits for the lab; its latest check decides whether it can be sold', async () => {
-    const [b1] = await batches()
-    expect((await lotStatus()).map((l) => l.qc_status)).toEqual(['pending', 'pending'])
-    await pass(b1.id, 'fail', '2026-10-02')
-    expect((await lotStatus())[0].qc_status).toBe('failed')
-    const recheck = await pass(b1.id, 'pass', '2026-10-04')
-    expect((await lotStatus())[0].qc_status).toBe('passed')
-    await rpc('delete_quality_check', recheck)
-    expect((await lotStatus())[0].qc_status).toBe('failed')
+describe('production batches', () => {
+  it('can be sold as soon as they are made (no quality step)', async () => {
+    expect((await lotStatus()).map((l) => l.qc_status)).toEqual(['passed', 'passed'])
+    await invoice([{ product_id: product, qty: 5, unit_price_baisa: 1500 }])
+    expect((await lotStatus())[0].qty_remaining).toBe('25.000')
   })
 })
 
 describe('invoices', () => {
-  it('refuses to sell lots not released by quality', async () => {
-    await expect(invoice([{ product_id: product, qty: 5, unit_price_baisa: 1500 }])).rejects.toThrow(/الكمية غير كافية/)
-    expect((await q(`select 1 from sales_invoices`)).length).toBe(0)
-  })
-
   it('refuses to sell without a valid sale permit', async () => {
-    const [b1] = await batches()
-    await pass(b1.id)
     await q(`update agreements set end_date = '2026-10-09' where product_id = $1`, [product])
     await expect(invoice([{ product_id: product, qty: 5, unit_price_baisa: 1500 }])).rejects.toThrow(/تصريح بيع/)
     // The failed attempt does not use up an invoice number
@@ -71,9 +56,6 @@ describe('invoices', () => {
   })
 
   it('sells nearest expiry first, across lots, and records each lot with its cost', async () => {
-    const [b1, b2] = await batches()
-    await pass(b1.id)
-    await pass(b2.id)
     const id = await invoice([{ product_id: product, qty: 40, unit_price_baisa: 1500 }])
     const inv = await one<{ invoice_no: string; total_baisa: string; due_date: string }>(
       `select invoice_no, total_baisa::text, due_date::text from sales_invoices where id = $1`, [id])
@@ -88,9 +70,6 @@ describe('invoices', () => {
   })
 
   it('shares the discount across lines and charges VAT per line once registered', async () => {
-    const [b1, b2] = await batches()
-    await pass(b1.id)
-    await pass(b2.id)
     await q(`update settings set vat_registered = true, default_vat_rate = 5 where id = 1`)
     const id = await invoice(
       [{ product_id: product, qty: 10, unit_price_baisa: 1000 }, { product_id: product, qty: 5, unit_price_baisa: 2000 }],
@@ -106,15 +85,11 @@ describe('invoices', () => {
   })
 
   it('charges 0% while not VAT-registered, whatever the line says', async () => {
-    const [b1] = await batches()
-    await pass(b1.id)
     const id = await invoice([{ product_id: product, qty: 2, unit_price_baisa: 1500, vat_rate: 5 }])
     expect((await one<{ vat_baisa: string }>(`select vat_baisa::text from sales_invoices where id = $1`, [id])).vat_baisa).toBe('0')
   })
 
   it('voiding returns stock to the same lots, keeps the number, and frees linked payments', async () => {
-    const [b1] = await batches()
-    await pass(b1.id)
     const id = await invoice([{ product_id: product, qty: 12, unit_price_baisa: 1500 }])
     await q(`insert into customer_payments (customer_id, invoice_id, date, amount_baisa) values ($1, $2, '2026-10-11', 5000)`, [customer, id])
     await rpc('void_invoice', id, 'خطأ في الكمية')
@@ -129,7 +104,7 @@ describe('invoices', () => {
 })
 
 describe('quotations', () => {
-  it('can quote an unreleased product; accepting turns it into a numbered invoice', async () => {
+  it('can quote a product without a permit; accepting turns it into a numbered invoice', async () => {
     const qid = await rpc('save_quotation', json({
       customer_name: 'عميل جديد', date: '2026-10-08',
       lines: [{ product_id: product, qty: 20, unit_price_baisa: 1500 }],
@@ -139,12 +114,12 @@ describe('quotations', () => {
     expect(qt).toEqual({ quote_no: 'Q-0001', status: 'draft', valid_until: '2026-10-22', total_baisa: '30000' })
     expect((await q(`select 1 from customers where name = 'عميل جديد'`)).length).toBe(1)
 
-    // Not released yet: accepting is refused and nothing changes
-    await expect(rpc('accept_quotation', qid, '2026-10-10')).rejects.toThrow(/الكمية غير كافية/)
+    // No valid permit on that date: accepting is refused and nothing changes
+    await q(`update agreements set start_date = '2026-10-11' where product_id = $1`, [product])
+    await expect(rpc('accept_quotation', qid, '2026-10-10')).rejects.toThrow(/تصريح بيع/)
     expect((await one<{ status: string }>(`select status from quotations where id = $1`, [qid])).status).toBe('draft')
+    await q(`update agreements set start_date = '2026-01-01' where product_id = $1`, [product])
 
-    const [b1] = await batches()
-    await pass(b1.id)
     const inv = await rpc('accept_quotation', qid, '2026-10-10')
     const after = await one<{ status: string; invoice_id: string }>(`select status, invoice_id from quotations where id = $1`, [qid])
     expect(after).toEqual({ status: 'accepted', invoice_id: inv })
@@ -163,7 +138,7 @@ describe('demo factory', () => {
     expect(invoices).toEqual([{ invoice_no: 'INV-0001', total_baisa: '44000' }, { invoice_no: 'INV-0002', total_baisa: '24500' }])
     expect((await q(`select 1 from quotations`)).length).toBe(2)
     expect((await q<{ qc_status: string }>(`select l.qc_status from stock_lots l join items i on i.id = l.item_id where i.type = 'finished' order by l.lot_code`))
-      .map((r) => r.qc_status)).toEqual(['passed', 'pending'])
+      .map((r) => r.qc_status)).toEqual(['passed', 'passed'])
     await rpc('reset_all_data')
     expect((await q(`select 1 from sales_invoices union all select 1 from customers`)).length).toBe(0)
   })

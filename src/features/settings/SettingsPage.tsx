@@ -14,7 +14,7 @@ import { t } from '../../i18n/index'
 import { BrandingCard } from './BrandingCard'
 import { DemoDataCard } from './DemoDataCard'
 import { PendingChangesCard } from './PendingChangesCard'
-import { SalesQualityCard } from './SalesQualityCard'
+import { SalesSettingsCard } from './SalesSettingsCard'
 import { SectionTitle } from './SectionTitle'
 import { UsageCard } from './UsageCard'
 
@@ -245,7 +245,7 @@ export function SettingsPage() {
           <PendingChangesCard />
           <CompanyCard settings={s} />
           <BrandingCard settings={s} />
-          <SalesQualityCard settings={s} />
+          <SalesSettingsCard settings={s} />
           <AppearanceCard settings={s} />
           <UsageCard />
           <DemoDataCard />

@@ -83,7 +83,7 @@ export const AR = {
 type Labels = typeof AR
 
 export const EN: Labels = {
-  appName: 'Zawrda',
+  appName: 'Zuwardah',
   nav: {
     dashboard: 'Dashboard',
     inventory: 'Inventory',

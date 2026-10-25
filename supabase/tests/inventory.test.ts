@@ -201,11 +201,11 @@ describe('production', () => {
     })
     const out = await one<{ qty_remaining: string; unit_cost_baisa: string; qc_status: string; lot_code: string }>(
       `select qty_remaining, unit_cost_baisa, qc_status, lot_code from stock_lots where item_id = $1`, [product])
-    expect(out).toEqual({ qty_remaining: '10.000', unit_cost_baisa: '515.000', qc_status: 'pending', lot_code: 'B-0001' })
+    expect(out).toEqual({ qty_remaining: '10.000', unit_cost_baisa: '515.000', qc_status: 'passed', lot_code: 'B-0001' })
     expect((await q('select * from batch_consumption where batch_id = $1', [id])).length).toBe(3)
 
-    // Not released by quality yet → cannot be sold
-    await expect(rpc('stock_out', product, 1, '2026-10-11', 'sale', 'manual', null, null, true)).rejects.toThrow(/غير كافية/)
+    // No quality step: the batch can be sold straight away
+    await rpc('stock_out', product, 1, '2026-10-11', 'sale', 'manual', null, null, true)
   })
 
   it('refuses when materials are short and leaves nothing behind', async () => {

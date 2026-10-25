@@ -14,7 +14,7 @@ import { formatQty, formatSignedQty } from '../../domain/quantity'
 import { nameOf, t } from '../../i18n/index'
 import { formatDate } from '../tasks/labels'
 import { ItemFormModal } from './ItemFormModal'
-import { itemTypeLabel, movementLabel, QC_TONE, qcLabel, sourceLabel } from './labels'
+import { itemTypeLabel, movementLabel, sourceLabel } from './labels'
 import { AddStockModal, AdjustLotModal } from './LotModals'
 
 /** Where a movement came from, as a link when there is a page for it. */
@@ -115,7 +115,6 @@ export function ItemPage() {
                         <span className="text-muted">{t('بلا انتهاء', 'No expiry')}</span>
                       )}
                     </div>
-                    {item.type === 'finished' && <Badge tone={QC_TONE[l.qcStatus]}>{qcLabel(l.qcStatus)}</Badge>}
                     <div className="text-end">
                       <div className="num font-bold">
                         {formatQty(l.qtyRemaining)} / {formatQty(l.qtyIn, item.unit)}

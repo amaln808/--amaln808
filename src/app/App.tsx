@@ -7,6 +7,7 @@ import { startOutboxSync } from '../data/outbox'
 import { AgreementsPage } from '../features/agreements/AgreementsPage'
 import { InventoryPage } from '../features/inventory/InventoryPage'
 import { ItemPage } from '../features/inventory/ItemPage'
+import { ReadyStockPage } from '../features/inventory/ReadyStockPage'
 import { BatchFormPage } from '../features/production/BatchFormPage'
 import { BatchPage } from '../features/production/BatchPage'
 import { CalculatorPage } from '../features/production/CalculatorPage'
@@ -20,7 +21,6 @@ import { SuppliersPage } from '../features/suppliers/SuppliersPage'
 import { AuditPage } from '../features/audit/AuditPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { TasksPage } from '../features/tasks/TasksPage'
-import { QualityPage } from '../features/quality/QualityPage'
 import { CustomerPage } from '../features/sales/CustomerPage'
 import { InvoicePage } from '../features/sales/InvoicePage'
 import { QuotePage } from '../features/sales/QuotePage'
@@ -53,6 +53,7 @@ function makeRouter() {
       element: <Layout />,
       children: [
         ...placeholderRoutes(),
+        { path: '/ready', element: <ReadyStockPage /> },
         { path: '/inventory', element: <InventoryPage /> },
         { path: '/inventory/:id', element: <ItemPage /> },
         { path: '/suppliers', element: <SuppliersPage /> },
@@ -65,7 +66,6 @@ function makeRouter() {
         { path: '/production/new', element: <BatchFormPage /> },
         { path: '/production/calculator', element: <CalculatorPage /> },
         { path: '/production/:id', element: <BatchPage /> },
-        { path: '/quality', element: <QualityPage /> },
         { path: '/sales', element: <SalesPage /> },
         { path: '/customers/:id', element: <CustomerPage /> },
         { path: '/quotes/new', element: <SaleFormPage key="quote-new" kind="quote" /> },

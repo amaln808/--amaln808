@@ -2,7 +2,7 @@ import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { FormError } from '../../components/form'
-import { Badge, Button, Card, PageHeader, Stat } from '../../components/ui'
+import { Button, Card, PageHeader, Stat } from '../../components/ui'
 import { useConfirm } from '../../components/useConfirm'
 import { serverError } from '../../data/errors'
 import { fetchItemsWithStock, INVENTORY_KEY } from '../../data/inventory'
@@ -11,8 +11,7 @@ import { useQuery } from '../../data/useQuery'
 import { formatOMR } from '../../domain/money'
 import { formatQty } from '../../domain/quantity'
 import { nameOf, t } from '../../i18n/index'
-import { QC_TONE, qcLabel, sourceLabel } from '../inventory/labels'
-import { BatchQualityCard } from '../quality/BatchQualityCard'
+import { sourceLabel } from '../inventory/labels'
 import { BatchSalesCard } from '../sales/BatchSalesCard'
 import { formatDate } from '../tasks/labels'
 
@@ -78,13 +77,11 @@ export function BatchPage() {
           <Stat label={t('المتبقي في المخزون', 'Left in stock')} value={formatQty(outputLot?.qtyRemaining ?? 0)} />
         </div>
         <Card className="flex flex-wrap items-center gap-3">
-          {outputLot && <Badge tone={QC_TONE[outputLot.qcStatus]}>{qcLabel(outputLot.qcStatus)}</Badge>}
           {batch.expiryDate && <span>{t(`تنتهي ${formatDate(batch.expiryDate)}`, `Expires ${formatDate(batch.expiryDate)}`)}</span>}
           <span className="text-sm text-muted">
             {t(`المواد ${formatOMR(batch.materialsCostBaisa)} + إضافية ${formatOMR(batch.extraCostBaisa)}`, `Materials ${formatOMR(batch.materialsCostBaisa)} + extra ${formatOMR(batch.extraCostBaisa)}`)}
           </span>
         </Card>
-        <BatchQualityCard batchId={batch.id} batchNo={batch.batchNo} />
         {batch.outputLotId && <BatchSalesCard lotId={batch.outputLotId} />}
         <Card className="p-0">
           <h2 className="px-5 pt-4 text-lg font-bold">{t('المواد المستهلكة ودفعاتها', 'Materials used and their lots')}</h2>

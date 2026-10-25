@@ -116,7 +116,7 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
       ? company.vatRegistered
         ? L('فاتورة ضريبية', 'TAX INVOICE')
         : L('فاتورة', 'INVOICE')
-      : L('عرض سعر', 'QUOTATION')
+      : L('عرض أسعار', 'QUOTATION')
     const addressAr = company.address ? `${company.address} — سلطنة عُمان` : 'سلطنة عُمان'
     const addressEn = company.addressEn ? `${company.addressEn}, Sultanate of Oman` : 'Sultanate of Oman'
     const filler = Math.max(0, MIN_ROWS[lang] - doc.lines.length)
@@ -169,7 +169,10 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
 
         {/* Header: logo + document title */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24 }}>
-          <img src={images.logo} alt="" style={{ height: 110, width: 'auto', objectFit: 'contain' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <img src={images.logo} alt="" style={{ height: 100, width: 'auto', objectFit: 'contain' }} />
+            <div dir="ltr" style={{ fontSize: 13, fontWeight: 600, letterSpacing: 3, color: BRAND }}>Zuwardah</div>
+          </div>
           <div style={{ textAlign: end, minWidth: 260 }}>
             <div style={{ fontSize: 38, fontWeight: 700, color: BRAND, letterSpacing: lang === 'en' ? 2 : 0, lineHeight: 1.1 }}>{title}</div>
             <div style={{ marginTop: 6, fontSize: 18, fontWeight: 700 }}>{num(doc.number)}</div>

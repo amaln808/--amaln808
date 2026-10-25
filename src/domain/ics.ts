@@ -61,7 +61,7 @@ function trigger(minutes: number): string {
 
 export function buildIcs(events: IcsEvent[], now = new Date()): string {
   const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Zawrda//Factory//AR', 'CALSCALE:GREGORIAN']
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Zuwardah//Factory//AR', 'CALSCALE:GREGORIAN']
   for (const e of events) {
     const d = e.date.replace(/-/g, '')
     lines.push('BEGIN:VEVENT', `UID:${e.uid}@zawrda`, `DTSTAMP:${stamp}`)

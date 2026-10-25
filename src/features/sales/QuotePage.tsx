@@ -34,7 +34,7 @@ export function QuotePage() {
   if (!q.data) {
     return (
       <>
-        <PageHeader title={t('عرض سعر', 'Quotation')} back={{ to: '/sales?tab=quotes', label: t('المبيعات', 'Sales') }} />
+        <PageHeader title={t('عرض أسعار', 'Quotation')} back={{ to: '/sales?tab=quotes', label: t('المبيعات', 'Sales') }} />
         {q.error ? <FormError message={serverError(q.error)} /> : <p className="text-muted">{t('جارٍ التحميل…', 'Loading…')}</p>}
       </>
     )
@@ -65,7 +65,7 @@ export function QuotePage() {
   return (
     <>
       <PageHeader
-        title={t(`عرض سعر ${qt.quoteNo}`, `Quotation ${qt.quoteNo}`)}
+        title={t(`عرض أسعار ${qt.quoteNo}`, `Quotation ${qt.quoteNo}`)}
         subtitle={
           <>
             {customer ? <Link to={`/customers/${customer.id}`} className="underline">{customer.name}</Link> : '—'} · {formatDate(qt.date)}
@@ -169,8 +169,8 @@ export function QuotePage() {
           <div className="flex flex-col gap-4">
             <p>
               {t(
-                'تصدر فاتورة برقم تسلسلي جديد بنفس البنود والأسعار، ويُخصم المنتج من الدفعات المقبولة جودةً الأقرب انتهاءً أولاً، ويُضاف الختم والتوقيع.',
-                'A new numbered invoice is issued with the same lines and prices; stock comes out of quality-released lots, nearest expiry first; the stamp and signature are added.',
+                'تصدر فاتورة برقم تسلسلي جديد بنفس البنود والأسعار، ويُخصم المنتج من الدفعات الأقرب انتهاءً أولاً، ويُضاف الختم والتوقيع.',
+                'A new numbered invoice is issued with the same lines and prices; stock comes out of the lots nearest expiry first; the stamp and signature are added.',
               )}
             </p>
             <Field label={t('تاريخ الفاتورة', 'Invoice date')}>

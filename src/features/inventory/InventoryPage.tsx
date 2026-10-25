@@ -14,7 +14,7 @@ import { ItemFormModal } from './ItemFormModal'
 import { itemTypeLabel } from './labels'
 import { type StockAlerts, useStock } from './useStock'
 
-type Filter = 'all' | ItemType
+type Filter = 'all' | Exclude<ItemType, 'finished'>
 
 function AlertsCard({ alerts, items }: { alerts: StockAlerts; items: ItemWithStock[] }) {
   const byId = new Map(items.map((i) => [i.id, i]))
@@ -75,18 +75,25 @@ export function InventoryPage() {
   const [search, setSearch] = useState('')
   const [adding, setAdding] = useState(false)
 
-  const all = (items.data ?? []).filter((i) => i.active)
+  // Finished products have their own page («المخزون الجاهز للبيع»)
+  const all = (items.data ?? []).filter((i) => i.active && i.type !== 'finished')
   const shown = all
     .filter((i) => filter === 'all' || i.type === filter)
     .filter((i) => !search.trim() || `${i.name} ${i.nameEn ?? ''}`.toLowerCase().includes(search.trim().toLowerCase()))
   const value = all.reduce((s, i) => s + i.stock.valueBaisa, 0)
-  const inactive = (items.data ?? []).filter((i) => !i.active)
+  const inactive = (items.data ?? []).filter((i) => !i.active && i.type !== 'finished')
+  const ids = new Set(all.map((i) => i.id))
+  const materialAlerts: StockAlerts = {
+    low: alerts.low.filter((i) => ids.has(i.id)),
+    expiringLots: alerts.expiringLots.filter((l) => ids.has(l.itemId)),
+    expiredLots: alerts.expiredLots.filter((l) => ids.has(l.itemId)),
+  }
 
   return (
     <>
       <PageHeader
-        title={t('المخزون', 'Inventory')}
-        subtitle={t(`قيمة المخزون الحالية: ${formatOMR(value)}`, `Current stock value: ${formatOMR(value)}`)}
+        title={t('مخزون المواد الخام والتغليف', 'Materials stock')}
+        subtitle={t(`قيمة المواد الحالية: ${formatOMR(value)} — المنتجات الجاهزة في «المخزون الجاهز للبيع»`, `Current materials value: ${formatOMR(value)} — finished products are in «Ready for sale»`)}
         actions={
           <>
             <Link to="/suppliers" className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4">
@@ -101,10 +108,10 @@ export function InventoryPage() {
       />
 
       <div className="flex flex-col gap-5">
-        <AlertsCard alerts={alerts} items={all} />
+        <AlertsCard alerts={materialAlerts} items={all} />
 
         <div className="flex flex-col gap-3 md:flex-row">
-          <div className="md:w-[28rem]">
+          <div className="md:w-[22rem]">
             <Segmented<Filter>
               value={filter}
               onChange={setFilter}
@@ -112,7 +119,6 @@ export function InventoryPage() {
                 { value: 'all', label: t('الكل', 'All') },
                 { value: 'raw', label: t('خام', 'Raw') },
                 { value: 'packaging', label: t('تغليف', 'Packaging') },
-                { value: 'finished', label: t('منتجات', 'Products') },
               ]}
             />
           </div>
@@ -138,7 +144,7 @@ export function InventoryPage() {
                 const low = i.minQty > 0 && i.stock.usableQty <= i.minQty
                 return (
                   <li key={i.id}>
-                    <Link to={i.type === 'finished' ? `/products/${i.id}` : `/inventory/${i.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-brand-50">
+                    <Link to={`/inventory/${i.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-brand-50">
                       <div className="min-w-0 flex-1">
                         <div className="font-medium">{nameOf(i)}</div>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">

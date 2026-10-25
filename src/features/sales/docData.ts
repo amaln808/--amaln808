@@ -45,7 +45,7 @@ export function toDocData(p: {
 
 /** WhatsApp / email message sent with the PDF. */
 export function shareMessage(kind: DocData['kind'], number: string, totalText: string, company: string, lang: 'ar' | 'en' | 'both'): string {
-  const ar = kind === 'invoice' ? `مرفق فاتورة رقم ${number} بمبلغ ${totalText}. شكراً لتعاملكم مع ${company}.` : `مرفق عرض السعر رقم ${number} بمبلغ ${totalText}. يسعدنا تعاونكم مع ${company}.`
+  const ar = kind === 'invoice' ? `مرفق فاتورة رقم ${number} بمبلغ ${totalText}. شكراً لتعاملكم مع ${company}.` : `مرفق عرض الأسعار رقم ${number} بمبلغ ${totalText}. يسعدنا تعاونكم مع ${company}.`
   const en = kind === 'invoice' ? `Please find invoice ${number} for ${totalText} attached. Thank you for choosing ${company}.` : `Please find quotation ${number} for ${totalText} attached. We look forward to working with you.`
   return lang === 'ar' ? ar : lang === 'en' ? en : `${ar}\n\n${en}`
 }

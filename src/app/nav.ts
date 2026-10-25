@@ -2,7 +2,6 @@ import {
   BadgePercent,
   Boxes,
   Calculator,
-  ClipboardCheck,
   Factory,
   HandCoins,
   History,
@@ -10,6 +9,7 @@ import {
   ListChecks,
   type LucideIcon,
   Package,
+  PackageCheck,
   ReceiptText,
   ScrollText,
   Settings,
@@ -39,12 +39,12 @@ export function isNavActive(item: NavItem, pathname: string): boolean {
 /** Built on demand so labels follow the current language. */
 export function navItems(): NavItem[] {
   return [
-    { to: '/', label: t('لوحة المؤشرات', 'Dashboard'), shortLabel: t('المؤشرات', 'Dashboard'), icon: LayoutDashboard, primary: true, phase: 4 },
-    { to: '/inventory', label: t('المخزون', 'Inventory'), icon: Boxes, primary: true, phase: 0 },
+    { to: '/', label: t('لوحة المؤشرات', 'Dashboard'), shortLabel: t('المؤشرات', 'Dashboard'), icon: LayoutDashboard, primary: false, phase: 4 },
+    { to: '/ready', label: t('المخزون الجاهز للبيع', 'Ready for sale'), shortLabel: t('الجاهز', 'Ready'), icon: PackageCheck, primary: true, phase: 0 },
+    { to: '/inventory', label: t('مخزون المواد', 'Materials stock'), shortLabel: t('المواد', 'Materials'), icon: Boxes, primary: true, phase: 0 },
     { to: '/suppliers', label: t('الموردون', 'Suppliers'), icon: Truck, primary: false, phase: 0, also: ['/purchases'] },
     { to: '/products', label: t('المنتجات', 'Products'), icon: Package, primary: false, phase: 0 },
     { to: '/production', label: t('التصنيع', 'Production'), icon: Factory, primary: true, phase: 0 },
-    { to: '/quality', label: t('الجودة', 'Quality'), icon: ClipboardCheck, primary: false, phase: 0 },
     { to: '/sales', label: t('العملاء والمبيعات', 'Customers & sales'), shortLabel: t('المبيعات', 'Sales'), icon: Users, primary: true, phase: 0, also: ['/customers', '/invoices', '/quotes'] },
     { to: '/expenses', label: t('المصروفات', 'Expenses'), icon: ReceiptText, primary: false, phase: 3 },
     { to: '/receivables', label: t('المستحقات', 'Receivables'), icon: HandCoins, primary: false, phase: 3 },
