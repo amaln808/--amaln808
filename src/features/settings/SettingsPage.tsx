@@ -1,3 +1,4 @@
+import { buildLabel } from '../../app/pwaUpdate'
 import { Check, LogOut } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSettingsQuery } from '../../app/settingsContext'
@@ -215,6 +216,9 @@ function AccountCard() {
           {t('تسجيل الخروج', 'Sign out')}
         </Button>
       </div>
+      <p className="mt-4 text-sm text-muted">
+        {t('إصدار التطبيق:', 'App version:')} <span dir="ltr" className="num">{buildLabel()}</span>
+      </p>
       {dialog}
     </Card>
   )

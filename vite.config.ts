@@ -6,6 +6,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   // Relative asset URLs so the build runs from any folder (GitHub Pages sub-path, Netlify root…)
   base: './',
+  // Shown in Settings so the owner can confirm the iPad runs the latest version
+  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   plugins: [
     react(),
     tailwindcss(),
@@ -13,7 +15,8 @@ export default defineConfig({
     // The web manifest lives in public/ and is kept as is.
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'script',
+      // Registered in src/app/pwaUpdate.ts, which also checks for updates when the app is reopened
+      injectRegister: false,
       manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],

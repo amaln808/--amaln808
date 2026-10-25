@@ -13,7 +13,7 @@
     "isolatedModules": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "types": ["vite/client", "vitest/config"]
+    "types": ["vite/client", "vitest/config", "vite-plugin-pwa/client"]
   },
   "include": ["src", "vite.config.ts"]
 }
