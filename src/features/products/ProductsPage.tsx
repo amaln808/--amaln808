@@ -45,6 +45,7 @@ export function ProductsPage() {
   const [adding, setAdding] = useState(false)
   const navigate = useNavigate()
   const products = (items.data ?? []).filter((i) => i.type === 'finished' && i.active)
+  const stopped = (items.data ?? []).filter((i) => i.type === 'finished' && !i.active)
 
   return (
     <>
@@ -76,6 +77,21 @@ export function ProductsPage() {
             )
           })}
         </div>
+      )}
+      {stopped.length > 0 && (
+        <details className="mt-5 text-sm text-muted">
+          <summary className="min-h-11 cursor-pointer py-2">{t(`منتجات محذوفة من القائمة (${stopped.length})`, `Removed products (${stopped.length})`)}</summary>
+          <p className="mb-2">{t('لها سجلات سابقة فبقيت محفوظة. لإعادة منتج: افتحه ← تعديل ← «إعادة تفعيل».', 'They have past records, so they are kept. To bring one back: open it → Edit → «Reactivate».')}</p>
+          <ul className="flex flex-col gap-1 ps-4">
+            {stopped.map((p) => (
+              <li key={p.id}>
+                <Link to={`/products/${p.id}`} className="underline">
+                  {nameOf(p)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
       {adding && <ProductFormModal onClose={(id) => (setAdding(false), id && navigate(`/products/${id}`))} />}
     </>

@@ -424,3 +424,18 @@ export async function resetAllData() {
   if (error) throw error
   invalidate('')
 }
+
+/**
+ * «حذف»: an item with no history is deleted for good; one with stock, purchases,
+ * batches or sales is hidden from the lists instead, keeping its records.
+ */
+export async function deleteItem(id: string): Promise<'deleted' | 'hidden'> {
+  const { data, error } = await db().rpc('delete_item', { p_id: id })
+  if (error) throw error
+  invalidate(INVENTORY_KEY)
+  invalidate('item:')
+  invalidate('products')
+  invalidate('production')
+  invalidate('sales')
+  return data as 'deleted' | 'hidden'
+}

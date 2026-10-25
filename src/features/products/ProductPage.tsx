@@ -11,6 +11,7 @@ import { useSignedUrl } from '../../data/useSignedUrl'
 import { formatOMR } from '../../domain/money'
 import { formatQty } from '../../domain/quantity'
 import { nameOf, t } from '../../i18n/index'
+import { DeleteItemButton } from '../inventory/DeleteItemButton'
 import { formatDate } from '../tasks/labels'
 import { useSchedule } from '../tasks/useSchedule'
 import { PERMIT_TONE, permitFor, permitLabel } from './permits'
@@ -26,6 +27,7 @@ export function ProductPage() {
   const schedule = useSchedule()
   const photo = useSignedUrl('products', q.data?.item.photoPath)
   const [editing, setEditing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!q.data) {
     return (
@@ -52,6 +54,7 @@ export function ProductPage() {
               <Pencil className="size-4" />
               {t('تعديل', 'Edit')}
             </Button>
+            <DeleteItemButton id={item.id} name={nameOf(item)} backTo="/products" onError={setError} />
             <Link to={`/production/new?product=${item.id}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-700 px-5 font-medium text-on-brand">
               <Factory className="size-5" />
               {t('دفعة إنتاج', 'Production batch')}
@@ -60,6 +63,7 @@ export function ProductPage() {
         }
       />
       <div className="flex flex-col gap-5">
+        <FormError message={error} />
         <Card className="flex flex-col gap-5 sm:flex-row">
           <div className="flex size-40 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-brand-50 text-brand-800">
             {photo ? <img src={photo} alt={nameOf(item)} className="size-full object-cover" /> : <Package className="size-12" />}

@@ -153,6 +153,25 @@ describe('FEFO', () => {
   })
 })
 
+describe('deleting items', () => {
+  it('deletes an unused item for good, and only hides one with history', async () => {
+    const unused = await item('packaging', 'علبة قديمة', 'piece')
+    const product = await item('finished', 'منتج متوقف', 'piece')
+    await rpc('save_recipe', product, JSON.stringify([{ item_id: unused, qty_per_unit: 1 }]), false)
+    expect(await rpc('delete_item', unused)).toBe('deleted')
+    expect((await q('select 1 from recipe_components')).length).toBe(0)
+
+    const used = await item('raw', 'تمر', 'kg', true)
+    await rpc('add_opening_stock', used, 5, 1000, '2026-10-01', '2027-01-01', null, null)
+    expect(await rpc('delete_item', used)).toBe('hidden')
+    expect((await one<{ active: boolean }>('select active from items where id = $1', [used])).active).toBe(false)
+    expect((await q('select 1 from stock_lots where item_id = $1', [used])).length).toBe(1)
+
+    expect(await rpc('delete_item', product)).toBe('deleted')
+    expect((await q('select 1 from recipes')).length).toBe(0)
+  })
+})
+
 describe('production', () => {
   it('a batch can use a typed new material and stock a shortage in the same save', async () => {
     const dates = await item('raw', 'معجون تمر', 'kg', true)
