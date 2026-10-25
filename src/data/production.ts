@@ -126,6 +126,19 @@ export async function fetchBatchDetail(id: string) {
   }
 }
 
+/**
+ * A consumption row: an existing material (itemId) or a typed new one. addStock puts
+ * a quantity into stock first (material that is on hand but was never recorded).
+ */
+export interface BatchConsumptionInput {
+  itemId: string | null
+  itemName?: string
+  itemType?: 'raw' | 'packaging'
+  unit?: Unit
+  qty: number
+  addStock?: { qty: number; unitCostBaisa: number; expiryDate: string | null }
+}
+
 export async function createBatch(p: {
   productId: string
   productionDate: string
@@ -133,9 +146,9 @@ export async function createBatch(p: {
   qtyProduced: number
   extraCostBaisa: number
   notes: string | null
-  consumption: Array<{ itemId: string; qty: number }>
+  consumption: BatchConsumptionInput[]
 }): Promise<string> {
-  const { data, error } = await db().rpc('create_production_batch', {
+  const { data, error } = await db().rpc('create_production_batch_named', {
     p: {
       product_id: p.productId,
       production_date: p.productionDate,
@@ -143,7 +156,14 @@ export async function createBatch(p: {
       qty_produced: p.qtyProduced,
       extra_cost_baisa: p.extraCostBaisa,
       notes: p.notes,
-      consumption: p.consumption.map((c) => ({ item_id: c.itemId, qty: c.qty })),
+      consumption: p.consumption.map((c) => ({
+        item_id: c.itemId,
+        item_name: c.itemName,
+        item_type: c.itemType,
+        unit: c.unit,
+        qty: c.qty,
+        add_stock: c.addStock && { qty: c.addStock.qty, unit_cost_baisa: c.addStock.unitCostBaisa, expiry_date: c.addStock.expiryDate },
+      })),
     },
   })
   if (error) throw error
