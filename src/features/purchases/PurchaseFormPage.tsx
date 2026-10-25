@@ -21,6 +21,7 @@ import { parseQty, type Unit, unitLabel } from '../../domain/quantity'
 import { nameKey } from '../../domain/text'
 import { nameOf, t } from '../../i18n/index'
 import { METHODS, methodLabel } from '../inventory/labels'
+import { NewMaterialFields } from '../inventory/NewMaterialFields'
 
 interface LineDraft {
   key: number
@@ -200,26 +201,12 @@ export function PurchaseFormPage() {
                       <TextInput dir="ltr" value={l.lot} onChange={(e) => update(l.key, { lot: e.target.value })} />
                     </Field>
                     {isNew && (
-                      <div className="col-span-2 grid grid-cols-2 gap-3 rounded-xl bg-brand-50 p-3 lg:col-span-4">
-                        <p className="col-span-2 text-sm text-brand-800">
-                          {t('صنف جديد، سيُضاف إلى المخزون عند الحفظ:', 'New item, added to inventory on save:')}
-                        </p>
-                        <Segmented<'raw' | 'packaging'>
-                          value={l.newType}
-                          onChange={(v) => update(l.key, { newType: v, newUnit: v === 'raw' ? 'kg' : 'piece' })}
-                          options={[
-                            { value: 'raw', label: t('مادة خام', 'Raw material') },
-                            { value: 'packaging', label: t('تغليف', 'Packaging') },
-                          ]}
-                        />
-                        <Select value={l.newUnit} onChange={(e) => update(l.key, { newUnit: e.target.value as Unit })} aria-label={t('الوحدة', 'Unit')}>
-                          {(['kg', 'g', 'piece', 'liter'] as const).map((u) => (
-                            <option key={u} value={u}>
-                              {unitLabel(u)}
-                            </option>
-                          ))}
-                        </Select>
-                      </div>
+                      <NewMaterialFields
+                        className="col-span-2 lg:col-span-4"
+                        type={l.newType}
+                        unit={l.newUnit}
+                        onChange={(v) => update(l.key, { newType: v.type, newUnit: v.unit })}
+                      />
                     )}
                     <Field label={(item ? !item.requiresExpiry : l.newType === 'packaging') ? t('الانتهاء (اختياري)', 'Expiry (optional)') : t('تاريخ الانتهاء', 'Expiry date')}>
                       <DateInput value={l.expiry} onChange={(e) => update(l.key, { expiry: e.target.value })} />
