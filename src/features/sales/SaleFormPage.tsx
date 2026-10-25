@@ -33,7 +33,7 @@ const emptyLine = (): Line => ({ key: nextKey++, productId: '', qty: '', price: 
 /**
  * One form for a new quotation, an edited quotation (draft / sent), and a direct
  * invoice. Prices come from the customer's channel; an invoice also checks
- * stock released by quality and the product's sale permit before saving.
+ * the stock ready for sale and the product's sale permit before saving.
  */
 export function SaleFormPage({ kind }: { kind: 'quote' | 'invoice' }) {
   const { id } = useParams()
@@ -117,8 +117,8 @@ export function SaleFormPage({ kind }: { kind: 'quote' | 'invoice' }) {
           if (need > sellable)
             out.push(
               t(
-                `${nameOf(prod)}: المطلوب ${formatQty(need)} والمتاح للبيع (فحص مقبول) ${formatQty(sellable)}`,
-                `${nameOf(prod)}: need ${formatQty(need)}, released for sale ${formatQty(sellable)}`,
+                `${nameOf(prod)}: المطلوب ${formatQty(need)} والجاهز للبيع ${formatQty(sellable)}`,
+                `${nameOf(prod)}: need ${formatQty(need)}, ready for sale ${formatQty(sellable)}`,
               ),
             )
           return out
@@ -159,7 +159,7 @@ export function SaleFormPage({ kind }: { kind: 'quote' | 'invoice' }) {
     }
   }
 
-  const title = kind === 'invoice' ? t('فاتورة مباشرة', 'Direct invoice') : id ? t('تعديل عرض السعر', 'Edit quotation') : t('عرض سعر جديد', 'New quotation')
+  const title = kind === 'invoice' ? t('فاتورة مباشرة', 'Direct invoice') : id ? t('تعديل عرض الأسعار', 'Edit quotation') : t('عرض أسعار جديد', 'New quotation')
 
   return (
     <>
@@ -282,7 +282,7 @@ export function SaleFormPage({ kind }: { kind: 'quote' | 'invoice' }) {
                 <li key={p}>{p}</li>
               ))}
             </ul>
-            <p className="mt-1">{t('البيع يحتاج تصريح بيع ساري ودفعة فحصها «مقبول». يمكن حفظه كعرض سعر بدلاً من ذلك.', 'Selling needs a valid sale permit and a batch checked «pass». You can save it as a quotation instead.')}</p>
+            <p className="mt-1">{t('البيع يحتاج تصريح بيع ساري وكمية جاهزة غير منتهية. يمكن حفظه كعرض أسعار بدلاً من ذلك.', 'Selling needs a valid sale permit and unexpired stock. You can save it as a quotation instead.')}</p>
           </div>
         )}
         <FormError message={error} />

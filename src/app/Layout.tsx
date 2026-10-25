@@ -10,9 +10,9 @@ import { isNavActive, navItems } from './nav'
 
 const logoVar = { '--logo-url': `url(${LOGO_URL})` } as CSSProperties
 
-/** The calligraphic Zawrda mark, drawn in the current text colour. */
+/** The calligraphic Zuwardah mark, drawn in the current text colour. */
 export function LogoMark({ className = '' }: { className?: string }) {
-  return <div role="img" aria-label={t('زوردة', 'Zawrda')} className={`logo-mark ${className}`} style={logoVar} />
+  return <div role="img" aria-label={t('زوردة', 'Zuwardah')} className={`logo-mark ${className}`} style={logoVar} />
 }
 
 function Rail() {
@@ -21,7 +21,8 @@ function Rail() {
     <aside className="hidden md:flex w-60 lg:w-64 shrink-0 flex-col overflow-y-auto bg-rail text-on-rail">
       <div className="flex flex-col items-center px-6 pt-6 pb-4">
         <LogoMark className="h-24 w-12" />
-        <div className="mt-2 text-sm opacity-75">{t('إدارة المصنع', 'Factory management')}</div>
+        <div className="mt-1.5 text-[15px] font-semibold tracking-[0.2em]" dir="ltr">Zuwardah</div>
+        <div className="mt-1 text-sm opacity-75">{t('إدارة المصنع', 'Factory management')}</div>
       </div>
       <nav className="flex flex-col px-3 pb-3">
         {navItems().map((item) => {

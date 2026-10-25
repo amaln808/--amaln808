@@ -25,7 +25,7 @@ function ProductCard({ p, recipeState, permit }: { p: ItemWithStock; recipeState
         <div className="min-w-0 flex-1">
           <div className="font-bold">{nameOf(p)}</div>
           <div className="mt-1 text-sm text-muted">
-            {t(`في المخزون ${formatQty(p.stock.usableQty)} · قابل للبيع ${formatQty(p.stock.sellableQty)}`, `${formatQty(p.stock.usableQty)} in stock · ${formatQty(p.stock.sellableQty)} sellable`)}
+            {t(`جاهز للبيع ${formatQty(p.stock.sellableQty)}`, `${formatQty(p.stock.sellableQty)} ready for sale`)}
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge tone={PERMIT_TONE[permit.state]}>{permitLabel(permit)}</Badge>

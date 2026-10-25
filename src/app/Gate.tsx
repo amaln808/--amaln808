@@ -16,6 +16,7 @@ function Frame({ children }: { children: ReactNode }) {
     <div className="flex min-h-full flex-col md:flex-row">
       <div className="flex flex-col items-center justify-center gap-4 bg-rail px-6 py-10 text-on-rail md:w-[44%] md:py-0">
         <LogoMark className="h-40 w-20 md:h-[58vh] md:w-[29vh]" />
+        <div className="text-xl font-semibold tracking-[0.25em]" dir="ltr">Zuwardah</div>
         <p className="max-w-[16rem] text-center text-sm leading-relaxed opacity-80">
           {t('معجون التمر بزبدة الفول السوداني', 'Date paste with peanut butter')}
         </p>
@@ -114,7 +115,7 @@ export function NotMemberScreen() {
       <p className="mt-3 leading-relaxed text-muted">
         {t(
           `الحساب ${session?.user.email ?? ''} مسجّل، لكنه ليس من أعضاء زوردة، لذلك لا يرى أي بيانات.`,
-          `${session?.user.email ?? ''} is signed in but is not a Zawrda member, so it can't see any data.`,
+          `${session?.user.email ?? ''} is signed in but is not a Zuwardah member, so it can't see any data.`,
         )}
       </p>
       <Button variant="secondary" className="mt-8" onClick={signOut}>

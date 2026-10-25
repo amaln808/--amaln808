@@ -1,7 +1,7 @@
 import { Calculator, ChevronLeft, Factory, Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { FormError } from '../../components/form'
-import { Badge, Card, EmptyState, PageHeader } from '../../components/ui'
+import { Card, EmptyState, PageHeader } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { fetchItemsWithStock, INVENTORY_KEY } from '../../data/inventory'
 import { fetchBatches, PRODUCTION_KEY } from '../../data/production'
@@ -9,7 +9,6 @@ import { useQuery } from '../../data/useQuery'
 import { formatOMR } from '../../domain/money'
 import { formatQty } from '../../domain/quantity'
 import { nameOf, t } from '../../i18n/index'
-import { QC_TONE, qcLabel } from '../inventory/labels'
 import { formatDate } from '../tasks/labels'
 
 export function ProductionPage() {
@@ -52,7 +51,6 @@ export function ProductionPage() {
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
                       <span>{formatDate(b.productionDate)}</span>
                       {b.expiryDate && <span>· {t(`تنتهي ${formatDate(b.expiryDate)}`, `expires ${formatDate(b.expiryDate)}`)}</span>}
-                      {b.qcStatus && <Badge tone={QC_TONE[b.qcStatus]}>{qcLabel(b.qcStatus)}</Badge>}
                     </div>
                   </div>
                   <div className="text-end">

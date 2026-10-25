@@ -20,16 +20,6 @@ export function movementLabel(type: string): string {
   return l ? t(l[0], l[1]) : type
 }
 
-export function qcLabel(status: Lot['qcStatus']): string {
-  return {
-    na: '—',
-    pending: t('بانتظار الفحص', 'Awaiting check'),
-    passed: t('مُصرَّح للبيع', 'Released'),
-    failed: t('مرفوضة', 'Rejected'),
-  }[status]
-}
-
-export const QC_TONE = { na: 'stone', pending: 'amber', passed: 'green', failed: 'red' } as const
 
 export function methodLabel(m: PaymentMethod): string {
   return { cash: t('نقداً', 'Cash'), bank: t('تحويل بنكي', 'Bank transfer'), card: t('بطاقة', 'Card'), other: t('أخرى', 'Other') }[m]

@@ -11,7 +11,6 @@ import { useSignedUrl } from '../../data/useSignedUrl'
 import { formatOMR } from '../../domain/money'
 import { formatQty } from '../../domain/quantity'
 import { nameOf, t } from '../../i18n/index'
-import { QC_TONE, qcLabel } from '../inventory/labels'
 import { formatDate } from '../tasks/labels'
 import { useSchedule } from '../tasks/useSchedule'
 import { PERMIT_TONE, permitFor, permitLabel } from './permits'
@@ -39,7 +38,7 @@ export function ProductPage() {
   const { item, lots: productLots } = q.data
   const permit = permitFor(item.id, schedule.data?.agreements ?? [], schedule.todayDate)
   const open = productLots.filter((l) => l.qtyRemaining > 0)
-  const sellable = open.filter((l) => l.qcStatus === 'passed' && (!l.expiryDate || l.expiryDate >= schedule.todayDate))
+  const sellable = open.filter((l) => (!l.expiryDate || l.expiryDate >= schedule.todayDate))
   const materials = (items.data ?? []).filter((i) => i.active && i.type !== 'finished')
 
   return (
@@ -116,7 +115,6 @@ export function ProductPage() {
                 <li key={l.id}>
                   <Link to={l.sourceId ? `/production/${l.sourceId}` : '#'} className="flex flex-wrap items-center gap-3 px-5 py-3 hover:bg-brand-50">
                     <span className="font-medium" dir="ltr">{l.lotCode}</span>
-                    <Badge tone={QC_TONE[l.qcStatus]}>{qcLabel(l.qcStatus)}</Badge>
                     <span className="text-sm text-muted">{l.expiryDate ? t(`تنتهي ${formatDate(l.expiryDate)}`, `expires ${formatDate(l.expiryDate)}`) : ''}</span>
                     <span className="num ms-auto font-bold">{formatQty(l.qtyRemaining)}</span>
                     <span className="num text-sm text-muted">{formatOMR(Math.round(l.unitCostBaisa))} {t('للعبوة', 'each')}</span>
@@ -124,11 +122,6 @@ export function ProductPage() {
                 </li>
               ))}
             </ul>
-          )}
-          {open.some((l) => l.qcStatus === 'pending') && (
-            <p className="border-t border-line px-5 py-3 text-sm text-muted">
-              {t('الدفعات «بانتظار الفحص» لا تُباع حتى تُقبل في وحدة الجودة (الجولة 2).', 'Batches awaiting check cannot be sold until passed in Quality (round 2).')}
-            </p>
           )}
         </Card>
       </div>

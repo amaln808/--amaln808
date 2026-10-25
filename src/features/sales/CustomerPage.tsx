@@ -136,7 +136,7 @@ export function CustomerPage() {
           <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-4">
             <h2 className="text-lg font-bold">{t('عروض الأسعار', 'Quotations')}</h2>
             <Link to={`/quotes/new?customer=${id}`} className="text-sm font-medium text-brand-800 underline">
-              {t('عرض سعر جديد', 'New quotation')}
+              {t('عرض أسعار جديد', 'New quotation')}
             </Link>
           </div>
           {!quotes.length ? (

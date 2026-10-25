@@ -47,7 +47,7 @@ export function SalesPage() {
           <>
             <Link to="/quotes/new" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-4">
               <FileText className="size-5" />
-              {t('عرض سعر', 'Quotation')}
+              {t('عرض أسعار', 'Quotation')}
             </Link>
             <Link to="/invoices/new" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-700 px-5 font-medium text-on-brand">
               <Plus className="size-5" />
@@ -81,7 +81,7 @@ export function SalesPage() {
             <EmptyState
               icon={ReceiptText}
               title={q.loading ? t('جارٍ التحميل…', 'Loading…') : t('لا توجد فواتير بعد', 'No invoices yet')}
-              description={t('الفاتورة تصدر من عرض سعر مقبول، أو مباشرة بزر «فاتورة».', 'Invoices come from an accepted quotation, or directly with «Invoice».')}
+              description={t('الفاتورة تصدر من عرض أسعار مقبول، أو مباشرة بزر «فاتورة».', 'Invoices come from an accepted quotation, or directly with «Invoice».')}
             />
           ) : (
             <ul className="divide-y divide-line">
