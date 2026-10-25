@@ -8,7 +8,6 @@ import { fetchSuppliers, SUPPLIERS_KEY } from '../../data/inventory'
 import { useQuery } from '../../data/useQuery'
 import { formatOMR } from '../../domain/money'
 import { t } from '../../i18n/index'
-import { supplierKindLabel } from '../inventory/labels'
 import { SupplierFormModal } from './SupplierFormModal'
 
 export function SuppliersPage() {
@@ -51,8 +50,7 @@ export function SuppliersPage() {
                   <div className="min-w-0 flex-1">
                     <div className="font-medium">{s.name}</div>
                     <div className="text-sm text-muted">
-                      {supplierKindLabel(s.kind)}
-                      {s.phone ? ` · ${s.phone}` : ''}
+                      {[s.kind, s.phone].filter(Boolean).join(' · ')}
                     </div>
                   </div>
                   <div className="text-end">

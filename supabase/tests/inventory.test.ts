@@ -31,6 +31,41 @@ beforeEach(async () => {
 }, 60_000)
 
 describe('purchases', () => {
+  it('creates unknown suppliers and items from typed names, and reuses them next time', async () => {
+    const buy = (lines: unknown[]) =>
+      rpc('create_purchase_named', JSON.stringify({ supplier_name: ' مزرعة النخيل ', date: '2026-10-01', lines }))
+    await buy([
+      { item_name: 'تمر خلاص', item_type: 'raw', unit: 'kg', qty: 10, unit_cost_baisa: 900, expiry_date: '2027-01-01' },
+      { item_name: 'كرتون', item_type: 'packaging', unit: 'piece', qty: 100, unit_cost_baisa: 50 },
+    ])
+    await buy([{ item_name: 'تمر خلاص', qty: 5, unit_cost_baisa: 950, expiry_date: '2027-02-01' }])
+    const sups = await q<{ name: string; kind: string | null }>(`select name, kind from suppliers`)
+    expect(sups).toEqual([{ name: 'مزرعة النخيل', kind: null }])
+    const items = await q<{ name: string; type: string; unit: string; requires_expiry: boolean }>(
+      `select name, type, unit, requires_expiry from items order by name`,
+    )
+    expect(items).toEqual([
+      { name: 'تمر خلاص', type: 'raw', unit: 'kg', requires_expiry: true },
+      { name: 'كرتون', type: 'packaging', unit: 'piece', requires_expiry: false },
+    ])
+    expect((await q(`select 1 from stock_lots`)).length).toBe(3)
+  })
+
+  it('creates nothing when the typed purchase fails', async () => {
+    await expect(
+      rpc('create_purchase_named', JSON.stringify({
+        supplier_name: 'مورد جديد', date: '2026-10-01',
+        lines: [{ item_name: 'زيت', item_type: 'raw', qty: 1, unit_cost_baisa: 100 }],
+      })),
+    ).rejects.toThrow(/تاريخ الانتهاء مطلوب/)
+    expect((await q(`select 1 from suppliers union all select 1 from items`)).length).toBe(0)
+  })
+
+  it('accepts any text as the supplier type', async () => {
+    await q(`insert into suppliers (name, kind) values ('شركة الكهرباء', 'كهرباء')`)
+    expect((await one<{ kind: string }>(`select kind from suppliers`)).kind).toBe('كهرباء')
+  })
+
   it('creates a lot per line with expiry, totals and an immediate payment', async () => {
     const s = await supplier()
     const dates = await item('raw', 'معجون تمر', 'kg', true)

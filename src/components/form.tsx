@@ -6,7 +6,9 @@ import {
   type TextareaHTMLAttributes,
   useContext,
   useId,
+  useState,
 } from 'react'
+import { nameKey } from '../domain/text'
 
 /** Lets a control inside <Field> pick up the id its label points to. */
 const FieldId = createContext<string | undefined>(undefined)
@@ -112,6 +114,70 @@ export function Segmented<T extends string>({
           {o.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+/**
+ * Free-text input that offers earlier entries as choices. Anything typed is
+ * accepted; when it matches no choice the field is marked «جديد».
+ */
+export function Combobox({
+  value,
+  onChange,
+  options,
+  placeholder,
+  newLabel,
+}: {
+  value: string
+  onChange: (text: string) => void
+  options: Array<{ label: string; hint?: string }>
+  placeholder?: string
+  /** Badge shown when the text is not one of the options; omit to hide it. */
+  newLabel?: string
+}) {
+  const id = useFieldId()
+  const [open, setOpen] = useState(false)
+  const q = nameKey(value)
+  const exact = options.some((o) => nameKey(o.label) === q)
+  const shown = exact ? options : options.filter((o) => nameKey(o.label).includes(q))
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        autoComplete="off"
+        id={id}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => (onChange(e.target.value), setOpen(true))}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        className={`${inputCls} ${newLabel && q && !exact ? 'pe-16' : ''}`}
+      />
+      {newLabel && q && !exact && (
+        <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center">
+          <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-800">{newLabel}</span>
+        </span>
+      )}
+      {open && shown.length > 0 && (
+        <ul className="absolute inset-x-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-line bg-card p-1 shadow-lg">
+          {shown.map((o) => (
+            <li key={o.label}>
+              <button
+                type="button"
+                // mousedown fires before the input's blur, so the choice registers
+                onMouseDown={(e) => (e.preventDefault(), onChange(o.label), setOpen(false))}
+                className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 text-start hover:bg-brand-50 ${
+                  nameKey(o.label) === q ? 'font-bold text-brand-800' : ''
+                }`}
+              >
+                <span>{o.label}</span>
+                {o.hint && <span className="text-xs text-muted">{o.hint}</span>}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

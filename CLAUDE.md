@@ -28,7 +28,8 @@
 ## 3. الوحدات (المتطلبات الوظيفية)
 
 ### 3.1 الموردون
-- البيانات: الاسم، الهاتف، البريد، العنوان، الرقم الضريبي، ملاحظات، **نوع المورد**: مواد (خام/تغليف) / مصروفات (كهرباء، نقل...) / كلاهما.
+- البيانات: الاسم، الهاتف، البريد، العنوان، الرقم الضريبي، ملاحظات، **نوع المورد: نص حر** تكتبه صاحبة المشروع (تمور، عبوات، كهرباء…)، والأنواع المكتوبة سابقاً تظهر اختيارات — القائمة تكبر مع الاستخدام بلا حد (ملاحظة 25 أكتوبر 2026).
+- **قاعدة عامة (ملاحظة صاحبة المشروع):** الحقول تبدأ فارغة وتُكتب بحرية، وما سُجّل سابقاً يُقترح للاختيار (مكوّن `Combobox`) — فتتكوّن قاعدة البيانات مع الاستخدام. في فاتورة الشراء: المورد والصنف يُكتبان أو يُختاران؛ الاسم الجديد يُنشأ مع الفاتورة في نفس المعاملة (`create_purchase_named`، الترحيل `0007`)، والصنف المعروف يعبئ آخر سعر وضريبة دُفعا فيه.
 - المشتريات: فاتورة شراء بعدة بنود (مادة، كمية، سعر الوحدة، **رقم دفعة المورد**، **تاريخ الانتهاء**) + ضريبة مدفوعة + صورة الفاتورة اختيارياً.
 - الدفعات للمورد (كاملة/جزئية، مرتبطة بفاتورة أو عامة).
 - **المستحق للمورد** = Σ المشتريات (شاملة الضريبة) − Σ الدفعات. كشف حساب لكل مورد.
@@ -189,7 +190,7 @@ src/
 ### 6.2 الموردون والمشتريات
 | الجدول | الحقول |
 |---|---|
-| **suppliers** | `name`, `phone?`, `email?`, `address?`, `vat_no?`, `kind ('materials'\|'expenses'\|'both')`, `last_expense_category_id? → expense_categories` (لتعبئة التصنيف تلقائياً), `notes?`, `active` |
+| **suppliers** | `name`, `phone?`, `email?`, `address?`, `vat_no?`, `kind?` (نص حر منذ `0007`), `last_expense_category_id? → expense_categories` (لتعبئة التصنيف تلقائياً), `notes?`, `active` |
 | **purchases** | `supplier_id`, `date`, `supplier_invoice_no?`, `subtotal_baisa`, `vat_baisa`, `total_baisa`, `attachment_path?`, `notes?` |
 | **purchase_lines** | `purchase_id`, `item_id`, `qty`, `unit_cost_baisa numeric` (بدون ضريبة), `vat_rate`, `supplier_lot_code?`, `expiry_date?`, `lot_id → stock_lots` (الدفعة التي أنشأها البند) |
 | **supplier_payments** | `supplier_id`, `purchase_id?`, `date`, `amount_baisa`, `method ('cash'\|'bank'\|'card'\|'other')`, `notes?` |
@@ -249,7 +250,7 @@ src/
 - **مجلدات التخزين (كلها خاصة):** `products` (صور المنتجات)، `lab-certificates`، `receipts` (فواتير المصروفات والمشتريات)، `branding` (الشعار، الختم، التوقيع)، `documents` (وثائق الاتفاقيات والتصاريح). سياسات `storage.objects` مقيدة بـ `is_member()`. العرض عبر `createSignedUrl` قصير المدة.
 
 ### 6.9 الدوال الرئيسية (RPC، كل منها معاملة واحدة)
-**المنفّذ (الترحيل `0005`):** `stock_in` / `stock_out` (FEFO مع `for update`، يتخطى المنتهي، و`p_sellable_only` يتخطى غير المُصرَّح جودةً، ورسالة نقص واضحة) · عرض `v_stock` (`security_invoker`) · `create_purchase` (ضريبة المشتريات تُضاف للتكلفة إن لم تكن مسجّلة) / `delete_purchase` · `adjust_lot` · `add_opening_stock` · `save_recipe` · `create_production_batch` (دفعة المنتج `qc_status = 'pending'`) / `delete_production_batch` · `load_demo_data` · `reset_all_data` (المالكة فقط، `security definer`). رسائل الخطأ `'عربي | English'` و`serverError` يختار حسب اللغة. اختبارات `supabase/tests/inventory.test.ts`.
+**المنفّذ (الترحيل `0005`):** `stock_in` / `stock_out` (FEFO مع `for update`، يتخطى المنتهي، و`p_sellable_only` يتخطى غير المُصرَّح جودةً، ورسالة نقص واضحة) · عرض `v_stock` (`security_invoker`) · `create_purchase` (ضريبة المشتريات تُضاف للتكلفة إن لم تكن مسجّلة) / `create_purchase_named` (`0007`: ينشئ المورد والأصناف الجديدة بالاسم ثم يستدعي `create_purchase`) / `delete_purchase` · `adjust_lot` · `add_opening_stock` · `save_recipe` · `create_production_batch` (دفعة المنتج `qc_status = 'pending'`) / `delete_production_batch` · `load_demo_data` · `reset_all_data` (المالكة فقط، `security definer`). رسائل الخطأ `'عربي | English'` و`serverError` يختار حسب اللغة. اختبارات `supabase/tests/inventory.test.ts`.
 **المخطط:**
 `create_purchase` / `delete_purchase` · `record_supplier_payment` · `adjust_stock` (تسوية/تالف من دفعة محددة) · `create_production_batch` / `delete_production_batch` · `record_quality_check` · `accept_quotation` (← فاتورة + خصم FEFO + رقم) · `create_invoice` (بيع مباشر بدون عرض) · `void_invoice` · `record_customer_payment` · `allocate_fefo(item_id, qty)` (داخلية: تختار الدفعات وتُرجع التوزيع، وترفض بنقص واضح).
 
@@ -295,6 +296,7 @@ src/
   - `backup.yml`: أسبوعياً (الخميس ليلاً) `scripts/backup.sh` ← ملف مشفّر `zawrda-backup-*.tar.gz.gpg` كـ Artifact لمدة 90 يوماً. الفك: `gpg -d … | tar xz`، والاستعادة: `scripts/db-restore.sh` (اختُبرت ذهاباً وإياباً على Postgres محلي).
   - الأسرار المعتمدة: **`SUPABASE_ACCESS_TOKEN`** (مفتاح شخصي `sbp_` بصلاحية قاعدة البيانات — الترحيلات `scripts/db-migrate-api.py` والنسخ الاحتياطي `scripts/backup-api.py` عبر Management API، **بلا كلمة مرور قاعدة البيانات**)، `SUPABASE_SECRET_KEY` (تنزيل الصور)، `BACKUP_PASSPHRASE`. مسار `psql`/`pg_dump` بـ `SUPABASE_DB_PASSWORD`/`SUPABASE_DB_URL` باقٍ احتياطياً لكن كلمة المرور الحالية مرفوضة — لا يُعتمد عليه.
   - صيغة النسخة عبر الـ API: `tables/<جدول>.json` + `manifest.json`؛ الاستعادة `scripts/db-restore-api.py <مجلد> <project-ref>` (معاملة واحدة، `session_replication_role = replica`، لا تمس `members`) — مُختبرة ذهاباً وإياباً محلياً.
+- **Supabase يرفض `UPDATE`/`DELETE` بلا `WHERE`** حتى داخل الدوال (pg-safeupdate) — اكتب `where true` عند القصد؛ اختبار في `security.test.ts` يفحص كل الدوال.
 - **الأمان في قاعدة البيانات:** أول حساب = المالكة (`bootstrap_owner`)؛ `is_member()` في كل سياسة؛ `anon` بلا أي صلاحية سوى `ping()`؛ سجل التعديلات بـ Trigger لا يُعدَّل.
 
 ### 9.1 الهوية البصرية (مهارة frontend-design)

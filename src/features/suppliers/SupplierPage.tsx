@@ -9,7 +9,7 @@ import { useQuery } from '../../data/useQuery'
 import { statement } from '../../domain/fefo'
 import { formatOMR } from '../../domain/money'
 import { t } from '../../i18n/index'
-import { methodLabel, supplierKindLabel } from '../inventory/labels'
+import { methodLabel } from '../inventory/labels'
 import { formatDate } from '../tasks/labels'
 import { PaymentModal } from './PaymentModal'
 import { SupplierFormModal } from './SupplierFormModal'
@@ -47,7 +47,7 @@ export function SupplierPage() {
     <>
       <PageHeader
         title={supplier.name}
-        subtitle={supplierKindLabel(supplier.kind)}
+        subtitle={supplier.kind ?? undefined}
         back={{ to: '/suppliers', label: t('الموردون', 'Suppliers') }}
         actions={
           <>
