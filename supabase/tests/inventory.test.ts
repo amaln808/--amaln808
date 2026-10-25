@@ -149,6 +149,35 @@ describe('FEFO', () => {
 })
 
 describe('production', () => {
+  it('saves a recipe from typed material names, creating only the new ones', async () => {
+    const dates = await item('raw', 'معجون تمر', 'kg', true)
+    const product = await item('finished', 'مكعبات تمر', 'piece')
+    await rpc('save_recipe_named', product, JSON.stringify([
+      { item_id: dates, qty_per_unit: 0.2 },
+      { item_name: 'شوكولاتة داكنة', item_type: 'raw', unit: 'kg', qty_per_unit: 0.05 },
+      { item_name: 'علبة كرتون', item_type: 'packaging', qty_per_unit: 1 },
+    ]), false)
+    // Saving again with the same typed names reuses the materials
+    await rpc('save_recipe_named', product, JSON.stringify([
+      { item_name: ' شوكولاتة داكنة ', item_type: 'raw', qty_per_unit: 0.06 },
+      { item_name: 'علبة كرتون', item_type: 'packaging', qty_per_unit: 1 },
+    ]), false)
+    const rows = await q<{ name: string; type: string; unit: string; qty_per_unit: string }>(
+      `select i.name, i.type, i.unit, c.qty_per_unit::text from recipe_components c join items i on i.id = c.item_id order by i.name`,
+    )
+    expect(rows).toEqual([
+      { name: 'شوكولاتة داكنة', type: 'raw', unit: 'kg', qty_per_unit: '0.060' },
+      { name: 'علبة كرتون', type: 'packaging', unit: 'piece', qty_per_unit: '1.000' },
+    ])
+    expect((await q(`select 1 from items where type <> 'finished'`)).length).toBe(3)
+    await expect(
+      rpc('save_recipe_named', product, JSON.stringify([
+        { item_id: dates, qty_per_unit: 0.2 },
+        { item_name: 'معجون تمر', qty_per_unit: 0.1 },
+      ]), false),
+    ).rejects.toThrow(/مرة واحدة/)
+  })
+
   it('consumes FEFO, records lots used, and costs the unit from real lot costs', async () => {
     const dates = await item('raw', 'معجون تمر', 'kg', true)
     const jar = await item('packaging', 'علبة', 'piece')

@@ -1,3 +1,4 @@
+import type { Unit } from '../domain/quantity'
 import { toCamel } from './case'
 import { db } from './client'
 import { INVENTORY_KEY, type Lot, toLot } from './inventory'
@@ -33,15 +34,25 @@ export async function fetchRecipes(): Promise<Recipe[]> {
   }))
 }
 
-export async function saveRecipe(productId: string, components: RecipeComponent[], isEstimate: boolean) {
-  const { error } = await db().rpc('save_recipe', {
+/** A recipe row is an existing material (itemId) or a typed name created on save with its type and unit. */
+export type RecipeComponentInput =
+  | { itemId: string; qtyPerUnit: number }
+  | { itemId: null; itemName: string; itemType: 'raw' | 'packaging'; unit: Unit; qtyPerUnit: number }
+
+export async function saveRecipe(productId: string, components: RecipeComponentInput[], isEstimate: boolean) {
+  const { error } = await db().rpc('save_recipe_named', {
     p_product: productId,
-    p_components: components.map((c) => ({ item_id: c.itemId, qty_per_unit: c.qtyPerUnit })),
+    p_components: components.map((c) =>
+      c.itemId !== null
+        ? { item_id: c.itemId, qty_per_unit: c.qtyPerUnit }
+        : { item_name: c.itemName, item_type: c.itemType, unit: c.unit, qty_per_unit: c.qtyPerUnit },
+    ),
     p_is_estimate: isEstimate,
   })
   if (error) throw error
   invalidate(PRODUCTION_KEY)
   invalidate('products')
+  invalidate(INVENTORY_KEY) // new materials may have been added
 }
 
 export interface Batch {
