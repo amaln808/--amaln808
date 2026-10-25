@@ -1,15 +1,37 @@
-import { t } from '../../i18n/index'
-import { Download, Loader2, Share2 } from 'lucide-react'
+import { Download, Loader2, Mail, Share2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { LOGO_URL } from '../../app/assets'
 import { Segmented } from '../../components/form'
 import { Button, Card } from '../../components/ui'
-import { db } from '../../db/db'
-import type { DocLang } from '../../i18n/index'
-import { updateSettings } from '../../services/settings'
-import type { Item, Settings } from '../../db/types'
+import { signedUrl } from '../../data/files'
+import { type Settings, updateSettings } from '../../data/settings'
+import { type DocLang, t } from '../../i18n/index'
 import { downloadBlob, renderPdf, type RenderedDocument } from './pdf'
-import { type DocData, SalesDocument } from './SalesDocument'
-import { sharePdf } from './share'
+import { type DocCompany, type DocData, type DocImages, SalesDocument } from './SalesDocument'
+import { sealAllowed } from './seal'
+import { shareOrDownload, sharePdf } from './share'
+
+/** Private images become data URLs so the PDF capture never trips over cross-origin rules. */
+async function toDataUrl(url: string): Promise<string> {
+  const blob = await (await fetch(url)).blob()
+  return new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(r.result as string)
+    r.onerror = reject
+    r.readAsDataURL(blob)
+  })
+}
+
+async function loadImages(settings: Settings, withSeal: boolean): Promise<DocImages> {
+  const get = async (path: string | null) => (path ? toDataUrl(await signedUrl('branding', path)).catch(() => null) : null)
+  const [logo, stamp, signature] = await Promise.all([
+    settings.logoPath ? get(settings.logoPath) : Promise.resolve(LOGO_URL),
+    // The stamp and signature are fetched only for an issued invoice
+    withSeal ? get(settings.stampPath) : Promise.resolve(null),
+    withSeal ? get(settings.signaturePath) : Promise.resolve(null),
+  ])
+  return { logo: logo ?? LOGO_URL, stamp, signature }
+}
 
 /**
  * Renders the document off-screen, turns it into a PDF in the background, and
@@ -19,33 +41,52 @@ import { sharePdf } from './share'
 export function DocumentPanel({
   doc,
   settings,
-  items,
   shareText,
-  onShared,
+  email,
 }: {
   doc: DocData
   settings: Settings
-  items: Map<string, Item>
-  /** WhatsApp message for the chosen document language */
+  /** Message sent with the PDF, in the chosen document language */
   shareText: (lang: DocLang) => string
-  onShared?: () => void
+  email?: string | null
 }) {
   const [docLang, setDocLang] = useState<DocLang>(settings.docLanguage ?? 'ar')
   const chooseLang = (l: DocLang) => {
     setDocLang(l)
-    updateSettings(db, { docLanguage: l }).catch(() => {}) // remember as the default
+    updateSettings({ docLanguage: l }).catch(() => {}) // remember as the default
+  }
+  const withSeal = sealAllowed(doc)
+  const [images, setImages] = useState<DocImages | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    loadImages(settings, withSeal).then((i) => !cancelled && setImages(i))
+    return () => {
+      cancelled = true
+    }
+  }, [settings.logoPath, settings.stampPath, settings.signaturePath, withSeal])
+
+  const company: DocCompany = {
+    name: settings.companyName,
+    nameEn: settings.companyNameEn,
+    phone: settings.phone,
+    crNo: settings.crNo,
+    vatNo: settings.vatNo,
+    address: settings.address,
+    addressEn: settings.addressEn,
+    vatRegistered: settings.vatRegistered,
   }
   const ref = useRef<HTMLDivElement>(null)
   const [rendered, setRendered] = useState<RenderedDocument | null>(null)
   const [failed, setFailed] = useState(false)
   const filename = `${doc.number}${docLang === 'en' ? '-EN' : docLang === 'both' ? '-AR-EN' : ''}.pdf`
-  const key = JSON.stringify({ doc, docLang, s: [settings.businessName, settings.businessPhone, settings.commercialRegNo, settings.businessAddress, settings.logoDataUrl?.length, settings.businessAddressEn] })
+  const key = JSON.stringify({ doc, docLang, company, ready: !!images, seal: images?.stamp?.length, sig: images?.signature?.length, logo: images?.logo.length })
 
   useEffect(() => {
+    if (!images) return
     let cancelled = false
     setRendered(null)
     setFailed(false)
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       if (!ref.current) return
       renderPdf(ref.current)
         .then((r) => !cancelled && setRendered(r))
@@ -56,20 +97,26 @@ export function DocumentPanel({
     }, 150)
     return () => {
       cancelled = true
-      clearTimeout(t)
+      clearTimeout(timer)
     }
   }, [key])
 
   const share = async () => {
+    if (rendered) await sharePdf(rendered.blob, filename, { text: shareText(docLang), phone: doc.customer?.phone ?? undefined })
+  }
+  const sendEmail = async () => {
     if (!rendered) return
-    const result = await sharePdf(rendered.blob, filename, { text: shareText(docLang), phone: doc.customer?.phone })
-    if (result !== 'cancelled') onShared?.()
+    const result = await shareOrDownload(rendered.blob, filename, 'application/pdf')
+    if (result === 'fallback') {
+      // No share sheet here: the PDF was downloaded; open a pre-filled email to attach it to
+      window.location.href = `mailto:${email ?? ''}?subject=${encodeURIComponent(doc.number)}&body=${encodeURIComponent(shareText(docLang))}`
+    }
   }
 
   return (
     <Card>
       <div className="mb-4 max-w-md">
-        <div className="mb-1.5 text-sm font-medium text-stone-700">{t("لغة المستند", "Document language")}</div>
+        <div className="mb-1.5 text-sm font-medium text-stone-700">{t('لغة المستند', 'Document language')}</div>
         <Segmented
           value={docLang}
           onChange={chooseLang}
@@ -81,18 +128,24 @@ export function DocumentPanel({
         />
       </div>
       <div className="mb-4 flex flex-wrap gap-2">
-        <Button onClick={share} disabled={!rendered} className="!bg-[#25D366] hover:!bg-[#1ebe5a]">
+        <Button onClick={share} disabled={!rendered} className="!bg-[#25D366] !text-white hover:!bg-[#1ebe5a]">
           {rendered ? <Share2 className="size-5" /> : <Loader2 className="size-5 animate-spin" />}
-          {t("مشاركة PDF عبر واتساب", "Share PDF via WhatsApp")}
+          {t('مشاركة PDF عبر واتساب', 'Share PDF via WhatsApp')}
+        </Button>
+        <Button variant="secondary" onClick={sendEmail} disabled={!rendered}>
+          <Mail className="size-5" /> {t('إرسال بالبريد', 'Send by email')}
         </Button>
         <Button variant="secondary" onClick={() => rendered && downloadBlob(rendered.blob, filename)} disabled={!rendered}>
-          <Download className="size-5" /> {t("تنزيل PDF", "Download PDF")}
+          <Download className="size-5" /> {t('تنزيل PDF', 'Download PDF')}
         </Button>
       </div>
-      {failed && <p className="mb-3 text-sm text-red-700">{t("تعذر إنشاء ملف PDF.", "Couldn't create the PDF.")}</p>}
-      <div className="overflow-hidden rounded-xl border border-stone-200 bg-stone-100">
+      {withSeal && images && (!images.stamp || !images.signature) && (
+        <p className="mb-3 text-sm text-muted">{t('لم يُرفع الختم أو التوقيع بعد — يُضافان من الإعدادات ← الشعار والختم والتوقيع.', 'No stamp or signature uploaded yet — add them in Settings → Logo, stamp and signature.')}</p>
+      )}
+      {failed && <p className="mb-3 text-sm text-red-700">{t('تعذر إنشاء ملف PDF.', "Couldn't create the PDF.")}</p>}
+      <div className="overflow-hidden rounded-xl border border-line bg-stone-100">
         {rendered ? (
-          <img src={rendered.previewUrl} alt={t("معاينة المستند", "Document preview")} className="mx-auto w-full max-w-[794px] bg-white" />
+          <img src={rendered.previewUrl} alt={t('معاينة المستند', 'Document preview')} className="mx-auto w-full max-w-[794px] bg-white" />
         ) : (
           <div className="flex aspect-[1/1.414] items-center justify-center text-stone-400">
             <Loader2 className="size-8 animate-spin" />
@@ -100,9 +153,11 @@ export function DocumentPanel({
         )}
       </div>
       {/* Off-screen source for the PDF */}
-      <div aria-hidden style={{ position: 'fixed', top: 0, left: -10000, pointerEvents: 'none' }}>
-        <SalesDocument ref={ref} doc={doc} settings={settings} items={items} lang={docLang} />
-      </div>
+      {images && (
+        <div aria-hidden style={{ position: 'fixed', top: 0, left: -10000, pointerEvents: 'none' }}>
+          <SalesDocument ref={ref} doc={doc} company={company} images={images} lang={docLang} />
+        </div>
+      )}
     </Card>
   )
 }
