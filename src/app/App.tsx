@@ -26,6 +26,11 @@ import { InvoicePage } from '../features/sales/InvoicePage'
 import { QuotePage } from '../features/sales/QuotePage'
 import { SaleFormPage } from '../features/sales/SaleFormPage'
 import { SalesPage } from '../features/sales/SalesPage'
+import { ExpenseFormPage } from '../features/expenses/ExpenseFormPage'
+import { ExpensesPage } from '../features/expenses/ExpensesPage'
+import { ReceivablesPage } from '../features/receivables/ReceivablesPage'
+import { PricingPage } from '../features/pricing/PricingPage'
+import { VatPage } from '../features/vat/VatPage'
 import { getLang } from '../i18n/index'
 import { LoadingScreen, LoginScreen, NotMemberScreen, SetupScreen } from './Gate'
 import { onLanguageChange } from './language'
@@ -67,6 +72,12 @@ function makeRouter() {
         { path: '/production/calculator', element: <CalculatorPage /> },
         { path: '/production/:id', element: <BatchPage /> },
         { path: '/sales', element: <SalesPage /> },
+        { path: '/expenses', element: <ExpensesPage /> },
+        { path: '/receivables', element: <ReceivablesPage /> },
+        { path: '/pricing', element: <PricingPage /> },
+        { path: '/vat', element: <VatPage /> },
+        { path: '/expenses/new', element: <ExpenseFormPage key="new" /> },
+        { path: '/expenses/:id', element: <ExpenseFormPage key="edit" /> },
         { path: '/customers/:id', element: <CustomerPage /> },
         { path: '/quotes/new', element: <SaleFormPage key="quote-new" kind="quote" /> },
         { path: '/quotes/:id/edit', element: <SaleFormPage key="quote-edit" kind="quote" /> },
