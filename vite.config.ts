@@ -3,12 +3,21 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const BUILD_TIME = new Date().toISOString()
+
 export default defineConfig({
   // Relative asset URLs so the build runs from any folder (GitHub Pages sub-path, Netlify root…)
   base: './',
   // Shown in Settings so the owner can confirm the iPad runs the latest version
-  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
+  define: { __BUILD_TIME__: JSON.stringify(BUILD_TIME) },
   plugins: [
+    // version.json: the app compares it with its own build to spot a newer one (never cached)
+    {
+      name: 'version-file',
+      generateBundle() {
+        this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ build: BUILD_TIME }) })
+      },
+    },
     react(),
     tailwindcss(),
     // Offline support: precache the whole app shell so it opens without internet.
