@@ -142,4 +142,19 @@ describe('demo factory', () => {
     await rpc('reset_all_data')
     expect((await q(`select 1 from sales_invoices union all select 1 from customers`)).length).toBe(0)
   })
+
+  it('accepting with a price option uses its prices, due date and note', async () => {
+    const qid = await rpc('save_quotation', json({
+      customer_id: customer, date: '2026-10-08',
+      lines: [{ product_id: product, qty: 10, unit_price_baisa: 1500 }],
+      price_options: [{ key: 'advance', pct: -5 }, { key: 'installments', pct: 0 }, { key: 'deferred', pct: 5, n: 60 }, { key: 'bulk', pct: -10, n: 1000 }],
+    }))
+    await expect(rpc('accept_quotation', qid, '2026-10-10', 'other', null)).rejects.toThrow(/خيار السعر/)
+    const inv = await rpc('accept_quotation', qid, '2026-10-10', 'deferred', 'الدفع بعد 60 يوماً')
+    expect(await one(`select due_date::text, total_baisa::text, notes from sales_invoices where id = $1`, [inv]))
+      .toEqual({ due_date: '2026-12-09', total_baisa: '15750', notes: 'الدفع بعد 60 يوماً' })
+    expect(await one(`select unit_price_baisa::text from invoice_lines where invoice_id = $1`, [inv])).toEqual({ unit_price_baisa: '1575' })
+    expect(await one(`select chosen_option, jsonb_array_length(price_options) as n from quotations where id = $1`, [qid]))
+      .toEqual({ chosen_option: 'deferred', n: 4 })
+  })
 })
