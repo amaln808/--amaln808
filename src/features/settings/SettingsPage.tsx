@@ -1,4 +1,4 @@
-import { buildLabel } from '../../app/pwaUpdate'
+import { buildLabel, forceUpdate } from '../../app/pwaUpdate'
 import { Check, LogOut } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSettingsQuery } from '../../app/settingsContext'
@@ -218,9 +218,14 @@ function AccountCard() {
           {t('تسجيل الخروج', 'Sign out')}
         </Button>
       </div>
-      <p className="mt-4 text-sm text-muted">
-        {t('إصدار التطبيق:', 'App version:')} <span dir="ltr" className="num">{buildLabel()}</span>
-      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted">
+        <span>
+          {t('إصدار التطبيق:', 'App version:')} <span dir="ltr" className="num">{buildLabel()}</span>
+        </span>
+        <Button variant="ghost" onClick={() => forceUpdate()}>
+          {t('تحديث التطبيق الآن', 'Update the app now')}
+        </Button>
+      </div>
       {dialog}
     </Card>
   )

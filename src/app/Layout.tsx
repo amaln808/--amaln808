@@ -5,6 +5,7 @@ import { MyTasksButton } from '../features/tasks/MyTasksButton'
 import { t } from '../i18n/index'
 import { LOGO_URL } from './assets'
 import { BackupReminder } from './BackupReminder'
+import { UpdateBanner } from './UpdateBanner'
 import { ConnectionBadge } from './ConnectionBadge'
 import { LanguageToggle } from './LanguageToggle'
 import { isNavActive, navItems } from './nav'
@@ -97,6 +98,7 @@ export function Layout() {
               <MyTasksButton />
             </div>
           </div>
+          <UpdateBanner />
           <BackupReminder />
           <Outlet />
         </div>
