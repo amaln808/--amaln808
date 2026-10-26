@@ -17,6 +17,7 @@ export function toDocData(p: {
   totals: { subtotalBaisa: number; discountBaisa: number; vatBaisa: number; totalBaisa: number }
   paidBaisa?: number
   notes: string | null
+  options?: DocData['options']
 }): DocData {
   return {
     kind: p.kind,
@@ -40,6 +41,7 @@ export function toDocData(p: {
     ...p.totals,
     paidBaisa: p.paidBaisa,
     notes: p.notes,
+    options: p.options,
   }
 }
 

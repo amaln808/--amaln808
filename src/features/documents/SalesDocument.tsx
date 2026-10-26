@@ -33,6 +33,8 @@ export interface DocData {
   /** Invoices: amount received so far */
   paidBaisa?: number
   notes: string | null
+  /** Quotations: the price of each line for each way of paying, with the total */
+  options?: Array<{ ar: string; en: string; prices: number[]; totalBaisa: number }>
 }
 
 export interface DocCompany {
@@ -119,7 +121,8 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
       : L('عرض أسعار', 'QUOTATION')
     const addressAr = company.address ? `${company.address} — سلطنة عُمان` : 'سلطنة عُمان'
     const addressEn = company.addressEn ? `${company.addressEn}, Sultanate of Oman` : 'Sultanate of Oman'
-    const filler = Math.max(0, MIN_ROWS[lang] - doc.lines.length)
+    const options = !isInvoice && doc.options?.length ? doc.options : null
+    const filler = Math.max(0, MIN_ROWS[lang] - doc.lines.length - (options ? doc.lines.length + 4 : 0))
     const cell = (align: 'start' | 'end' | 'center' = 'start'): React.CSSProperties => ({
       padding: '9px 10px',
       textAlign: align === 'start' ? start : align === 'end' ? end : 'center',
@@ -271,7 +274,9 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
                       : '—'}
                   </td>
                 )}
-                <td style={cell('center')}>{num(formatQty(l.qty, l.unit, unitLang))}</td>
+                <td style={cell('center')}>
+                  <span style={{ unicodeBidi: 'isolate', direction: unitLang === 'en' ? 'ltr' : 'rtl', display: 'inline-block' }}>{formatQty(l.qty, l.unit, unitLang)}</span>
+                </td>
                 <td style={cell('end')}>{num(formatBaisa(l.unitPriceBaisa))}</td>
                 <td style={{ ...cell('end'), fontWeight: 700 }}>{num(formatBaisa(l.grossBaisa))}</td>
               </tr>
@@ -319,6 +324,45 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
             </tbody>
           </table>
         </div>
+
+        {/* Quotation: price per way of paying */}
+        {options && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontWeight: 700, color: BRAND, marginBottom: 6, fontSize: 15 }}>{L('خيارات الأسعار حسب طريقة الدفع', 'Prices by payment option', { inline: true })}</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: TINT, color: BRAND }}>
+                  <th style={{ ...cell('start'), fontWeight: 700 }}>{L('الصنف (سعر الوحدة)', 'Item (unit price)')}</th>
+                  {options.map((o, i) => (
+                    <th key={i} style={{ ...cell('center'), fontWeight: 700, width: 120 }}>
+                      {L(o.ar, o.en)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {doc.lines.map((l, i) => (
+                  <tr key={i}>
+                    <td style={cell('start')}>{itemName(l)}</td>
+                    {options.map((o, j) => (
+                      <td key={j} style={cell('center')}>
+                        {num(formatBaisa(o.prices[i]))}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                <tr style={{ fontWeight: 700 }}>
+                  <td style={cell('start')}>{company.vatRegistered ? L('الإجمالي قبل الضريبة', 'Total before VAT') : L('الإجمالي', 'Total')}</td>
+                  {options.map((o, j) => (
+                    <td key={j} style={cell('center')}>
+                      {num(formatBaisa(o.totalBaisa))}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Signature & stamp — issued invoices only, pushed to the bottom of the page */}
         {seal && (

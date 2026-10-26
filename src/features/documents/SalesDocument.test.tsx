@@ -39,4 +39,14 @@ describe('SalesDocument', () => {
     }
     expect(html(doc('invoice', 'void'))).toContain('ملغاة')
   })
+
+  it('lists the price of each payment option on a quotation only', () => {
+    const options = [{ ar: 'الدفع مقدماً', en: 'Payment in advance', prices: [1425], totalBaisa: 14250 }]
+    const quote = html({ ...doc('quote', 'sent'), options })
+    expect(quote).toContain('خيارات الأسعار حسب طريقة الدفع')
+    expect(quote).toContain('الدفع مقدماً')
+    expect(quote).toContain('14.250')
+    expect(html({ ...doc('invoice', 'issued'), options })).not.toContain('الدفع مقدماً')
+  })
 })
+

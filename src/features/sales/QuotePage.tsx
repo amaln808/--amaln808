@@ -2,7 +2,7 @@ import { CheckCircle2, Pencil, Send, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useSettingsQuery } from '../../app/settingsContext'
-import { DateInput, Field, FormError } from '../../components/form'
+import { DateInput, Field, FormError, Select } from '../../components/form'
 import { Modal } from '../../components/Modal'
 import { Badge, Button, Card, PageHeader } from '../../components/ui'
 import { serverError } from '../../data/errors'
@@ -12,10 +12,12 @@ import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
 import { formatBaisa, formatOMR, lineTotal } from '../../domain/money'
 import { formatQty } from '../../domain/quantity'
+import { optionTotals, type OptionKey } from '../../domain/quoteOptions'
 import { nameOf, t } from '../../i18n/index'
 import { DocumentPanel } from '../documents/DocumentPanel'
 import { formatDate } from '../tasks/labels'
 import { shareMessage, toDocData } from './docData'
+import { optionLabel, optionLabels } from './priceOptions'
 import { QUOTE_TONE, quoteStatusLabel, quoteStatusOf } from './summary'
 
 export function QuotePage() {
@@ -28,6 +30,7 @@ export function QuotePage() {
   const [error, setError] = useState<string | null>(null)
   const [accepting, setAccepting] = useState(false)
   const [acceptDate, setAcceptDate] = useState(todayIso())
+  const [choice, setChoice] = useState<OptionKey | ''>('')
   const [busy, setBusy] = useState(false)
   const today = todayIso()
 
@@ -44,6 +47,8 @@ export function QuotePage() {
   const customer = sales.data?.customers.find((c) => c.id === qt.customerId)
   const status = quoteStatusOf(qt, today)
   const open = qt.status === 'draft' || qt.status === 'sent'
+  const priced = (qt.priceOptions ?? []).map((o) => ({ o, ...optionTotals(lines, qt.discountBaisa, o.pct) }))
+  const chosen = qt.priceOptions?.find((o) => o.key === (choice || qt.chosenOption))
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true)
@@ -56,11 +61,13 @@ export function QuotePage() {
       setBusy(false)
     }
   }
-  const accept = () =>
-    run(async () => {
-      const invoiceId = await acceptQuotation(qt.id, acceptDate)
+  const accept = () => {
+    if (priced.length && !choice) return setError(t('يُرجى اختيار طريقة الدفع التي وافق عليها العميل.', 'Choose the payment option the customer agreed to.'))
+    return run(async () => {
+      const invoiceId = await acceptQuotation(qt.id, acceptDate, chosen ? { key: chosen.key, note: optionLabels(chosen).ar } : undefined)
       navigate(`/invoices/${invoiceId}`)
     })
+  }
 
   return (
     <>
@@ -134,6 +141,24 @@ export function QuotePage() {
           </div>
         </Card>
 
+        {priced.length > 0 && (
+          <Card className="p-0">
+            <h2 className="px-5 pt-4 text-lg font-bold">{t('خيارات الأسعار حسب طريقة الدفع', 'Prices by payment option')}</h2>
+            <ul className="mt-2 divide-y divide-line">
+              {priced.map(({ o, prices, totalBaisa }) => (
+                <li key={o.key} className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 ${qt.chosenOption === o.key ? 'bg-brand-50' : ''}`}>
+                  <span className="min-w-0 flex-1 font-medium">
+                    {optionLabel(o)}
+                    {qt.chosenOption === o.key && <span className="ms-2"><Badge tone="green">{t('اختاره العميل', 'Chosen')}</Badge></span>}
+                  </span>
+                  <span className="num text-sm text-muted">{prices.map((p) => formatBaisa(p)).join(' · ')}</span>
+                  <span className="num font-bold">{formatOMR(totalBaisa)}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
         {settings && (
           <DocumentPanel
             doc={toDocData({
@@ -147,6 +172,7 @@ export function QuotePage() {
               products,
               totals: qt,
               notes: qt.notes,
+              options: priced.map(({ o, prices, totalBaisa }) => ({ ...optionLabels(o), prices, totalBaisa })),
             })}
             settings={settings}
             email={customer?.email}
@@ -168,11 +194,28 @@ export function QuotePage() {
         >
           <div className="flex flex-col gap-4">
             <p>
-              {t(
+              {priced.length > 0
+                ? t(
+                    'تصدر فاتورة برقم تسلسلي جديد بنفس البنود وبأسعار طريقة الدفع المختارة (وتاريخ استحقاقها)، ويُخصم المنتج من الدفعات الأقرب انتهاءً أولاً، ويُضاف الختم والتوقيع.',
+                    'A new numbered invoice is issued with the same lines at the chosen option’s prices (and due date); stock comes out of the lots nearest expiry first; the stamp and signature are added.',
+                  )
+                : t(
                 'تصدر فاتورة برقم تسلسلي جديد بنفس البنود والأسعار، ويُخصم المنتج من الدفعات الأقرب انتهاءً أولاً، ويُضاف الختم والتوقيع.',
                 'A new numbered invoice is issued with the same lines and prices; stock comes out of the lots nearest expiry first; the stamp and signature are added.',
-              )}
+                  )}
             </p>
+            {priced.length > 0 && (
+              <Field label={t('طريقة الدفع التي وافق عليها العميل', 'Payment option the customer agreed to')} hint={chosen ? t(`إجمالي الفاتورة ${formatOMR(priced.find((x) => x.o.key === chosen.key)!.totalBaisa)}`, `Invoice total ${formatOMR(priced.find((x) => x.o.key === chosen.key)!.totalBaisa)}`) : undefined}>
+                <Select value={choice} onChange={(e) => setChoice(e.target.value as OptionKey | '')}>
+                  <option value="">{t('اختيار…', 'Choose…')}</option>
+                  {priced.map(({ o }) => (
+                    <option key={o.key} value={o.key}>
+                      {optionLabel(o)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            )}
             <Field label={t('تاريخ الفاتورة', 'Invoice date')}>
               <DateInput value={acceptDate} onChange={(e) => setAcceptDate(e.target.value)} />
             </Field>
