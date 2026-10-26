@@ -1,5 +1,5 @@
 import { t } from '../i18n/index'
-import { today } from '../db/records'
+import { todayIso as today } from '../data/schedule'
 import { type DateRange, type PeriodKey, periodRange } from '../domain/periods'
 import { DateInput } from './form'
 
@@ -36,7 +36,7 @@ export function PeriodFilter({ value, onChange }: { value: PeriodValue; onChange
             type="button"
             onClick={() => onChange({ ...value, key: o.key })}
             className={`min-h-10 shrink-0 rounded-full border px-4 text-sm transition ${
-              value.key === o.key ? 'border-brand-700 bg-brand-700 font-bold text-white' : 'border-stone-300 bg-white text-stone-700'
+              value.key === o.key ? 'border-brand-700 bg-brand-700 font-bold text-on-brand' : 'border-line bg-card text-ink'
             }`}
           >
             {o.label}

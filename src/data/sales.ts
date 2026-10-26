@@ -400,3 +400,10 @@ export async function fetchCustomerLots(customerId: string): Promise<CustomerLot
     ),
   )
 }
+
+/** Remembers when the customer was last sent a payment reminder. */
+export async function markReminded(customerId: string) {
+  const { error } = await db().from('customers').update({ last_reminder_at: new Date().toISOString() }).eq('id', customerId)
+  if (error) throw error
+  invalidate(SALES_KEY)
+}
