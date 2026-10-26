@@ -4,6 +4,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { MyTasksButton } from '../features/tasks/MyTasksButton'
 import { t } from '../i18n/index'
 import { LOGO_URL } from './assets'
+import { BackupReminder } from './BackupReminder'
 import { ConnectionBadge } from './ConnectionBadge'
 import { LanguageToggle } from './LanguageToggle'
 import { isNavActive, navItems } from './nav'
@@ -96,6 +97,7 @@ export function Layout() {
               <MyTasksButton />
             </div>
           </div>
+          <BackupReminder />
           <Outlet />
         </div>
       </main>

@@ -7,6 +7,7 @@ import {
   lowStockItems,
   monthlySeries,
   outstanding,
+  topChannels,
   topCustomers,
   topProducts,
 } from './dashboard'
@@ -15,11 +16,11 @@ import {
 const data: DashboardInput = {
   invoices: [
     {
-      id: 'i1', customerId: 'store', date: '2026-10-05', subtotalBaisa: 69000, discountBaisa: 5000, totalBaisa: 64000,
+      id: 'i1', customerId: 'store', channelId: 'retail', date: '2026-10-05', subtotalBaisa: 69000, discountBaisa: 5000, totalBaisa: 64000,
       lines: [{ itemId: 'p250', qty: 30, unitPriceBaisa: 2300, unitCostBaisa: 365 }],
     },
     {
-      id: 'i2', customerId: 'mom', date: '2026-10-12', subtotalBaisa: 9000, discountBaisa: 0, totalBaisa: 9000,
+      id: 'i2', customerId: 'mom', channelId: 'relief', date: '2026-10-12', subtotalBaisa: 9000, discountBaisa: 0, totalBaisa: 9000,
       lines: [{ itemId: 'p500', qty: 2, unitPriceBaisa: 4500, unitCostBaisa: 700 }],
     },
     {
@@ -101,6 +102,10 @@ describe('rankings and balances', () => {
     expect(topProducts(data, october)).toEqual([
       { itemId: 'p250', qty: 30, revenueBaisa: 64000 },
       { itemId: 'p500', qty: 2, revenueBaisa: 9000 },
+    ])
+    expect(topChannels(data, october)).toEqual([
+      { key: 'retail', total: 64000 },
+      { key: 'relief', total: 9000 },
     ])
     expect(expensesByCategory(data, october)).toEqual([
       { key: 'rent', total: 15000 },

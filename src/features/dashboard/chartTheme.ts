@@ -1,19 +1,19 @@
 /**
- * Chart colors: first three slots of the validated reference palette
- * (checked with the dataviz validator against the white card surface).
+ * Chart colors: the first three slots of the dataviz reference palette, as CSS
+ * tokens in src/index.css so light and dark each use their own validated steps.
  * Blue = money in / revenue, orange = money out / costs, aqua = net.
- * Aqua is under 3:1 contrast, so charts always ship a legend, tooltip and table view.
+ * Aqua is under 3:1 on white, so charts always ship a legend, tooltip and table view.
  */
 export const SERIES = {
-  in: '#2a78d6',
-  out: '#eb6834',
-  net: '#1baf7a',
+  in: 'var(--viz-in)',
+  out: 'var(--viz-out)',
+  net: 'var(--viz-net)',
 }
 
 export const CHROME = {
-  grid: '#e7e5e4',
-  axis: '#a8a29e',
-  text: '#78716c',
+  grid: 'var(--line)',
+  axis: 'var(--line)',
+  text: 'var(--muted)',
 }
 
 /** Axis ticks in whole rials: 12500000 baisa → "12,500" */
