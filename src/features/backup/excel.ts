@@ -1,15 +1,14 @@
 import { t } from '../../i18n/index'
-import { buildBackupSheets, parseBackupSheets, type BackupData } from './format'
+import { type Backup, buildBackupSheets, parseBackupSheets } from './format'
 
 const widthFor = (rows: unknown[][], i: number) =>
   Math.min(40, Math.max(10, ...rows.slice(0, 50).map((r) => String((r[i] as { value?: unknown } | null)?.value ?? '').length + 2)))
 
 /** Builds the .xlsx in the browser (library loaded on demand). */
-export async function backupToBlob(data: BackupData, exportedAt: string, dbVersion: number): Promise<Blob> {
+export async function backupToBlob(b: Backup): Promise<Blob> {
   const { default: writeXlsxFile } = await import('write-excel-file/browser')
-  const sheets = buildBackupSheets(data, exportedAt, dbVersion)
   return writeXlsxFile(
-    sheets.map((s) => ({
+    buildBackupSheets(b).map((s) => ({
       sheet: s.sheet,
       data: s.data,
       rightToLeft: true,
@@ -19,17 +18,17 @@ export async function backupToBlob(data: BackupData, exportedAt: string, dbVersi
   ).toBlob()
 }
 
-export async function backupFromFile(file: File) {
+export async function backupFromFile(file: File): Promise<Backup> {
   const { default: readXlsxFile } = await import('read-excel-file/browser')
   let sheets
   try {
     sheets = await readXlsxFile(file)
   } catch {
-    throw Object.assign(new Error(t("تعذرت قراءة الملف — تأكد أنه ملف Excel صدّرته من التطبيق", "Couldn't read the file — make sure it's an Excel file exported from the app")), { name: 'UserError' })
+    throw Object.assign(new Error(t('تعذرت قراءة الملف — يُرجى اختيار ملف Excel صدر من التطبيق.', "Couldn't read the file — choose an Excel file exported from the app.")), { name: 'UserError' })
   }
   return parseBackupSheets(sheets as Array<{ sheet: string; data: unknown[][] }>)
 }
 
 export function backupFileName(date: string): string {
-  return `zawrda-backup-${date}.xlsx`
+  return `zuwardah-backup-${date}.xlsx`
 }

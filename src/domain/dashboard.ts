@@ -7,6 +7,8 @@ import { netRevenue } from './sales'
 export interface DashInvoice {
   id: string
   customerId: string
+  /** Channel at the time of sale */
+  channelId?: string | null
   date: string
   subtotalBaisa: number
   discountBaisa: number
@@ -139,6 +141,10 @@ export function monthlySeries(d: DashboardInput, months: string[]): MonthRow[] {
 
 export function topCustomers(d: DashboardInput, r: DateRange, limit = 5) {
   return totalsBy(d.invoices.filter((i) => inRange(i.date, r)), (i) => i.customerId, invoiceRevenue).slice(0, limit)
+}
+
+export function topChannels(d: DashboardInput, r: DateRange, limit = 5) {
+  return totalsBy(d.invoices.filter((i) => inRange(i.date, r)), (i) => i.channelId ?? '', invoiceRevenue).slice(0, limit)
 }
 
 export interface ProductTotal {

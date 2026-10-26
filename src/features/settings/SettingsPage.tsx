@@ -11,6 +11,7 @@ import { serverError } from '../../data/errors'
 import { type FontScale, type Settings, type ThemeMode, updateSettings } from '../../data/settings'
 import { useOutboxCounts } from '../../data/useOnline'
 import { t } from '../../i18n/index'
+import { BackupCard } from '../backup/BackupCard'
 import { BrandingCard } from './BrandingCard'
 import { DemoDataCard } from './DemoDataCard'
 import { PendingChangesCard } from './PendingChangesCard'
@@ -243,6 +244,7 @@ export function SettingsPage() {
             </p>
           )}
           <PendingChangesCard />
+          <BackupCard />
           <CompanyCard settings={s} />
           <BrandingCard settings={s} />
           <SalesSettingsCard settings={s} />
