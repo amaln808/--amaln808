@@ -34,6 +34,8 @@ export interface Settings {
   uiLanguage: 'ar' | 'en'
   docLanguage: 'ar' | 'en' | 'both'
   lastBackupAt: string | null
+  /** Jars planned each month: spreads fixed costs over each jar */
+  plannedMonthlyUnits: number | null
   updatedAt: string
 }
 

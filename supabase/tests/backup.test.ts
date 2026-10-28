@@ -37,12 +37,14 @@ describe('backup', () => {
 
   it('restores the demo factory exactly, in one go', async () => {
     await q('select public.load_demo_data()')
+    await q(`insert into assets (name, category, purchase_date, cost_baisa, life_months) values ('آلة التشكيل والتغليف', 'آلات ومعدات', '2026-09-01', 6000000, 84)`)
     const before = await snapshot()
     const backup = (await one<{ b: Record<string, unknown> }>('select public.export_backup() as b')).b
     expect(backup).toMatchObject({ app: 'zawrda', format: 2 })
 
     await q('select public.reset_all_data()')
     expect((await one<{ n: number }>('select count(*)::int as n from items')).n).toBe(0)
+    expect((await one<{ n: number }>('select count(*)::int as n from assets')).n).toBe(0)
 
     const counts = (await one<{ c: Record<string, number> }>('select public.restore_backup($1) as c', [JSON.stringify(backup)])).c
     expect(counts.items).toBeGreaterThan(0)
@@ -72,5 +74,14 @@ describe('backup', () => {
     await queryAs(db, { role: 'admin' }, `insert into members (user_id, display_name, role) values ($1, 'staff', 'staff') on conflict (user_id) do update set role = 'staff', active = true`, [STAFF])
     await expect(queryAs(db, { role: 'authenticated', userId: STAFF }, 'select public.restore_backup($1)', [JSON.stringify(backup)])).rejects.toThrow(/لصاحبة المشروع/)
     await expect(queryAs(db, { role: 'anon' }, 'select public.export_backup()')).rejects.toThrow()
+  })
+
+  it('assets: only members, and the cost must be above the end value', async () => {
+    await expect(q(`insert into assets (name, purchase_date, cost_baisa, life_months, residual_baisa) values ('x', '2026-09-01', 1000, 12, 1000)`)).rejects.toThrow()
+    await q(`insert into assets (name, purchase_date, cost_baisa, life_months) values ('x', '2026-09-01', 1000, 12)`)
+    expect(await queryAs(db, { role: 'anon' }, 'select * from assets').catch(() => [])).toEqual([])
+    await createUser(db, STAFF, 'outsider@example.com')
+    await queryAs(db, { role: 'admin' }, 'delete from members where user_id = $1', [STAFF])
+    expect(await queryAs(db, { role: 'authenticated', userId: STAFF }, 'select * from assets')).toEqual([])
   })
 })

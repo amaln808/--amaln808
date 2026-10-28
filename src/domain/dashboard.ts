@@ -1,3 +1,4 @@
+import { type AssetLike, depreciationIn } from './depreciation'
 import { isLowStock, stockValue } from './inventory'
 import { lineTotal } from './money'
 import { type DateRange, inRange, totalsBy } from './periods'
@@ -52,6 +53,8 @@ export interface DashboardInput {
   expenses: DashExpense[]
   batches: DashBatch[]
   items: DashItem[]
+  /** Machines, fit-out, set-up costs: their monthly depreciation is a cost */
+  assets?: AssetLike[]
 }
 
 /** Invoice revenue (excl. VAT) and cost of the goods it sold. */
@@ -71,6 +74,8 @@ export interface Kpis {
   grossProfitBaisa: number
   grossMargin: number | null
   expensesBaisa: number
+  /** Share of machines and fit-out used up in the period (no cash goes out) */
+  depreciationBaisa: number
   netProfitBaisa: number
   netMargin: number | null
   unitsProduced: number
@@ -89,7 +94,8 @@ export function computeKpis(d: DashboardInput, r: DateRange): Kpis {
   const cogsBaisa = sum(inv, invoiceCogs)
   const grossProfitBaisa = revenueBaisa - cogsBaisa
   const expensesBaisa = sum(d.expenses.filter((e) => inRange(e.date, r)), (e) => e.amountBaisa)
-  const netProfitBaisa = grossProfitBaisa - expensesBaisa
+  const depreciationBaisa = depreciationIn(d.assets ?? [], r)
+  const netProfitBaisa = grossProfitBaisa - expensesBaisa - depreciationBaisa
   const batches = d.batches.filter((b) => inRange(b.date, r))
   const unitsProduced = sum(batches, (b) => b.qtyProduced)
   const cashInBaisa = sum(d.customerPayments.filter((p) => inRange(p.date, r)), (p) => p.amountBaisa)
@@ -101,6 +107,7 @@ export function computeKpis(d: DashboardInput, r: DateRange): Kpis {
     grossProfitBaisa,
     grossMargin: ratio(grossProfitBaisa, revenueBaisa),
     expensesBaisa,
+    depreciationBaisa,
     netProfitBaisa,
     netMargin: ratio(netProfitBaisa, revenueBaisa),
     unitsProduced,
@@ -130,7 +137,7 @@ export function monthlySeries(d: DashboardInput, months: string[]): MonthRow[] {
     return {
       month,
       revenueBaisa: k.revenueBaisa,
-      costsBaisa: k.cogsBaisa + k.expensesBaisa,
+      costsBaisa: k.cogsBaisa + k.expensesBaisa + k.depreciationBaisa,
       netProfitBaisa: k.netProfitBaisa,
       cashInBaisa: k.cashInBaisa,
       cashOutBaisa: k.cashOutBaisa,
