@@ -13,9 +13,10 @@ import { fetchSales, SALES_KEY } from '../../data/sales'
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
 import { computeKpis, expensesByCategory, inventoryValue, monthlySeries, topChannels, topCustomers, topProducts } from '../../domain/dashboard'
+import { payback } from '../../domain/depreciation'
 import { forecastCash, lastFullMonths } from '../../domain/forecast'
 import { formatOMR, ltr } from '../../domain/money'
-import { type DateRange, inRange, monthsInRange } from '../../domain/periods'
+import { type DateRange, inRange, monthsInRange, periodRange } from '../../domain/periods'
 import { formatQty } from '../../domain/quantity'
 import { nameOf, t } from '../../i18n/index'
 import { useStock } from '../inventory/useStock'
@@ -141,6 +142,14 @@ export function DashboardPage() {
     payableBaisa: payable,
   })
 
+  // Getting the money put into machines and set-up back: earnings before depreciation so far
+  const invested = (input.assets ?? []).reduce((s, a) => s + a.costBaisa, 0)
+  const earned = (r: DateRange) => {
+    const x = computeKpis(input, r)
+    return x.grossProfitBaisa - x.expensesBaisa
+  }
+  const back = invested ? payback(invested, earned(periodRange('all', today)), past.map((m) => earned({ from: `${m}-01`, to: `${m}-31` }))) : null
+
   const { alerts } = stock
   const anyAlert = alerts.expiredLots.length + alerts.expiringLots.length + alerts.low.length > 0 || overdue > 0
 
@@ -192,7 +201,11 @@ export function DashboardPage() {
           label={t('صافي الربح', 'Net profit')}
           value={formatOMR(k.netProfitBaisa)}
           tone={k.netProfitBaisa > 0 ? 'good' : k.netProfitBaisa < 0 ? 'bad' : undefined}
-          sub={t(`هامش الربح ${pct(k.netMargin)} — بعد تكلفة البضاعة ${formatOMR(k.cogsBaisa)} والمصروفات`, `Margin ${pct(k.netMargin)} — after goods sold ${formatOMR(k.cogsBaisa)} and expenses`)}
+          sub={
+            k.depreciationBaisa
+              ? t(`هامش الربح ${pct(k.netMargin)} — بعد تكلفة البضاعة ${formatOMR(k.cogsBaisa)} والمصروفات وإهلاك المعدات ${formatOMR(k.depreciationBaisa)}`, `Margin ${pct(k.netMargin)} — after goods sold ${formatOMR(k.cogsBaisa)}, expenses and equipment depreciation ${formatOMR(k.depreciationBaisa)}`)
+              : t(`هامش الربح ${pct(k.netMargin)} — بعد تكلفة البضاعة ${formatOMR(k.cogsBaisa)} والمصروفات`, `Margin ${pct(k.netMargin)} — after goods sold ${formatOMR(k.cogsBaisa)} and expenses`)
+          }
         />
         <Kpi
           label={t('متوسط تكلفة العبوة المنتجة', 'Average cost per jar made')}
@@ -219,7 +232,7 @@ export function DashboardPage() {
           rows={monthly}
           series={[
             { key: 'revenueBaisa', label: t('الإيرادات', 'Revenue'), color: SERIES.in, kind: 'bar' },
-            { key: 'costsBaisa', label: t('التكاليف (بضاعة مباعة + مصروفات)', 'Costs (goods sold + expenses)'), color: SERIES.out, kind: 'bar' },
+            { key: 'costsBaisa', label: t('التكاليف (بضاعة مباعة + مصروفات + إهلاك)', 'Costs (goods sold + expenses + depreciation)'), color: SERIES.out, kind: 'bar' },
             { key: 'netProfitBaisa', label: t('صافي الربح', 'Net profit'), color: SERIES.net, kind: 'line' },
           ]}
         />
@@ -275,6 +288,36 @@ export function DashboardPage() {
           <span className="num">{formatOMR(Math.abs(fc.netBaisa))}</span>
         </div>
       </Card>
+
+      {back && (
+        <Card className="mb-5">
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-bold">{t('استرداد رأس المال', 'Getting the investment back')}</h2>
+            <Link to="/assets" className="text-sm text-brand-800 underline">
+              {t(`المستثمر في الأصول ${formatOMR(invested)}`, `${formatOMR(invested)} invested in assets`)}
+            </Link>
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-ground">
+            <div className="h-full rounded-full bg-palm" style={{ width: `${back.share * 100}%` }} />
+          </div>
+          <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm">
+            <span>
+              {t('استُرد', 'Recovered')} <b className="num">{formatOMR(back.recoveredBaisa)}</b> ({pct(back.share)})
+            </span>
+            <span>
+              {t('المتبقي', 'Left')} <b className="num">{formatOMR(back.leftBaisa)}</b>
+              {back.monthsLeft != null && back.monthsLeft > 0 && <span className="text-muted">{t(` — نحو ${back.monthsLeft} شهراً بمعدل آخر 3 أشهر`, ` — about ${back.monthsLeft} months at the last 3 months' pace`)}</span>}
+            </span>
+          </div>
+          <p className="mt-2 text-xs text-muted">
+            {t(
+              'المسترد = ما ربحه المصنع منذ البداية قبل الإهلاك (الإيرادات − تكلفة البضاعة − المصروفات).',
+              'Recovered = what the factory has earned since the start before depreciation (revenue − goods sold − expenses).',
+            )}
+            {back.monthsLeft == null && t(' لا يمكن تقدير المدة المتبقية قبل أن تحقق الأشهر الأخيرة ربحاً.', ' The time left cannot be estimated until recent months make a profit.')}
+          </p>
+        </Card>
+      )}
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <RankList

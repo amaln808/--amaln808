@@ -15,6 +15,7 @@ import {
   Settings,
   Truck,
   Users,
+  Wrench,
 } from 'lucide-react'
 import { t } from '../i18n/index'
 
@@ -49,6 +50,7 @@ export function navItems(): NavItem[] {
     { to: '/expenses', label: t('المصروفات', 'Expenses'), icon: ReceiptText, primary: false, phase: 0 },
     { to: '/receivables', label: t('المستحقات', 'Receivables'), icon: HandCoins, primary: false, phase: 0 },
     { to: '/pricing', label: t('حاسبة التسعير', 'Pricing calculator'), icon: Calculator, primary: false, phase: 0 },
+    { to: '/assets', label: t('الأصول والمعدات', 'Assets & equipment'), shortLabel: t('الأصول', 'Assets'), icon: Wrench, primary: false, phase: 0 },
     { to: '/vat', label: t('الضريبة', 'VAT'), icon: BadgePercent, primary: false, phase: 0 },
     { to: '/tasks', label: t('مهامي', 'My tasks'), icon: ListChecks, primary: false, phase: 0 },
     { to: '/agreements', label: t('الاتفاقيات والتصاريح', 'Agreements & permits'), icon: ScrollText, primary: false, phase: 0 },

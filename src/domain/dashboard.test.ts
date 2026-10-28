@@ -70,6 +70,16 @@ describe('dashboard KPIs (checked by hand)', () => {
     expect(k.avgUnitCostBaisa).toBe(432)
     expect(k.unitsSold).toBe(32)
     expect(k.invoiceCount).toBe(2)
+    expect(k.depreciationBaisa).toBe(0)
+  })
+
+  it('takes the month\'s depreciation of machines off the net profit (not the cash)', () => {
+    const withAssets = { ...data, assets: [{ purchaseDate: '2026-09-10', costBaisa: 1_200_000, lifeMonths: 60, residualBaisa: 0 }] }
+    const k = computeKpis(withAssets, october)
+    expect(k.depreciationBaisa).toBe(20000)
+    expect(k.netProfitBaisa).toBe(43150 - 20000)
+    expect(k.cashOutBaisa).toBe(computeKpis(data, october).cashOutBaisa)
+    expect(monthlySeries(withAssets, ['2026-10'])[0]).toMatchObject({ costsBaisa: 12350 + 17500 + 20000, netProfitBaisa: 23150 })
   })
 
   it('computes cash on payment dates', () => {

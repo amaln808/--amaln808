@@ -45,6 +45,7 @@ export const SHEETS: Record<string, string> = {
   agreements: 'الاتفاقيات والتصاريح',
   tasks: 'المهام',
   task_completions: 'المهام المنجزة',
+  assets: 'الأصول والمعدات',
 }
 
 type Rec = Record<string, unknown>

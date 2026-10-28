@@ -18,6 +18,7 @@ import { PurchaseFormPage } from '../features/purchases/PurchaseFormPage'
 import { PurchasePage } from '../features/purchases/PurchasePage'
 import { SupplierPage } from '../features/suppliers/SupplierPage'
 import { SuppliersPage } from '../features/suppliers/SuppliersPage'
+import { AssetsPage } from '../features/assets/AssetsPage'
 import { AuditPage } from '../features/audit/AuditPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
@@ -78,6 +79,7 @@ function makeRouter() {
         { path: '/receivables', element: <ReceivablesPage /> },
         { path: '/pricing', element: <PricingPage /> },
         { path: '/vat', element: <VatPage /> },
+        { path: '/assets', element: <AssetsPage /> },
         { path: '/expenses/new', element: <ExpenseFormPage key="new" /> },
         { path: '/expenses/:id', element: <ExpenseFormPage key="edit" /> },
         { path: '/customers/:id', element: <CustomerPage /> },
