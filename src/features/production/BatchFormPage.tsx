@@ -11,7 +11,7 @@ import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
 import { fefoEstimate, planFromRecipe } from '../../domain/fefo'
 import { formatOMR, parseRialToBaisa } from '../../domain/money'
-import { formatQty, parseQty, type Unit, unitLabel } from '../../domain/quantity'
+import { formatQty, literHint, parseQty, type Unit, unitLabel } from '../../domain/quantity'
 import { nameKey } from '../../domain/text'
 import { nameOf, t } from '../../i18n/index'
 import { type MaterialType, NewMaterialFields } from '../inventory/NewMaterialFields'
@@ -206,7 +206,7 @@ export function BatchFormPage() {
                   <Field label={t('المادة', 'Material')}>
                     <Combobox value={r.name} onChange={(v) => updateRow(r.key, { name: v })} options={materialOptions} newLabel={t('جديدة', 'New')} />
                   </Field>
-                  <Field label={t('الكمية', 'Qty')}>
+                  <Field label={t('الكمية', 'Qty')} hint={literHint(unit, r.qty)}>
                     <NumberInput value={r.qty} onChange={(e) => updateRow(r.key, { qty: e.target.value })} suffix={unit ? unitLabel(unit) : undefined} />
                   </Field>
                   <div className="hidden min-h-12 flex-col justify-center text-sm sm:flex">

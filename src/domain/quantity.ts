@@ -6,8 +6,8 @@ export type Unit = string
 
 const UNITS_AR: Record<string, string> = { kg: 'كجم', g: 'جم', piece: 'قطعة', liter: 'لتر', ml: 'مل' }
 const UNITS_EN: Record<string, string> = { kg: 'kg', g: 'g', piece: 'pc', liter: 'L', ml: 'mL' }
-/** Suggested before any unit has been typed */
-export const COMMON_UNITS: Unit[] = ['kg', 'g', 'liter', 'ml', 'piece']
+/** Suggested before any unit has been typed. Liquids use the litre (owner's choice): ml is not offered. */
+export const COMMON_UNITS: Unit[] = ['kg', 'g', 'liter', 'piece']
 
 export function unitLabel(u: Unit, lang: Lang = getLang()): string {
   return (lang === 'en' ? UNITS_EN : UNITS_AR)[u] ?? u
@@ -62,4 +62,13 @@ export function formatQty(qty: number, unit?: Unit, lang: Lang = getLang()): str
 export function formatSignedQty(qty: number, unit?: Unit): string {
   const n = ltr(`${qty > 0 ? '+' : qty < 0 ? '−' : ''}${qtyFormatter.format(Math.abs(qty))}`)
   return unit ? `${n} ${UNIT_LABELS[unit]}` : n
+}
+
+/** Under a quantity in litres, the same in millilitres to check it: «0.015» → «= 15 مل». */
+export function literHint(unit: Unit | undefined, text: string, lang: Lang = getLang()): string | undefined {
+  if (unit !== 'liter') return undefined
+  const q = parseQty(text)
+  if (!q) return undefined
+  const ml = qtyFormatter.format(roundQty(q * 1000))
+  return lang === 'en' ? `= ${ml} mL` : `= ${ml} مل`
 }

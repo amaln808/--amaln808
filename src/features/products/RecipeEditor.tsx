@@ -7,7 +7,7 @@ import type { ItemWithStock, Lot } from '../../data/inventory'
 import { type Recipe, saveRecipe } from '../../data/production'
 import { fefoEstimate } from '../../domain/fefo'
 import { formatOMR } from '../../domain/money'
-import { parseQty, type Unit, unitLabel } from '../../domain/quantity'
+import { literHint, parseQty, type Unit, unitLabel } from '../../domain/quantity'
 import { nameKey } from '../../domain/text'
 import { nameOf, t } from '../../i18n/index'
 import { type MaterialType, NewMaterialFields } from '../inventory/NewMaterialFields'
@@ -112,7 +112,7 @@ export function RecipeEditor({
               <Field label={t('المادة', 'Material')}>
                 <Combobox value={r.name} onChange={(v) => update(r.key, { name: v })} options={options} newLabel={t('جديدة', 'New')} />
               </Field>
-              <Field label={t('الكمية', 'Qty')}>
+              <Field label={t('الكمية', 'Qty')} hint={literHint(unit, r.qty)}>
                 <NumberInput value={r.qty} onChange={(e) => update(r.key, { qty: e.target.value })} suffix={unit ? unitLabel(unit) : undefined} />
               </Field>
               <span className="num hidden min-h-12 items-center text-sm text-muted sm:flex">{formatOMR(Math.round(est))}</span>
