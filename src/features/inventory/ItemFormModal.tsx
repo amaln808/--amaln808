@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import { DateInput, Field, FormError, NumberInput, Segmented, Select, TextInput } from '../../components/form'
+import { DateInput, Field, FormError, NumberInput, Segmented, TextInput } from '../../components/form'
 import { Modal } from '../../components/Modal'
 import { Button } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { addOpeningStock, type Item, type ItemDraft, saveItem } from '../../data/inventory'
 import { todayIso } from '../../data/schedule'
 import { parseRialToBaisa } from '../../domain/money'
-import { parseQty, type Unit, unitLabel } from '../../domain/quantity'
+import { parseQty, unitLabel } from '../../domain/quantity'
 import { t } from '../../i18n/index'
+import { UnitInput } from './UnitInput'
 
-const UNITS: Unit[] = ['kg', 'g', 'piece', 'liter']
 
 /** Add or edit a raw material / packaging item, optionally with stock already on hand. */
 export function ItemFormModal({ item, onClose }: { item?: Item; onClose: (savedId?: string) => void }) {
@@ -119,13 +119,7 @@ export function ItemFormModal({ item, onClose }: { item?: Item; onClose: (savedI
             <TextInput dir="ltr" value={f.nameEn ?? ''} onChange={(e) => set('nameEn', e.target.value)} />
           </Field>
           <Field label={t('الوحدة', 'Unit')}>
-            <Select value={f.unit} onChange={(e) => set('unit', e.target.value as Unit)}>
-              {UNITS.map((u) => (
-                <option key={u} value={u}>
-                  {unitLabel(u)}
-                </option>
-              ))}
-            </Select>
+            <UnitInput value={f.unit} onChange={(u) => set('unit', u)} />
           </Field>
           <Field label={t('الحد الأدنى للتنبيه', 'Alert below')} hint={t('يظهر تنبيه عندما يصل الرصيد لهذا الحد.', 'An alert shows when stock reaches this level.')}>
             <NumberInput value={minQty} onChange={(e) => setMinQty(e.target.value)} suffix={unitLabel(f.unit)} />

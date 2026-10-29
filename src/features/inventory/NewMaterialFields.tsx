@@ -1,6 +1,7 @@
-import { Segmented, Select } from '../../components/form'
-import { type Unit, unitLabel } from '../../domain/quantity'
+import { Segmented } from '../../components/form'
+import type { Unit } from '../../domain/quantity'
 import { t } from '../../i18n/index'
+import { UnitInput } from './UnitInput'
 
 export type MaterialType = 'raw' | 'packaging'
 
@@ -29,13 +30,7 @@ export function NewMaterialFields({
           { value: 'packaging', label: t('تغليف', 'Packaging') },
         ]}
       />
-      <Select value={unit} onChange={(e) => onChange({ type, unit: e.target.value as Unit })} aria-label={t('الوحدة', 'Unit')}>
-        {(['kg', 'g', 'piece', 'liter'] as const).map((u) => (
-          <option key={u} value={u}>
-            {unitLabel(u)}
-          </option>
-        ))}
-      </Select>
+      <UnitInput value={unit} onChange={(u) => onChange({ type, unit: u })} />
     </div>
   )
 }
