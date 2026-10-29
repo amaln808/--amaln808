@@ -195,6 +195,17 @@ describe('production', () => {
     expect((await q(`select 1 from items where name = 'فانيلا'`)).length).toBe(0)
   })
 
+  it('recipe materials can use any unit, e.g. ml or a typed one', async () => {
+    const product = await item('finished', 'معجون بزيت', 'piece')
+    await rpc('save_recipe_named', product, JSON.stringify([
+      { item_name: 'زيت جوز الهند', item_type: 'raw', unit: 'ml', qty_per_unit: 12.5 },
+      { item_name: 'ملصق دائري', item_type: 'packaging', unit: 'لفة', qty_per_unit: 0.002 },
+    ]), false)
+    const rows = await q<{ name: string; unit: string }>(`select name, unit from items where name in ('زيت جوز الهند', 'ملصق دائري') order by name`)
+    expect(rows).toEqual([{ name: 'زيت جوز الهند', unit: 'ml' }, { name: 'ملصق دائري', unit: 'لفة' }])
+    await expect(q(`insert into items (type, name, unit) values ('raw', 'x', '  ')`)).rejects.toThrow()
+  })
+
   it('saves a recipe from typed material names, creating only the new ones', async () => {
     const dates = await item('raw', 'معجون تمر', 'kg', true)
     const product = await item('finished', 'مكعبات تمر', 'piece')
