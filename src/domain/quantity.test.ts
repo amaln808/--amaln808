@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toUnit, unitLabel, unitSuggestions } from './quantity'
+import { literHint, toUnit, unitLabel, unitSuggestions } from './quantity'
 
 describe('free-text units', () => {
   it('keeps the known units as codes, whatever way they are written', () => {
@@ -20,6 +20,13 @@ describe('free-text units', () => {
   })
 
   it('suggests the usual units, then the ones used before', () => {
-    expect(unitSuggestions(['kg', 'علبة', 'علبة', ''])).toEqual(['kg', 'g', 'liter', 'ml', 'piece', 'علبة'])
+    expect(unitSuggestions(['kg', 'علبة', 'علبة', ''])).toEqual(['kg', 'g', 'liter', 'piece', 'علبة'])
+  })
+
+  it('shows a quantity in litres also in millilitres', () => {
+    expect(literHint('liter', '0.015', 'ar')).toBe('= 15 مل')
+    expect(literHint('liter', '2.5', 'en')).toBe('= 2,500 mL')
+    expect(literHint('kg', '0.015', 'ar')).toBeUndefined()
+    expect(literHint('liter', '', 'ar')).toBeUndefined()
   })
 })

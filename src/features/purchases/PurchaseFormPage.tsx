@@ -17,7 +17,7 @@ import {
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
 import { baisaToInput, formatOMR, lineTotal, parseRialToBaisa } from '../../domain/money'
-import { parseQty, type Unit, unitLabel } from '../../domain/quantity'
+import { literHint, parseQty, type Unit, unitLabel } from '../../domain/quantity'
 import { nameKey } from '../../domain/text'
 import { nameOf, t } from '../../i18n/index'
 import { METHODS, methodLabel } from '../inventory/labels'
@@ -188,7 +188,7 @@ export function PurchaseFormPage() {
                     <Field label={t('الصنف', 'Item')} className="col-span-2 lg:col-span-1">
                       <Combobox value={l.itemName} onChange={(v) => pickItem(l, v)} options={itemOptions} newLabel={newBadge} />
                     </Field>
-                    <Field label={t('الكمية', 'Quantity')}>
+                    <Field label={t('الكمية', 'Quantity')} hint={literHint(unit, l.qty)}>
                       <NumberInput value={l.qty} onChange={(e) => update(l.key, { qty: e.target.value })} suffix={unit ? unitLabel(unit) : undefined} />
                     </Field>
                     <Field label={t('سعر الوحدة (قبل الضريبة)', 'Unit price (before VAT)')}>
