@@ -11,10 +11,11 @@ import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
 import { fefoEstimate, planFromRecipe } from '../../domain/fefo'
 import { formatOMR, parseRialToBaisa } from '../../domain/money'
-import { formatQty, literHint, parseQty, type Unit, unitLabel } from '../../domain/quantity'
+import { formatQty, parseQty, type Unit, unitLabel } from '../../domain/quantity'
 import { nameKey } from '../../domain/text'
 import { nameOf, t } from '../../i18n/index'
 import { type MaterialType, NewMaterialFields } from '../inventory/NewMaterialFields'
+import { QtyInput } from '../inventory/QtyInput'
 
 interface Row {
   key: number
@@ -202,14 +203,14 @@ export function BatchFormPage() {
               const item = r.item
               const unit = item?.unit ?? (r.isNew ? r.newUnit : undefined)
               return (
-                <div key={r.key} className={`grid grid-cols-[1fr_8rem_auto] items-end gap-2 rounded-xl p-2 sm:grid-cols-[1fr_9rem_10rem_auto] ${r.shortage > 0 ? 'bg-red-50' : ''}`}>
+                <div key={r.key} className={`grid grid-cols-[1fr_8rem_auto] items-start gap-2 rounded-xl p-2 sm:grid-cols-[1fr_9rem_10rem_auto] ${r.shortage > 0 ? 'bg-red-50' : ''}`}>
                   <Field label={t('المادة', 'Material')}>
                     <Combobox value={r.name} onChange={(v) => updateRow(r.key, { name: v })} options={materialOptions} newLabel={t('جديدة', 'New')} />
                   </Field>
-                  <Field label={t('الكمية', 'Qty')} hint={literHint(unit, r.qty)}>
-                    <NumberInput value={r.qty} onChange={(e) => updateRow(r.key, { qty: e.target.value })} suffix={unit ? unitLabel(unit) : undefined} />
+                  <Field label={t('الكمية', 'Qty')}>
+                    <QtyInput key={unit ?? ''} value={r.qty} onChange={(v) => updateRow(r.key, { qty: v })} unit={unit} />
                   </Field>
-                  <div className="hidden min-h-12 flex-col justify-center text-sm sm:flex">
+                  <div className="mt-[1.625rem] hidden min-h-12 flex-col justify-center text-sm sm:flex">
                     <span className={r.shortage > 0 ? 'font-bold text-red-700' : 'text-muted'}>
                       {r.shortage > 0
                         ? t(`ناقص ${formatQty(r.shortage, unit)}`, `Short ${formatQty(r.shortage, unit)}`)
@@ -220,7 +221,7 @@ export function BatchFormPage() {
                   <button
                     type="button"
                     onClick={() => (setRowsTouched(true), setRows((rs) => rs.filter((x) => x.key !== r.key)))}
-                    className="flex size-12 items-center justify-center rounded-xl text-muted hover:bg-red-50 hover:text-red-700"
+                    className="mt-[1.625rem] flex size-12 items-center justify-center rounded-xl text-muted hover:bg-red-50 hover:text-red-700"
                     aria-label={t('حذف', 'Remove')}
                   >
                     <Trash2 className="size-5" />

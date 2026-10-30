@@ -206,6 +206,12 @@ describe('production', () => {
     await expect(q(`insert into items (type, name, unit) values ('raw', 'x', '  ')`)).rejects.toThrow()
   })
 
+  it('keeps grams in a kilogram recipe (6 decimals): half a gram of salt per jar', async () => {
+    const product = await item('finished', 'معجون مملح', 'piece')
+    await rpc('save_recipe_named', product, JSON.stringify([{ item_name: 'ملح', item_type: 'raw', unit: 'kg', qty_per_unit: 0.0005 }]), false)
+    expect(await one(`select qty_per_unit::text as q from recipe_components`)).toEqual({ q: '0.000500' })
+  })
+
   it('saves a recipe from typed material names, creating only the new ones', async () => {
     const dates = await item('raw', 'معجون تمر', 'kg', true)
     const product = await item('finished', 'مكعبات تمر', 'piece')
@@ -223,8 +229,8 @@ describe('production', () => {
       `select i.name, i.type, i.unit, c.qty_per_unit::text from recipe_components c join items i on i.id = c.item_id order by i.name`,
     )
     expect(rows).toEqual([
-      { name: 'شوكولاتة داكنة', type: 'raw', unit: 'kg', qty_per_unit: '0.060' },
-      { name: 'علبة كرتون', type: 'packaging', unit: 'piece', qty_per_unit: '1.000' },
+      { name: 'شوكولاتة داكنة', type: 'raw', unit: 'kg', qty_per_unit: '0.060000' },
+      { name: 'علبة كرتون', type: 'packaging', unit: 'piece', qty_per_unit: '1.000000' },
     ])
     expect((await q(`select 1 from items where type <> 'finished'`)).length).toBe(3)
     await expect(

@@ -45,10 +45,12 @@ export function roundQty(qty: number): number {
   return Math.round(qty * 1000) / 1000
 }
 
-export function parseQty(input: string): number | null {
+/** A typed quantity, up to `decimals` places (3 = whole grams in kg; recipes keep 6). */
+export function parseQty(input: string, decimals = 3): number | null {
   const s = normalizeDigits(input.trim())
-  if (!/^\d*(\.\d{0,3})?$/.test(s) || s === '' || s === '.') return null
-  return roundQty(Number(s))
+  if (!new RegExp(`^\\d*(\\.\\d{0,${decimals}})?$`).test(s) || s === '' || s === '.') return null
+  const f = 10 ** decimals
+  return Math.round(Number(s) * f) / f
 }
 
 const qtyFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 })
@@ -71,4 +73,23 @@ export function literHint(unit: Unit | undefined, text: string, lang: Lang = get
   if (!q) return undefined
   const ml = qtyFormatter.format(roundQty(q * 1000))
   return lang === 'en' ? `= ${ml} mL` : `= ${ml} مل`
+}
+
+/** The smaller unit a quantity can also be typed in: grams for kg, millilitres for litres. */
+export function smallUnitOf(unit: Unit | undefined): Unit | null {
+  return unit === 'kg' ? 'g' : unit === 'liter' ? 'ml' : null
+}
+
+/** Typed grams / millilitres → the stored kg / litre text («175» → «0.175»); '' when not a number. */
+export function smallToBase(text: string, decimals = 3): string {
+  const q = parseQty(text, 3)
+  if (q == null) return text.trim() ? 'x' : ''
+  const f = 10 ** decimals
+  return String(Math.round((q / 1000) * f) / f)
+}
+
+/** Stored kg / litre text → grams / millilitres to show («0.175» → «175»). */
+export function baseToSmall(text: string, decimals = 3): string {
+  const q = parseQty(text, decimals)
+  return q == null ? '' : String(roundQty(q * 1000))
 }
