@@ -6,8 +6,8 @@ export type Unit = string
 
 const UNITS_AR: Record<string, string> = { kg: 'كجم', g: 'جم', piece: 'قطعة', liter: 'لتر', ml: 'مل' }
 const UNITS_EN: Record<string, string> = { kg: 'kg', g: 'g', piece: 'pc', liter: 'L', ml: 'mL' }
-/** Suggested before any unit has been typed. Liquids use the litre (owner's choice): ml is not offered. */
-export const COMMON_UNITS: Unit[] = ['kg', 'g', 'liter', 'piece']
+/** Suggested before any unit has been typed. Owner's choice: kg and litres only (no g / ml) to avoid mix-ups. */
+export const COMMON_UNITS: Unit[] = ['kg', 'liter', 'piece']
 
 export function unitLabel(u: Unit, lang: Lang = getLang()): string {
   return (lang === 'en' ? UNITS_EN : UNITS_AR)[u] ?? u

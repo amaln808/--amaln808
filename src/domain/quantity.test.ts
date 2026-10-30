@@ -20,7 +20,7 @@ describe('free-text units', () => {
   })
 
   it('suggests the usual units, then the ones used before', () => {
-    expect(unitSuggestions(['kg', 'علبة', 'علبة', ''])).toEqual(['kg', 'g', 'liter', 'piece', 'علبة'])
+    expect(unitSuggestions(['kg', 'علبة', 'علبة', ''])).toEqual(['kg', 'liter', 'piece', 'علبة'])
   })
 
   it('shows a quantity in litres also in millilitres', () => {

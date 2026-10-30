@@ -114,7 +114,7 @@ export function RecipeEditor({
                 <Combobox value={r.name} onChange={(v) => update(r.key, { name: v })} options={options} newLabel={t('جديدة', 'New')} />
               </Field>
               <Field label={t('الكمية', 'Qty')}>
-                <QtyInput key={unit ?? ''} value={r.qty} onChange={(v) => update(r.key, { qty: v })} unit={unit} decimals={6} preferSmall />
+                <QtyInput key={unit ?? ''} value={r.qty} onChange={(v) => update(r.key, { qty: v })} unit={unit} decimals={6} />
               </Field>
               <span className="num mt-[1.625rem] hidden min-h-12 items-center text-sm text-muted sm:flex">{formatOMR(Math.round(est))}</span>
               <button
