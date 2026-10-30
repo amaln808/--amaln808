@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { literHint, toUnit, unitLabel, unitSuggestions } from './quantity'
+import { baseToSmall, literHint, parseQty, smallToBase, smallUnitOf, toUnit, unitLabel, unitSuggestions } from './quantity'
 
 describe('free-text units', () => {
   it('keeps the known units as codes, whatever way they are written', () => {
@@ -28,5 +28,21 @@ describe('free-text units', () => {
     expect(literHint('liter', '2.5', 'en')).toBe('= 2,500 mL')
     expect(literHint('kg', '0.015', 'ar')).toBeUndefined()
     expect(literHint('liter', '', 'ar')).toBeUndefined()
+  })
+
+  it('converts grams and millilitres to the stored kg and litres', () => {
+    expect(smallUnitOf('kg')).toBe('g')
+    expect(smallUnitOf('liter')).toBe('ml')
+    expect(smallUnitOf('piece')).toBeNull()
+    expect(smallToBase('175')).toBe('0.175')
+    expect(smallToBase('١٢٫٥', 6)).toBe('0.0125')
+    expect(smallToBase('0.5', 6)).toBe('0.0005')
+    expect(smallToBase('12.5')).toBe('0.013') // batch totals keep whole grams
+    expect(smallToBase('')).toBe('')
+    expect(smallToBase('abc')).toBe('x')
+    expect(baseToSmall('0.0125', 6)).toBe('12.5')
+    expect(baseToSmall('0.175')).toBe('175')
+    expect(parseQty('0.0005', 6)).toBe(0.0005)
+    expect(parseQty('0.0005')).toBeNull()
   })
 })

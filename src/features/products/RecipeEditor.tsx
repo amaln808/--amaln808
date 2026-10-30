@@ -1,16 +1,17 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Combobox, Field, FormError, NumberInput } from '../../components/form'
+import { Combobox, Field, FormError } from '../../components/form'
 import { Badge, Button, Card } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import type { ItemWithStock, Lot } from '../../data/inventory'
 import { type Recipe, saveRecipe } from '../../data/production'
 import { fefoEstimate } from '../../domain/fefo'
 import { formatOMR } from '../../domain/money'
-import { literHint, parseQty, type Unit, unitLabel } from '../../domain/quantity'
+import { parseQty, type Unit, unitLabel } from '../../domain/quantity'
 import { nameKey } from '../../domain/text'
 import { nameOf, t } from '../../i18n/index'
 import { type MaterialType, NewMaterialFields } from '../inventory/NewMaterialFields'
+import { QtyInput } from '../inventory/QtyInput'
 
 interface Row {
   key: number
@@ -49,7 +50,7 @@ export function RecipeEditor({
   const itemOf = (r: Row) => byName.get(nameKey(r.name))
   const lotsOf = (id: string) => lots.filter((l) => l.itemId === id)
   const costPerUnit = rows.reduce((s, r) => {
-    const q = parseQty(r.qty)
+    const q = parseQty(r.qty, 6)
     const item = itemOf(r)
     return q && item ? s + fefoEstimate(lotsOf(item.id), q, today).cost : s
   }, 0)
@@ -66,7 +67,7 @@ export function RecipeEditor({
     const filled = rows.filter((r) => r.name.trim() || r.qty)
     for (const r of filled) {
       if (!r.name.trim()) return setError(t('اسم المادة مطلوب في كل سطر.', 'Every row needs a material.'))
-      if (!parseQty(r.qty)) return setError(t(`الكمية غير صحيحة لـ «${r.name.trim()}».`, `Invalid quantity for «${r.name.trim()}».`))
+      if (!parseQty(r.qty, 6)) return setError(t(`الكمية غير صحيحة لـ «${r.name.trim()}».`, `Invalid quantity for «${r.name.trim()}».`))
     }
     if (new Set(filled.map((r) => nameKey(r.name))).size !== filled.length) return setError(t('كل مادة مرة واحدة فقط.', 'Each material only once.'))
     setBusy(true)
@@ -76,7 +77,7 @@ export function RecipeEditor({
         productId,
         filled.map((r) => {
           const item = itemOf(r)
-          const qtyPerUnit = parseQty(r.qty)!
+          const qtyPerUnit = parseQty(r.qty, 6)!
           return item
             ? { itemId: item.id, qtyPerUnit }
             : { itemId: null, itemName: r.name.trim(), itemType: r.newType, unit: r.newUnit, qtyPerUnit }
@@ -105,21 +106,21 @@ export function RecipeEditor({
           const item = itemOf(r)
           const isNew = !item && !!r.name.trim()
           const unit = item?.unit ?? (isNew ? r.newUnit : undefined)
-          const q = parseQty(r.qty)
+          const q = parseQty(r.qty, 6)
           const est = item && q ? fefoEstimate(lotsOf(item.id), q, today).cost : 0
           return (
-            <div key={r.key} className="grid grid-cols-[1fr_8rem_auto] items-end gap-2 sm:grid-cols-[1fr_9rem_7rem_auto]">
+            <div key={r.key} className="grid grid-cols-[1fr_8rem_auto] items-start gap-2 sm:grid-cols-[1fr_9rem_7rem_auto]">
               <Field label={t('المادة', 'Material')}>
                 <Combobox value={r.name} onChange={(v) => update(r.key, { name: v })} options={options} newLabel={t('جديدة', 'New')} />
               </Field>
-              <Field label={t('الكمية', 'Qty')} hint={literHint(unit, r.qty)}>
-                <NumberInput value={r.qty} onChange={(e) => update(r.key, { qty: e.target.value })} suffix={unit ? unitLabel(unit) : undefined} />
+              <Field label={t('الكمية', 'Qty')}>
+                <QtyInput key={unit ?? ''} value={r.qty} onChange={(v) => update(r.key, { qty: v })} unit={unit} decimals={6} preferSmall />
               </Field>
-              <span className="num hidden min-h-12 items-center text-sm text-muted sm:flex">{formatOMR(Math.round(est))}</span>
+              <span className="num mt-[1.625rem] hidden min-h-12 items-center text-sm text-muted sm:flex">{formatOMR(Math.round(est))}</span>
               <button
                 type="button"
                 onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}
-                className="flex size-12 items-center justify-center rounded-xl text-muted hover:bg-red-50 hover:text-red-700"
+                className="mt-[1.625rem] flex size-12 items-center justify-center rounded-xl text-muted hover:bg-red-50 hover:text-red-700"
                 aria-label={t('حذف', 'Remove')}
               >
                 <Trash2 className="size-5" />
