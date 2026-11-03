@@ -7,8 +7,9 @@ import { Badge, Button, Card, PageHeader } from '../../components/ui'
 import { useConfirm } from '../../components/useConfirm'
 import { serverError } from '../../data/errors'
 import { fetchItemsWithStock, INVENTORY_KEY } from '../../data/inventory'
-import { deleteOrder, deleteStep, fetchOrders, type OrderStep, ORDERS_KEY, saveStep, updateOrder } from '../../data/orders'
-import { fetchSales, SALES_KEY } from '../../data/sales'
+import type { PaymentMethod } from '../../data/inventory'
+import { deleteOrder, deleteStep, fetchOrders, type Order, type OrderStep, ORDERS_KEY, saveStep, updateOrder } from '../../data/orders'
+import { deleteCustomerPayment, fetchSales, recordCustomerPayment, SALES_KEY, updateCustomerPayment } from '../../data/sales'
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
 import { baisaToInput, formatOMR, parseRialToBaisa } from '../../domain/money'
@@ -16,6 +17,7 @@ import { orderProgress, type StepKind, stepState } from '../../domain/orders'
 import { formatQty } from '../../domain/quantity'
 import { nameOf, t } from '../../i18n/index'
 import { invoiceStatusLabel, quoteStatusLabel, quoteStatusOf, summarize } from '../sales/summary'
+import { METHODS, methodLabel } from '../inventory/labels'
 import { formatDate } from '../tasks/labels'
 import { dueLabel, OrderFormModal } from './OrdersPage'
 import { DOT, stateLabel } from './steps'
@@ -23,12 +25,16 @@ import { DOT, stateLabel } from './steps'
 type StepDraft = Partial<OrderStep> & { kind: StepKind }
 
 /** Add or edit one stage: its name, planned date, done date, amount (payments) and notes. */
-function StepModal({ orderId, step, nextSort, onClose }: { orderId: string; step: StepDraft; nextSort: number; onClose: () => void }) {
+function StepModal({ order, step, nextSort, onClose }: { order: Order; step: StepDraft; nextSort: number; onClose: () => void }) {
+  const orderId = order.id
   const [title, setTitle] = useState(step.title ?? '')
   const [planned, setPlanned] = useState(step.plannedDate ?? '')
   const [done, setDone] = useState(step.doneDate ?? '')
   const [amount, setAmount] = useState(step.amountBaisa != null ? baisaToInput(step.amountBaisa) : '')
   const [notes, setNotes] = useState(step.notes ?? '')
+  const [method, setMethod] = useState<PaymentMethod>(step.method ?? 'bank')
+  // Also record the money in the customer's account (المقبوضات), once
+  const [record, setRecord] = useState(!step.paymentId)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const { confirm, dialog } = useConfirm()
@@ -39,8 +45,26 @@ function StepModal({ orderId, step, nextSort, onClose }: { orderId: string; step
     const a = amount.trim() ? parseRialToBaisa(amount) : null
     if (!title.trim()) return setError(t('اسم المرحلة مطلوب.', 'The stage name is required.'))
     if (amount.trim() && (a == null || a < 0)) return setError(t('المبلغ غير صحيح.', 'Invalid amount.'))
+    if (isPayment && done && !a) return setError(t('يُرجى كتابة المبلغ المستلم.', 'Enter the amount received.'))
     setBusy(true)
     try {
+      // The receipt in the customer's account follows the stage: added, changed, or removed with it
+      let paymentId = step.paymentId ?? null
+      if (isPayment && paymentId && !done) {
+        await deleteCustomerPayment(paymentId)
+        paymentId = null
+      } else if (isPayment && paymentId && done && a) {
+        await updateCustomerPayment(paymentId, { date: done, amountBaisa: a, method })
+      } else if (isPayment && !paymentId && done && a && record) {
+        paymentId = await recordCustomerPayment({
+          customerId: order.customerId,
+          invoiceId: order.invoiceId,
+          date: done,
+          amountBaisa: a,
+          method,
+          notes: t(`طلبية ${order.orderNo} — ${title.trim()}`, `Order ${order.orderNo} — ${title.trim()}`),
+        })
+      }
       await saveStep({
         id: step.id,
         orderId,
@@ -49,6 +73,8 @@ function StepModal({ orderId, step, nextSort, onClose }: { orderId: string; step
         plannedDate: planned || null,
         doneDate: done || null,
         amountBaisa: isPayment ? a : null,
+        method: isPayment && done ? method : null,
+        paymentId: isPayment ? paymentId : null,
         notes: notes.trim() || null,
         sortOrder: step.sortOrder ?? nextSort,
       })
@@ -60,8 +86,12 @@ function StepModal({ orderId, step, nextSort, onClose }: { orderId: string; step
   }
   const remove = async () => {
     if (!step.id) return
-    if (!(await confirm({ title: t('حذف المرحلة', 'Delete stage'), message: t(`حذف «${step.title}»؟`, `Delete «${step.title}»?`), confirmLabel: t('حذف', 'Delete'), danger: true }))) return
+    const message = step.paymentId
+      ? t(`حذف «${step.title}»؟ يُحذف المبلغ المسجّل في المقبوضات معها.`, `Delete «${step.title}»? Its recorded receipt is deleted too.`)
+      : t(`حذف «${step.title}»؟`, `Delete «${step.title}»?`)
+    if (!(await confirm({ title: t('حذف المرحلة', 'Delete stage'), message, confirmLabel: t('حذف', 'Delete'), danger: true }))) return
     try {
+      if (step.paymentId) await deleteCustomerPayment(step.paymentId)
       await deleteStep(step.id)
       onClose()
     } catch (e) {
@@ -102,6 +132,29 @@ function StepModal({ orderId, step, nextSort, onClose }: { orderId: string; step
           <Field label={t('المبلغ', 'Amount')}>
             <NumberInput value={amount} onChange={(e) => setAmount(e.target.value)} suffix={t('ر.ع', 'OMR')} placeholder="0.000" />
           </Field>
+        )}
+        {isPayment && done && (
+          <Field label={t('طريقة الدفع', 'Paid by')}>
+            <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
+              {METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {methodLabel(m)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
+        {isPayment && done && (
+          <div className="sm:col-span-2">
+            {step.paymentId ? (
+              <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm">{t('هذه الدفعة مسجّلة في حساب العميل (المقبوضات)، وتتغير معها عند الحفظ.', 'This payment is recorded in the customer’s account, and is updated with it on save.')}</p>
+            ) : (
+              <label className="flex min-h-11 items-center gap-3 text-sm">
+                <input type="checkbox" className="size-5 accent-[var(--brand)]" checked={record} onChange={(e) => setRecord(e.target.checked)} />
+                {t('تسجيل المبلغ في حساب العميل (المقبوضات) أيضاً', 'Also record the amount in the customer’s account')}
+              </label>
+            )}
+          </div>
         )}
         <Field label={t('ملاحظات', 'Notes')} className="sm:col-span-2">
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
@@ -154,7 +207,11 @@ export function OrderPage() {
       setError(serverError(e))
     }
   }
-  const markDone = (s: OrderStep) => run(() => saveStep({ id: s.id, orderId: order.id, doneDate: s.doneDate ? null : today }))
+  const markDone = async (s: OrderStep) => {
+    // A payment needs its date, amount and method: open its form, ready for today
+    if (s.kind === 'payment') return setStepDraft(s.doneDate ? s : { ...s, doneDate: today })
+    await run(() => saveStep({ id: s.id, orderId: order.id, doneDate: s.doneDate ? null : today }))
+  }
   const linkQuote = (quotationId: string) =>
     run(async () => {
       const qt = sales.data?.quotations.find((x) => x.id === quotationId)
@@ -310,8 +367,18 @@ export function OrderPage() {
                   <button type="button" onClick={() => setStepDraft(s)} className="min-w-0 flex-1 rounded-xl px-2 py-1 text-start hover:bg-brand-50">
                     <div className="font-bold">{s.title}</div>
                     <div className="flex flex-wrap gap-x-3 text-sm">
-                      {s.doneDate ? (
+                      {s.doneDate && s.kind === 'payment' ? (
+                        <span className="text-palm">
+                          {t(`استُلمت ${formatDate(s.doneDate)}`, `Received ${formatDate(s.doneDate)}`)}
+                          {s.method && ` · ${methodLabel(s.method)}`}
+                          {s.paymentId && t(' · في المقبوضات', ' · in receipts')}
+                        </span>
+                      ) : s.doneDate ? (
                         <span className="text-palm">{t(`تمت ${formatDate(s.doneDate)}`, `Done ${formatDate(s.doneDate)}`)}</span>
+                      ) : s.kind === 'payment' && s.plannedDate ? (
+                        <span className={st === 'late' ? 'font-bold text-red-700' : st === 'soon' ? 'text-amber-800' : 'text-muted'}>
+                          {t(`مستحقة ${formatDate(s.plannedDate)}`, `Due ${formatDate(s.plannedDate)}`)} · {st === 'late' ? t('متأخرة', 'Late') : t('لم تُستلم بعد', 'Not received yet')}
+                        </span>
                       ) : s.plannedDate ? (
                         <span className={st === 'late' ? 'font-bold text-red-700' : st === 'soon' ? 'text-amber-800' : 'text-muted'}>
                           {t(`مخطط ${formatDate(s.plannedDate)}`, `Planned ${formatDate(s.plannedDate)}`)} · {stateLabel(st)}
@@ -324,7 +391,7 @@ export function OrderPage() {
                     {s.notes && <div className="mt-0.5 text-sm text-muted">{s.notes}</div>}
                   </button>
                   <Button variant={s.doneDate ? 'ghost' : 'secondary'} className="shrink-0 self-start" onClick={() => markDone(s)}>
-                    {s.doneDate ? t('تراجع', 'Undo') : t('تمت', 'Done')}
+                    {s.kind === 'payment' ? (s.doneDate ? t('تفاصيل', 'Details') : t('استلام', 'Receive')) : s.doneDate ? t('تراجع', 'Undo') : t('تمت', 'Done')}
                   </Button>
                 </li>
               )
@@ -340,7 +407,7 @@ export function OrderPage() {
         </div>
       </div>
       {editing && <OrderFormModal order={order} onClose={() => setEditing(false)} />}
-      {stepDraft && <StepModal orderId={order.id} step={stepDraft} nextSort={nextSort} onClose={() => setStepDraft(null)} />}
+      {stepDraft && <StepModal order={order} step={stepDraft} nextSort={nextSort} onClose={() => setStepDraft(null)} />}
       {dialog}
     </>
   )

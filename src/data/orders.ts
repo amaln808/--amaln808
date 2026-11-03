@@ -1,4 +1,5 @@
 import type { StepKind } from '../domain/orders'
+import type { PaymentMethod } from './inventory'
 import { toCamel, toSnake } from './case'
 import { db } from './client'
 import { invalidate } from './useQuery'
@@ -13,6 +14,9 @@ export interface OrderStep {
   plannedDate: string | null
   doneDate: string | null
   amountBaisa: number | null
+  /** Payments: how it was paid, and the receipt recorded in the customer's account */
+  method: PaymentMethod | null
+  paymentId: string | null
   notes: string | null
   sortOrder: number
 }

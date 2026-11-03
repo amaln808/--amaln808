@@ -52,4 +52,14 @@ describe('orders', () => {
     expect((await one<{ n: number }>('select count(*)::int as n from orders')).n).toBe(0)
     expect((await one<{ n: string }>(`select public.next_doc_no('order') as n`)).n).toBe('O-0001')
   })
+
+  it('a payment stage keeps how it was paid and the receipt it was recorded as', async () => {
+    const id = await rpc('create_order', json({ customer_name: 'عميل' }))
+    const pay = (await one<{ id: string; customer_id: string }>(
+      `insert into customer_payments (customer_id, date, amount_baisa, method) select customer_id, '2026-11-03', 275000, 'bank' from orders where id = $1 returning id`, [id])).id
+    await q(`update order_steps set done_date = '2026-11-03', amount_baisa = 275000, method = 'bank', payment_id = $2 where order_id = $1 and kind = 'payment'`, [id, pay])
+    expect(await one(`select method, payment_id = $2 as linked from order_steps where order_id = $1 and kind = 'payment'`, [id, pay])).toEqual({ method: 'bank', linked: true })
+    await expect(q(`update order_steps set method = 'cheque' where order_id = $1`, [id])).rejects.toThrow()
+  })
 })
+
