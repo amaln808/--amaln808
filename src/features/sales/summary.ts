@@ -1,4 +1,5 @@
 import type { SalesData } from '../../data/sales'
+import { type OrderBalanceLike, orderReceivables } from '../../domain/orders'
 import { allocatePayments, type InvoiceStatus, invoiceStatus, quoteDisplayStatus, type QuoteDisplayStatus } from '../../domain/sales'
 import { t } from '../../i18n/index'
 
@@ -11,6 +12,8 @@ export interface InvoiceInfo {
 export interface CustomerBalance {
   invoicedBaisa: number
   paidBaisa: number
+  /** Still owed on orders agreed but not invoiced yet */
+  orderBaisa: number
   dueBaisa: number
   overdueBaisa: number
 }
@@ -18,18 +21,29 @@ export interface CustomerBalance {
 /**
  * Payment status of every invoice and the balance of every customer. Payments
  * linked to an invoice settle it first; the rest settle the oldest invoices.
+ * Orders agreed but not invoiced yet add what is still owed on them; the
+ * receipts recorded for those orders settle the order, not other invoices.
  */
-export function summarize(data: SalesData, today: string) {
+export function summarize(data: SalesData, today: string, orders: OrderBalanceLike[] = []) {
   const invoiceInfo = new Map<string, InvoiceInfo>()
   const balances = new Map<string, CustomerBalance>()
+  const owedOnOrders = orderReceivables(orders, today)
+  const orderPayments = new Set(owedOnOrders.flatMap((o) => o.paymentIds))
   for (const c of data.customers) {
     const issued = data.invoices.filter((i) => i.customerId === c.id && i.status === 'issued')
-    const payments = data.payments.filter((p) => p.customerId === c.id)
+    const payments = data.payments.filter((p) => p.customerId === c.id && !orderPayments.has(p.id))
+    const mine = owedOnOrders.filter((o) => o.customerId === c.id)
     const { paid } = allocatePayments(
       issued.map((i) => ({ id: i.id, date: i.date, createdAt: i.createdAt, totalBaisa: i.totalBaisa })),
       payments.map((p) => ({ invoiceId: p.invoiceId ?? undefined, amountBaisa: p.amountBaisa })),
     )
-    const b: CustomerBalance = { invoicedBaisa: 0, paidBaisa: payments.reduce((s, p) => s + p.amountBaisa, 0), dueBaisa: 0, overdueBaisa: 0 }
+    const b: CustomerBalance = {
+      invoicedBaisa: 0,
+      paidBaisa: payments.reduce((s, p) => s + p.amountBaisa, 0),
+      orderBaisa: mine.reduce((s, o) => s + o.leftBaisa, 0),
+      dueBaisa: 0,
+      overdueBaisa: mine.reduce((s, o) => s + o.overdueBaisa, 0),
+    }
     for (const i of issued) {
       const p = paid.get(i.id) ?? 0
       const status = invoiceStatus(i.totalBaisa, p, i.dueDate ?? undefined, today)
@@ -37,11 +51,11 @@ export function summarize(data: SalesData, today: string) {
       b.invoicedBaisa += i.totalBaisa
       if (status === 'overdue') b.overdueBaisa += i.totalBaisa - p
     }
-    b.dueBaisa = b.invoicedBaisa - b.paidBaisa
+    b.dueBaisa = b.invoicedBaisa - b.paidBaisa + b.orderBaisa
     balances.set(c.id, b)
   }
   for (const i of data.invoices) if (i.status === 'void') invoiceInfo.set(i.id, { paidBaisa: 0, status: 'void' })
-  return { invoiceInfo, balances }
+  return { invoiceInfo, balances, owedOnOrders }
 }
 
 export function quoteStatusOf(q: SalesData['quotations'][number], today: string): QuoteDisplayStatus {
