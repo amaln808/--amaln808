@@ -349,9 +349,17 @@ registerOutboxHandler<PaymentPayload>('customer.payment', async (p, entry) => {
   changed()
 })
 
-export async function recordCustomerPayment(p: PaymentPayload) {
-  await enqueue('customer.payment', p)
+/** Saves a receipt (offline too) and returns its id. */
+export async function recordCustomerPayment(p: PaymentPayload): Promise<string> {
+  const id = await enqueue('customer.payment', p)
   await flushOutbox()
+  return id
+}
+
+export async function updateCustomerPayment(id: string, p: Pick<PaymentPayload, 'date' | 'amountBaisa' | 'method'>) {
+  const { error } = await db().from('customer_payments').update({ date: p.date, amount_baisa: p.amountBaisa, method: p.method }).eq('id', id)
+  if (error) throw error
+  changed()
 }
 
 export async function deleteCustomerPayment(id: string) {
