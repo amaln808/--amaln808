@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronLeft, Clock, Factory, HandCoins, LayoutDashboard, PackageMinus, ReceiptText } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, ClipboardList, Clock, Factory, HandCoins, LayoutDashboard, PackageMinus, ReceiptText } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSettingsQuery } from '../../app/settingsContext'
@@ -9,12 +9,14 @@ import { DASHBOARD_KEY, fetchDashboard } from '../../data/dashboard'
 import { serverError } from '../../data/errors'
 import { EXPENSES_KEY, fetchExpenses } from '../../data/expenses'
 import { fetchSuppliers, SUPPLIERS_KEY } from '../../data/inventory'
+import { fetchOrders, ORDERS_KEY } from '../../data/orders'
 import { fetchSales, SALES_KEY } from '../../data/sales'
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
 import { computeKpis, expensesByCategory, inventoryValue, monthlySeries, topChannels, topCustomers, topProducts } from '../../domain/dashboard'
 import { payback } from '../../domain/depreciation'
 import { forecastCash, lastFullMonths } from '../../domain/forecast'
+import { orderProgress } from '../../domain/orders'
 import { formatOMR, ltr } from '../../domain/money'
 import { type DateRange, inRange, monthsInRange, periodRange } from '../../domain/periods'
 import { formatQty } from '../../domain/quantity'
@@ -93,6 +95,7 @@ export function DashboardPage() {
   const suppliers = useQuery(SUPPLIERS_KEY, fetchSuppliers)
   const expenses = useQuery(EXPENSES_KEY, fetchExpenses)
   const stock = useStock()
+  const orders = useQuery(ORDERS_KEY, fetchOrders)
   const settings = useSettingsQuery().data
   const [period, setPeriod] = useState(initialPeriod())
   const [horizon, setHorizon] = useState<'1' | '3'>('1')
@@ -151,7 +154,8 @@ export function DashboardPage() {
   const back = invested ? payback(invested, earned(periodRange('all', today)), past.map((m) => earned({ from: `${m}-01`, to: `${m}-31` }))) : null
 
   const { alerts } = stock
-  const anyAlert = alerts.expiredLots.length + alerts.expiringLots.length + alerts.low.length > 0 || overdue > 0
+  const lateOrders = (orders.data ?? []).filter((o) => o.status === 'open' && orderProgress(o.steps, today).late.length > 0).length
+  const anyAlert = alerts.expiredLots.length + alerts.expiringLots.length + alerts.low.length + lateOrders > 0 || overdue > 0
 
   return (
     <>
@@ -159,6 +163,7 @@ export function DashboardPage() {
 
       {anyAlert && (
         <div className="mb-5 grid gap-2 sm:grid-cols-2">
+          {lateOrders > 0 && <AlertLink icon={ClipboardList} label={t('طلبيات فيها مراحل متأخرة', 'Orders with late stages')} count={lateOrders} to="/orders" red />}
           {overdue > 0 && <AlertLink icon={HandCoins} label={t('ديون متأخرة على العملاء', 'Overdue customer debts')} count={formatOMR(overdue)} to="/receivables" red />}
           {alerts.expiredLots.length > 0 && <AlertLink icon={AlertTriangle} label={t('دفعات منتهية فيها رصيد', 'Expired lots with stock')} count={alerts.expiredLots.length} to="/inventory" red />}
           {alerts.expiringLots.length > 0 && <AlertLink icon={Clock} label={t('دفعات قريبة الانتهاء', 'Lots expiring soon')} count={alerts.expiringLots.length} to="/inventory" />}

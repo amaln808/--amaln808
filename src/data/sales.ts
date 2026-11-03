@@ -196,6 +196,7 @@ export async function fetchPastPrices(): Promise<PastPrice[]> {
 
 function changed() {
   invalidate(SALES_KEY)
+  invalidate('orders') // accepting a quotation updates its order
   invalidate('invoice:')
   invalidate('quote:')
   invalidate('customer:')
