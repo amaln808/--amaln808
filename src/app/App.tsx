@@ -20,6 +20,8 @@ import { SupplierPage } from '../features/suppliers/SupplierPage'
 import { SuppliersPage } from '../features/suppliers/SuppliersPage'
 import { AssetsPage } from '../features/assets/AssetsPage'
 import { AuditPage } from '../features/audit/AuditPage'
+import { OrderPage } from '../features/orders/OrderPage'
+import { OrdersPage } from '../features/orders/OrdersPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { TasksPage } from '../features/tasks/TasksPage'
@@ -75,6 +77,8 @@ function makeRouter() {
         { path: '/production/calculator', element: <CalculatorPage /> },
         { path: '/production/:id', element: <BatchPage /> },
         { path: '/sales', element: <SalesPage /> },
+        { path: '/orders', element: <OrdersPage /> },
+        { path: '/orders/:id', element: <OrderPage /> },
         { path: '/expenses', element: <ExpensesPage /> },
         { path: '/receivables', element: <ReceivablesPage /> },
         { path: '/pricing', element: <PricingPage /> },

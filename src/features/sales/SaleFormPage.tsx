@@ -6,6 +6,7 @@ import { Combobox, DateInput, Field, FormError, NumberInput, Select, Textarea } 
 import { Badge, Button, Card, PageHeader } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { fetchItemsWithStock, INVENTORY_KEY } from '../../data/inventory'
+import { linkQuotation } from '../../data/orders'
 import { fetchBatches, PRODUCTION_KEY } from '../../data/production'
 import { createInvoice, fetchPastPrices, fetchQuotationDetail, fetchSales, SALES_KEY, saveQuotation, setChannelPrice } from '../../data/sales'
 import { todayIso } from '../../data/schedule'
@@ -83,7 +84,12 @@ export function SaleFormPage({ kind }: { kind: 'quote' | 'invoice' }) {
   const [until, setUntil] = useState('')
   const [discount, setDiscount] = useState('')
   const [notes, setNotes] = useState('')
-  const [lines, setLines] = useState<Line[]>([emptyLine()])
+  // Opened from an order: start with its product and quantity
+  const [lines, setLines] = useState<Line[]>(() => {
+    const productId = params.get('product')
+    return [productId ? { ...emptyLine(), productId, qty: params.get('qty') ?? '' } : emptyLine()]
+  })
+  const fromOrder = params.get('order')
   /** Quotation only: show a price per way of paying (null = one price) */
   const [options, setOptions] = useState<Array<PriceOption & { on: boolean; down: boolean; pctText: string; nText: string }> | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -229,6 +235,10 @@ export function SaleFormPage({ kind }: { kind: 'quote' | 'invoice' }) {
         priceOptions: kind === 'quote' && chosenOptions?.length ? chosenOptions : null,
       }
       const newId = kind === 'invoice' ? await createInvoice(draft) : await saveQuotation(draft, id)
+      if (kind === 'quote' && !id && fromOrder) {
+        await linkQuotation(fromOrder, newId, date)
+        return navigate(`/orders/${fromOrder}`, { replace: true })
+      }
       navigate(kind === 'invoice' ? `/invoices/${newId}` : `/quotes/${newId}`, { replace: true })
     } catch (e) {
       setError(serverError(e))
