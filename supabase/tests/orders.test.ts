@@ -61,5 +61,20 @@ describe('orders', () => {
     expect(await one(`select method, payment_id = $2 as linked from order_steps where order_id = $1 and kind = 'payment'`, [id, pay])).toEqual({ method: 'bank', linked: true })
     await expect(q(`update order_steps set method = 'cheque' where order_id = $1`, [id])).rejects.toThrow()
   })
+
+  it('receipts recorded for an order move onto its invoice when it gets one', async () => {
+    const id = await rpc('create_order', json({ customer_name: 'عميل', product_id: product, qty: 10, amount_baisa: 200000 }))
+    const pay = (await one<{ id: string }>(
+      `insert into customer_payments (customer_id, date, amount_baisa, method) select customer_id, '2026-11-03', 100000, 'cash' from orders where id = $1 returning id`, [id])).id
+    await q(`update order_steps set done_date = '2026-11-03', amount_baisa = 100000, payment_id = $2 where order_id = $1 and kind = 'payment'`, [id, pay])
+    const qid = await rpc('save_quotation', json({ customer_name: 'عميل', date: '2026-11-03', lines: [{ product_id: product, qty: 10, unit_price_baisa: 20000 }] }))
+    // Stands in for the invoice accept_quotation would issue (the test product has no sale permit)
+    const inv = (await one<{ id: string }>(
+      `insert into sales_invoices (invoice_no, customer_id, date, due_date, status, subtotal_baisa, total_baisa) select 'INV-T1', customer_id, '2026-11-04', '2026-11-19', 'issued', 200000, 200000 from orders where id = $1 returning id`, [id])).id
+    await q(`update orders set quotation_id = $1 where id = $2`, [qid, id])
+    await q(`update quotations set status = 'accepted', invoice_id = $2 where id = $1`, [qid, inv])
+    expect(await one(`select invoice_id = $2 as linked from orders where id = $1`, [id, inv])).toEqual({ linked: true })
+    expect(await one(`select invoice_id = $2 as moved from customer_payments where id = $1`, [pay, inv])).toEqual({ moved: true })
+  })
 })
 

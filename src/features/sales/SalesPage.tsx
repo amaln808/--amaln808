@@ -5,6 +5,7 @@ import { FormError, Segmented } from '../../components/form'
 import { Badge, Button, Card, EmptyState, PageHeader, Stat } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { fetchItemsWithStock, INVENTORY_KEY } from '../../data/inventory'
+import { fetchOrders, ORDERS_KEY } from '../../data/orders'
 import { fetchSales, SALES_KEY } from '../../data/sales'
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
@@ -23,10 +24,11 @@ export function SalesPage() {
   const setTab = (v: Tab) => setParams({ tab: v }, { replace: true })
   const q = useQuery(SALES_KEY, fetchSales)
   const items = useQuery(INVENTORY_KEY, fetchItemsWithStock)
+  const orders = useQuery(ORDERS_KEY, fetchOrders)
   const [addingCustomer, setAddingCustomer] = useState(false)
   const today = todayIso()
   const data = q.data
-  const sum = data ? summarize(data, today) : null
+  const sum = data ? summarize(data, today, orders.data ?? []) : null
   const invoiceInfo = sum?.invoiceInfo ?? new Map<string, InvoiceInfo>()
   const balances = sum?.balances ?? new Map<string, CustomerBalance>()
   const customerName = new Map((data?.customers ?? []).map((c) => [c.id, c.name]))
@@ -178,8 +180,10 @@ export function SalesPage() {
                           <div className="text-sm text-muted">{[c.channelId ? channelName.get(c.channelId) : null, c.phone].filter(Boolean).join(' · ')}</div>
                         </div>
                         <div className="text-end">
-                          <div className={`num font-bold ${b && b.overdueBaisa > 0 ? 'text-red-700' : ''}`}>{formatOMR(b?.dueBaisa ?? 0)}</div>
-                          <div className="text-xs text-muted">{b && b.overdueBaisa > 0 ? t('منه متأخر', 'part overdue') : t('مستحق', 'owed')}</div>
+                          <div className={`num font-bold ${b && b.overdueBaisa > 0 ? 'text-red-700' : ''}`}>{formatOMR(Math.abs(b?.dueBaisa ?? 0))}</div>
+                          <div className="text-xs text-muted">
+                            {b && b.dueBaisa < 0 ? t('رصيد للعميل', 'customer credit') : b && b.overdueBaisa > 0 ? t('منه متأخر', 'part overdue') : t('مستحق', 'owed')}
+                          </div>
                         </div>
                         <ChevronLeft className="size-5 text-muted ltr:rotate-180" />
                       </Link>

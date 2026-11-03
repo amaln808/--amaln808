@@ -5,6 +5,7 @@ import { FormError } from '../../components/form'
 import { Card, EmptyState, PageHeader, Stat } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { fetchSuppliers, SUPPLIERS_KEY } from '../../data/inventory'
+import { fetchOrders, ORDERS_KEY } from '../../data/orders'
 import { fetchSales, markReminded, SALES_KEY } from '../../data/sales'
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
@@ -28,16 +29,21 @@ function bucketLabel(b: AgingBucket): string {
 /** Who owes the factory, how late, with a ready WhatsApp reminder — and what the factory owes its suppliers. */
 export function ReceivablesPage() {
   const sales = useQuery(SALES_KEY, fetchSales)
+  const orders = useQuery(ORDERS_KEY, fetchOrders)
   const suppliers = useQuery(SUPPLIERS_KEY, fetchSuppliers)
   const settings = useSettingsQuery().data
   const today = todayIso()
   const data = sales.data
 
-  const info = data ? summarize(data, today).invoiceInfo : new Map()
-  const open: OpenInvoice[] = (data?.invoices ?? [])
-    .filter((i) => i.status === 'issued')
-    .map((i) => ({ id: i.id, customerId: i.customerId, invoiceNo: i.invoiceNo, dueDate: i.dueDate, leftBaisa: i.totalBaisa - (info.get(i.id)?.paidBaisa ?? 0) }))
-    .filter((i) => i.leftBaisa > 0)
+  const sum = data ? summarize(data, today, orders.data ?? []) : null
+  const info = sum?.invoiceInfo ?? new Map()
+  const open: OpenInvoice[] = [
+    ...(data?.invoices ?? [])
+      .filter((i) => i.status === 'issued')
+      .map((i) => ({ id: i.id, customerId: i.customerId, invoiceNo: i.invoiceNo, dueDate: i.dueDate, leftBaisa: i.totalBaisa - (info.get(i.id)?.paidBaisa ?? 0) })),
+    // Orders agreed but not invoiced yet: what is left on them
+    ...(sum?.owedOnOrders ?? []).map((o) => ({ id: o.orderId, customerId: o.customerId, invoiceNo: o.orderNo, dueDate: o.dueDate, leftBaisa: o.leftBaisa })),
+  ].filter((i) => i.leftBaisa > 0)
   const { byCustomer, all } = agingTable(open, today)
   const rows = (data?.customers ?? [])
     .filter((c) => byCustomer.has(c.id))
@@ -57,7 +63,7 @@ export function ReceivablesPage() {
 
   return (
     <>
-      <PageHeader title={t('المستحقات', 'Receivables')} subtitle={t('أعمار الديون تُحسب من تاريخ استحقاق كل فاتورة.', 'Debt age is counted from each invoice due date.')} />
+      <PageHeader title={t('المستحقات', 'Receivables')} subtitle={t('أعمار الديون تُحسب من تاريخ استحقاق كل فاتورة، أو موعد الدفعة القادمة لطلبية لم تُفوتر بعد.', 'Debt age is counted from each invoice due date, or the next payment date of an order not invoiced yet.')} />
       {sales.error && !data && <FormError message={serverError(sales.error)} />}
 
       <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">

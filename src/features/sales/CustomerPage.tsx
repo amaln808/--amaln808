@@ -6,6 +6,7 @@ import { Badge, Button, Card, PageHeader, Stat } from '../../components/ui'
 import { useConfirm } from '../../components/useConfirm'
 import { serverError } from '../../data/errors'
 import { fetchItemsWithStock, INVENTORY_KEY } from '../../data/inventory'
+import { fetchOrders, ORDERS_KEY } from '../../data/orders'
 import { deleteCustomerPayment, fetchCustomerLots, fetchSales, SALES_KEY } from '../../data/sales'
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
@@ -22,6 +23,7 @@ import { INVOICE_TONE, invoiceStatusLabel, QUOTE_TONE, quoteStatusLabel, quoteSt
 export function CustomerPage() {
   const { id = '' } = useParams()
   const sales = useQuery(SALES_KEY, fetchSales)
+  const orders = useQuery(ORDERS_KEY, fetchOrders)
   const lots = useQuery(`customer:${id}:lots`, () => fetchCustomerLots(id))
   const items = useQuery(INVENTORY_KEY, fetchItemsWithStock)
   const [editing, setEditing] = useState(false)
@@ -40,8 +42,8 @@ export function CustomerPage() {
       </>
     )
   }
-  const { invoiceInfo, balances } = summarize(data, today)
-  const b = balances.get(id) ?? { invoicedBaisa: 0, paidBaisa: 0, dueBaisa: 0, overdueBaisa: 0 }
+  const { invoiceInfo, balances } = summarize(data, today, orders.data ?? [])
+  const b = balances.get(id) ?? { invoicedBaisa: 0, paidBaisa: 0, orderBaisa: 0, dueBaisa: 0, overdueBaisa: 0 }
   const invoices = data.invoices.filter((i) => i.customerId === id)
   const quotes = data.quotations.filter((x) => x.customerId === id)
   const payments = data.payments.filter((p) => p.customerId === id)
@@ -98,6 +100,17 @@ export function CustomerPage() {
           <Stat label={b.dueBaisa < 0 ? t('رصيد للعميل', 'Customer credit') : t('المستحق', 'Owed')} value={formatOMR(Math.abs(b.dueBaisa))} />
           <Stat label={t('منه متأخر', 'Of which overdue')} value={formatOMR(b.overdueBaisa)} tone={b.overdueBaisa > 0 ? 'red' : undefined} />
         </div>
+        {b.orderBaisa > 0 && (
+          <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm">
+            {t(
+              `المستحق يشمل ${formatOMR(b.orderBaisa)} باقية على طلبيات لم تُصدر فاتورتها بعد (القيمة المتفق عليها ناقص الدفعات المستلمة).`,
+              `Owed includes ${formatOMR(b.orderBaisa)} left on orders not invoiced yet (agreed value less payments received).`,
+            )}{' '}
+            <Link to="/orders" className="font-medium underline">
+              {t('الطلبيات', 'Orders')}
+            </Link>
+          </p>
+        )}
         {!channel && (
           <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm">
             {t('لا توجد قناة لهذا العميل، فلن تُعبأ الأسعار تلقائياً. أضيفوا القناة من «تعديل».', 'No channel for this customer, so prices are not filled in. Add one with «Edit».')}

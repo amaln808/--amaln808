@@ -123,11 +123,15 @@ export function DashboardPage() {
   const hasActivity = input.invoices.length + input.expenses.length + input.batches.length + input.purchases.length > 0
 
   // What is owed, with payments matched to invoices as on the sales pages
-  const info = sales.data ? summarize(sales.data, today).invoiceInfo : new Map()
-  const open = (sales.data?.invoices ?? [])
-    .filter((i) => i.status === 'issued')
-    .map((i) => ({ dueDate: i.dueDate, leftBaisa: i.totalBaisa - (info.get(i.id)?.paidBaisa ?? 0) }))
-    .filter((i) => i.leftBaisa > 0)
+  const sum = sales.data ? summarize(sales.data, today, orders.data ?? []) : null
+  const info = sum?.invoiceInfo ?? new Map()
+  const open = [
+    ...(sales.data?.invoices ?? [])
+      .filter((i) => i.status === 'issued')
+      .map((i) => ({ dueDate: i.dueDate, leftBaisa: i.totalBaisa - (info.get(i.id)?.paidBaisa ?? 0) })),
+    // Orders agreed but not invoiced yet
+    ...(sum?.owedOnOrders ?? []).map((o) => ({ dueDate: o.dueDate, leftBaisa: o.leftBaisa })),
+  ].filter((i) => i.leftBaisa > 0)
   const receivable = open.reduce((s, i) => s + i.leftBaisa, 0)
   const overdue = open.filter((i) => i.dueDate && i.dueDate < today).reduce((s, i) => s + i.leftBaisa, 0)
   const payable = (suppliers.data ?? []).reduce((s, x) => s + Math.max(x.dueBaisa, 0), 0)
