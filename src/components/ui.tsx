@@ -94,12 +94,13 @@ export function LinkButton({
   )
 }
 
-export function Stat({ label, value, tone }: { label: string; value: ReactNode; tone?: 'red' | 'green' }) {
+export function Stat({ label, value, tone, hint }: { label: string; value: ReactNode; tone?: 'red' | 'green'; hint?: ReactNode }) {
   const color = tone === 'red' ? 'text-red-700' : tone === 'green' ? 'text-emerald-700' : 'text-ink'
   return (
     <div className="rounded-2xl border border-line bg-card p-4">
       <div className="text-sm text-muted">{label}</div>
       <div className={`num mt-1 text-lg font-bold sm:text-xl ${color}`} style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{value}</div>
+      {hint && <div className="mt-1 text-xs text-muted">{hint}</div>}
     </div>
   )
 }

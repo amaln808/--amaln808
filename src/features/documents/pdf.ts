@@ -5,7 +5,11 @@ export interface RenderedDocument {
 }
 
 /** Captures an element to an A4 PDF. Libraries are loaded on demand. */
-export async function renderPdf(el: HTMLElement): Promise<RenderedDocument> {
+/**
+ * `fitUpTo`: a document up to this many times an A4 page tall is shrunk onto one
+ * page rather than split (a split can cut a table row in half).
+ */
+export async function renderPdf(el: HTMLElement, { fitUpTo = 1.08 } = {}): Promise<RenderedDocument> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import('html2canvas-pro'), import('jspdf')])
   await document.fonts.ready
   await Promise.all(
@@ -19,7 +23,7 @@ export async function renderPdf(el: HTMLElement): Promise<RenderedDocument> {
   const pageH = pdf.internal.pageSize.getHeight()
   const imgH = (canvas.height * pageW) / canvas.width
   const jpeg = canvas.toDataURL('image/jpeg', 0.92)
-  if (imgH <= pageH * 1.08) {
+  if (imgH <= pageH * fitUpTo) {
     // Slightly taller than A4: shrink to fit one page rather than spill a sliver onto page 2
     const h = Math.min(imgH, pageH)
     const w = (pageW * h) / imgH

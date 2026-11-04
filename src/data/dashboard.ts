@@ -10,7 +10,7 @@ export async function fetchDashboard() {
     db().from('invoice_lines').select('invoice_id, product_id, qty, unit_price_baisa, invoice_line_lots(qty, unit_cost_baisa)'),
     db().from('customer_payments').select('customer_id, date, amount_baisa'),
     db().from('supplier_payments').select('supplier_id, date, amount_baisa'),
-    db().from('purchases').select('supplier_id, total_baisa'),
+    db().from('purchases').select('supplier_id, date, total_baisa'),
     db().from('expenses').select('date, amount_baisa, category_id'),
     db().from('production_batches').select('production_date, qty_produced, total_cost_baisa'),
     db().from('items').select('id, type, active, min_qty'),
@@ -42,7 +42,7 @@ export async function fetchDashboard() {
     })),
     customerPayments: cp.data!.map((p) => ({ customerId: p.customer_id as string, date: p.date as string, amountBaisa: Number(p.amount_baisa) })),
     supplierPayments: sp.data!.map((p) => ({ supplierId: p.supplier_id as string, date: p.date as string, amountBaisa: Number(p.amount_baisa) })),
-    purchases: pur.data!.map((p) => ({ supplierId: p.supplier_id as string, totalBaisa: Number(p.total_baisa) })),
+    purchases: pur.data!.map((p) => ({ supplierId: p.supplier_id as string, date: p.date as string, totalBaisa: Number(p.total_baisa) })),
     expenses: exp.data!.map((e) => ({ date: e.date as string, amountBaisa: Number(e.amount_baisa), categoryId: e.category_id as string })),
     batches: bat.data!.map((b) => ({ date: b.production_date as string, qtyProduced: Number(b.qty_produced), totalCostBaisa: Number(b.total_cost_baisa) })),
     items: items.data!.map((i) => {

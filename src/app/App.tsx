@@ -1,3 +1,4 @@
+import { MonthlyReportPage } from '../features/dashboard/MonthlyReportPage'
 import { useEffect, useState } from 'react'
 import { createHashRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { ComingSoon } from '../components/ComingSoon'
@@ -88,6 +89,7 @@ function makeRouter() {
         { path: '/receivables', element: <ReceivablesPage /> },
         { path: '/pricing', element: <PricingPage /> },
         { path: '/vat', element: <VatPage /> },
+        { path: '/reports/monthly', element: <MonthlyReportPage /> },
         { path: '/assets', element: <AssetsPage /> },
         { path: '/expenses/new', element: <ExpenseFormPage key="new" /> },
         { path: '/expenses/:id', element: <ExpenseFormPage key="edit" /> },
