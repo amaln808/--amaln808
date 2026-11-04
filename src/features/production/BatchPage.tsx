@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react'
+import { Tag, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { FormError } from '../../components/form'
@@ -62,10 +62,16 @@ export function BatchPage() {
         }
         back={{ to: '/production', label: t('التصنيع', 'Production') }}
         actions={
-          <Button variant="secondary" className="!border-red-300 !text-red-700" onClick={remove}>
-            <Trash2 className="size-4" />
-            {t('حذف الدفعة', 'Delete batch')}
-          </Button>
+          <>
+            <Button onClick={() => navigate(`/production/${batch.id}/label`)}>
+              <Tag className="size-5" />
+              {t('ملصق الدفعة', 'Batch label')}
+            </Button>
+            <Button variant="secondary" className="!border-red-300 !text-red-700" onClick={remove}>
+              <Trash2 className="size-4" />
+              {t('حذف الدفعة', 'Delete batch')}
+            </Button>
+          </>
         }
       />
       <div className="flex flex-col gap-5">
