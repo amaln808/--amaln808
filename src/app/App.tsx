@@ -9,6 +9,7 @@ import { InventoryPage } from '../features/inventory/InventoryPage'
 import { ItemPage } from '../features/inventory/ItemPage'
 import { ReadyStockPage } from '../features/inventory/ReadyStockPage'
 import { BatchFormPage } from '../features/production/BatchFormPage'
+import { LabelPage } from '../features/production/LabelPage'
 import { BatchPage } from '../features/production/BatchPage'
 import { CalculatorPage } from '../features/production/CalculatorPage'
 import { ProductionPage } from '../features/production/ProductionPage'
@@ -78,6 +79,7 @@ function makeRouter() {
         { path: '/production/new', element: <BatchFormPage /> },
         { path: '/production/calculator', element: <CalculatorPage /> },
         { path: '/production/:id', element: <BatchPage /> },
+        { path: '/production/:id/label', element: <LabelPage /> },
         { path: '/sales', element: <SalesPage /> },
         { path: '/orders', element: <OrdersPage /> },
         { path: '/orders/plan', element: <PlanPage /> },
