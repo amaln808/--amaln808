@@ -1,11 +1,9 @@
 import { Download, Loader2, Printer } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useSettingsQuery } from '../../app/settingsContext'
 import { Field, FormError, NumberInput, Segmented } from '../../components/form'
 import { Button, Card, PageHeader } from '../../components/ui'
 import { serverError } from '../../data/errors'
-import { fetchItemsWithStock, INVENTORY_KEY } from '../../data/inventory'
 import { fetchBatchDetail } from '../../data/production'
 import { useQuery } from '../../data/useQuery'
 import { A4, placeLabels, sheetGrid } from '../../domain/labels'
@@ -16,7 +14,7 @@ import { shareOrDownload } from '../documents/share'
 import { BatchLabel, type LabelData } from './BatchLabel'
 
 type Layout = 'roll' | 'sheet'
-const SIZES = ['50x30', '60x40', '70x50', '100x50', 'custom'] as const
+const SIZES = ['40x20', '50x25', '50x30', '60x40', 'custom'] as const
 type SizeKey = (typeof SIZES)[number]
 const PREFS = 'zawrda-label'
 
@@ -27,21 +25,15 @@ function loadPrefs(): { size: SizeKey; w: string; h: string; layout: Layout } {
   } catch {
     /* no saved choice */
   }
-  return { size: '50x30', w: '50', h: '30', layout: 'roll' }
+  return { size: '40x20', w: '40', h: '20', layout: 'roll' }
 }
-
-/** Where the QR code leads: this batch in the app (anyone else lands on the sign-in page). */
-const batchLink = (id: string) => `${window.location.origin}${window.location.pathname}#/production/${id}`
 
 /** Labels for a production batch, as a PDF at the real label size to print from the iPad. */
 export function LabelPage() {
   const { id = '' } = useParams()
   const q = useQuery(`batch:${id}`, () => fetchBatchDetail(id))
-  const items = useQuery(INVENTORY_KEY, fetchItemsWithStock)
-  const settings = useSettingsQuery().data
   const [prefs, setPrefs] = useState(loadPrefs)
   const [copies, setCopies] = useState('')
-  const [qr, setQr] = useState<string | null>(null)
   const [pdf, setPdf] = useState<{ blob: Blob; preview: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
@@ -55,32 +47,14 @@ export function LabelPage() {
     }
   }
   const [w, h] = prefs.size === 'custom' ? [parseQty(prefs.w) ?? 0, parseQty(prefs.h) ?? 0] : prefs.size.split('x').map(Number)
-  const sizeOk = w >= 30 && h >= 20 && w <= 200 && h <= 150
+  const sizeOk = w >= 25 && h >= 15 && w <= 200 && h <= 150
   const grid = sheetGrid(w, h)
   const layout: Layout = prefs.layout === 'sheet' && grid.perPage ? 'sheet' : 'roll'
   const n = copies.trim() ? (parseQty(copies) ?? 0) : layout === 'sheet' ? grid.perPage : 1
   const count = Math.min(Math.floor(n), 2000)
 
-  useEffect(() => {
-    import('qrcode').then((QR) => QR.toDataURL(batchLink(id), { margin: 0, width: 480, errorCorrectionLevel: 'M' })).then(setQr, (e) => setError(String(e)))
-  }, [id])
-
   const batch = q.data?.batch
-  const product = (items.data ?? []).find((i) => i.id === batch?.productId)
-  const data: LabelData | null =
-    batch && product && qr && settings
-      ? {
-          name: product.name,
-          nameEn: product.nameEn,
-          weightG: product.weightG,
-          batchNo: batch.batchNo,
-          productionDate: batch.productionDate,
-          expiryDate: batch.expiryDate,
-          company: settings.companyName,
-          companyEn: settings.companyNameEn,
-          qr,
-        }
-      : null
+  const data: LabelData | null = batch ? { batchNo: batch.batchNo, productionDate: batch.productionDate, expiryDate: batch.expiryDate } : null
   const key = JSON.stringify({ data, w, h, layout, count })
 
   useEffect(() => {
@@ -138,7 +112,7 @@ export function LabelPage() {
     <>
       <PageHeader
         title={t(`ملصق الدفعة ${batch.batchNo}`, `Label for batch ${batch.batchNo}`)}
-        subtitle={t('الاسم والوزن ورقم الدفعة وتاريخا الإنتاج والانتهاء، ورمز QR يفتح هذه الدفعة في التطبيق.', 'Name, weight, batch number, production and expiry dates, and a QR code that opens this batch in the app.')}
+        subtitle={t('رقم الدفعة وتاريخا الإنتاج والانتهاء، لعبوات مطبوع عليها باقي بيانات المنتج.', 'Batch number, production and expiry dates, for packaging that already carries the product details.')}
         back={back}
       />
       <div className="flex flex-col gap-5">
@@ -160,7 +134,7 @@ export function LabelPage() {
               </Field>
             </div>
           )}
-          {!sizeOk && <p className="text-sm text-red-700">{t('المقاس بين 30×20 و200×150 ملم.', 'Size between 30×20 and 200×150 mm.')}</p>}
+          {!sizeOk && <p className="text-sm text-red-700">{t('المقاس بين 25×15 و200×150 ملم.', 'Size between 25×15 and 200×150 mm.')}</p>}
           <Field
             label={t('الطباعة على', 'Print on')}
             hint={
@@ -210,9 +184,6 @@ export function LabelPage() {
               <Loader2 className="size-8 animate-spin text-stone-400" />
             )}
           </div>
-          {!product?.nameEn && (
-            <p className="mt-3 text-sm text-muted">{t('يمكن إضافة الاسم الإنجليزي للمنتج من صفحته ليظهر على الملصق.', "Add the product's English name on its page to show it on the label.")}</p>
-          )}
         </Card>
       </div>
       {data && sizeOk && (
