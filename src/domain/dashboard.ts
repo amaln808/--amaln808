@@ -42,6 +42,7 @@ export interface DashItem {
 }
 export interface DashPurchase {
   supplierId: string
+  date?: string
   totalBaisa: number
 }
 

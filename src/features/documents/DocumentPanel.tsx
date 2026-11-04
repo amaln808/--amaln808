@@ -89,6 +89,7 @@ export function PdfPanel({
   phone,
   email,
   render,
+  fitUpTo,
 }: {
   settings: Settings
   /** Fetch and pass the stamp and signature (issued invoices only) */
@@ -100,6 +101,8 @@ export function PdfPanel({
   shareText: (lang: DocLang) => string
   phone?: string | null
   email?: string | null
+  /** Shrink a slightly long document onto one page (see renderPdf) */
+  fitUpTo?: number
   render: (ref: RefObject<HTMLDivElement | null>, ctx: { company: DocCompany; images: DocImages; lang: DocLang }) => ReactNode
 }) {
   const [docLang, setDocLang] = useState<DocLang>(settings.docLanguage ?? 'ar')
@@ -130,7 +133,7 @@ export function PdfPanel({
     setFailed(false)
     const timer = setTimeout(() => {
       if (!ref.current) return
-      renderPdf(ref.current)
+      renderPdf(ref.current, { fitUpTo })
         .then((r) => !cancelled && setRendered(r))
         .catch((e) => {
           console.error(e)

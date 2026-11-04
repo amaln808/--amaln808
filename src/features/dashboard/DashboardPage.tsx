@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronLeft, ClipboardList, Clock, Factory, HandCoins, LayoutDashboard, PackageMinus, ReceiptText } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, ClipboardList, Clock, Factory, FileBarChart, HandCoins, LayoutDashboard, PackageMinus, ReceiptText } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSettingsQuery } from '../../app/settingsContext'
@@ -163,7 +163,14 @@ export function DashboardPage() {
 
   return (
     <>
-      <PageHeader title={t('لوحة المؤشرات', 'Dashboard')} />
+      <PageHeader
+        title={t('لوحة المؤشرات', 'Dashboard')}
+        actions={
+          <LinkButton to="/reports/monthly" variant="secondary">
+            <FileBarChart className="size-5" /> {t('التقرير الشهري', 'Monthly report')}
+          </LinkButton>
+        }
+      />
 
       {anyAlert && (
         <div className="mb-5 grid gap-2 sm:grid-cols-2">
