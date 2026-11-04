@@ -70,6 +70,26 @@ export function PurchaseFormPage() {
   const [saving, setSaving] = useState(false)
   const camera = useRef<HTMLInputElement>(null)
 
+  // Opened from the purchase plan: one line per material to buy (?items=id:qty,…), with the last price paid
+  const fromPlan = params.get('items')
+  const [planFilled, setPlanFilled] = useState(false)
+  useEffect(() => {
+    if (!fromPlan || planFilled || !items.data || !lastPrices.data) return
+    const planned = fromPlan
+      .split(',')
+      .map((pair) => pair.split(':'))
+      .map(([id, q]) => ({ item: buyable.find((i) => i.id === id), qty: q }))
+      .filter((x) => x.item)
+    if (planned.length)
+      setLines(
+        planned.map(({ item, qty }) => {
+          const last = lastPrices.data!.get(item!.id)
+          return { ...emptyLine(), itemName: nameOf(item!), qty: qty ?? '', cost: last ? baisaToInput(last.unitCostBaisa) : '', vat: last?.vatRate ? String(last.vatRate) : '' }
+        }),
+      )
+    setPlanFilled(true)
+  }, [fromPlan, planFilled, items.data, lastPrices.data])
+
   const update = (key: number, patch: Partial<LineDraft>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)))
   // Picking a known item fills in the price and VAT paid last time, if still empty
   const pickItem = (l: LineDraft, name: string) => {

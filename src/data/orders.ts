@@ -17,6 +17,8 @@ export interface OrderStep {
   /** Payments: how it was paid, and the receipt recorded in the customer's account */
   method: PaymentMethod | null
   paymentId: string | null
+  /** Production stage: the batch that made the order */
+  batchId: string | null
   notes: string | null
   sortOrder: number
 }
@@ -128,5 +130,12 @@ export async function linkQuotation(orderId: string, quotationId: string, date: 
   if (r1.error) throw r1.error
   const r2 = await db().from('order_steps').update({ done_date: date }).eq('order_id', orderId).eq('kind', 'quote').is('done_date', null)
   if (r2.error) throw r2.error
+  changed()
+}
+
+/** A production batch made for an order: its production stage is done that day and points at it. */
+export async function linkBatch(orderId: string, batchId: string, date: string) {
+  const { error } = await db().from('order_steps').update({ batch_id: batchId, done_date: date }).eq('order_id', orderId).eq('kind', 'production')
+  if (error) throw error
   changed()
 }

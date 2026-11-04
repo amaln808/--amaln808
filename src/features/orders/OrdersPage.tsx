@@ -1,4 +1,4 @@
-import { ClipboardList, Plus } from 'lucide-react'
+import { ClipboardList, Plus, ShoppingCart } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Combobox, DateInput, Field, FormError, NumberInput, Segmented, Select, Textarea } from '../../components/form'
@@ -142,10 +142,16 @@ export function OrdersPage() {
         title={t('الطلبيات', 'Orders')}
         subtitle={t('مراحل كل طلبية وتواريخها من الطلب حتى آخر دفعة.', 'Each order’s stages and dates, from the request to the last payment.')}
         actions={
-          <Button onClick={() => setAdding(true)}>
-            <Plus className="size-5" />
-            {t('طلبية جديدة', 'New order')}
-          </Button>
+          <>
+            <Button variant="secondary" onClick={() => navigate('/orders/plan')}>
+              <ShoppingCart className="size-5" />
+              {t('خطة شراء المواد', 'Purchase plan')}
+            </Button>
+            <Button onClick={() => setAdding(true)}>
+              <Plus className="size-5" />
+              {t('طلبية جديدة', 'New order')}
+            </Button>
+          </>
         }
       />
       <div className="mb-5 max-w-md">

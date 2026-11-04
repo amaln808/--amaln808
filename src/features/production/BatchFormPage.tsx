@@ -6,6 +6,7 @@ import { Combobox, DateInput, Field, FormError, NumberInput, Select, Textarea } 
 import { Button, Card, PageHeader } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { fetchItemsWithStock, fetchOpenLots, INVENTORY_KEY } from '../../data/inventory'
+import { linkBatch } from '../../data/orders'
 import { createBatch, fetchRecipes, PRODUCTION_KEY } from '../../data/production'
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
@@ -139,6 +140,11 @@ export function BatchFormPage() {
           ...(r.addStock && r.missing > 0 ? { addStock: { qty: r.missing, unitCostBaisa: r.addCostBaisa ?? 0, expiryDate: r.addExpiry || null } } : {}),
         })),
       })
+      const fromOrder = params.get('order')
+      if (fromOrder) {
+        await linkBatch(fromOrder, id, date)
+        return navigate(`/orders/${fromOrder}`, { replace: true })
+      }
       navigate(`/production/${id}`, { replace: true })
     } catch (e) {
       setError(serverError(e))

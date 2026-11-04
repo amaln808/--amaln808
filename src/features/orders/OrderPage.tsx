@@ -9,6 +9,7 @@ import { serverError } from '../../data/errors'
 import { fetchItemsWithStock, INVENTORY_KEY } from '../../data/inventory'
 import type { PaymentMethod } from '../../data/inventory'
 import { deleteOrder, deleteStep, fetchOrders, type Order, type OrderStep, ORDERS_KEY, saveStep, updateOrder } from '../../data/orders'
+import { fetchBatches, PRODUCTION_KEY } from '../../data/production'
 import { deleteCustomerPayment, fetchSales, recordCustomerPayment, SALES_KEY, updateCustomerPayment } from '../../data/sales'
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
@@ -173,6 +174,7 @@ export function OrderPage() {
   const q = useQuery(ORDERS_KEY, fetchOrders)
   const sales = useQuery(SALES_KEY, fetchSales)
   const items = useQuery(INVENTORY_KEY, fetchItemsWithStock)
+  const batches = useQuery(PRODUCTION_KEY, fetchBatches)
   const [editing, setEditing] = useState(false)
   const [stepDraft, setStepDraft] = useState<StepDraft | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -229,6 +231,8 @@ export function OrderPage() {
       navigate('/orders', { replace: true })
     })
   }
+  const batchNo = (id: string) => batches.data?.find((b) => b.id === id)?.batchNo ?? ''
+  const newBatchUrl = `/production/new?product=${order.productId}${order.qty ? `&qty=${order.qty}` : ''}&order=${order.id}`
   const newQuoteUrl = `/quotes/new?customer=${order.customerId}${order.productId ? `&product=${order.productId}` : ''}${order.qty ? `&qty=${order.qty}` : ''}&order=${order.id}`
 
   return (
@@ -388,11 +392,22 @@ export function OrderPage() {
                       )}
                       {s.kind === 'payment' && s.amountBaisa != null && <span className="num font-medium">{formatOMR(s.amountBaisa)}</span>}
                     </div>
+                    {s.batchId && <div className="text-sm">{t(`دفعة الإنتاج ${batchNo(s.batchId)}`, `Production batch ${batchNo(s.batchId)}`)}</div>}
                     {s.notes && <div className="mt-0.5 text-sm text-muted">{s.notes}</div>}
                   </button>
+                  {s.kind === 'production' && s.batchId ? (
+                    <Button variant="ghost" className="shrink-0 self-start" onClick={() => navigate(`/production/${s.batchId}`)}>
+                      {t('الدفعة', 'Batch')}
+                    </Button>
+                  ) : s.kind === 'production' && !s.doneDate && order.productId ? (
+                    <Button variant="secondary" className="shrink-0 self-start" onClick={() => navigate(newBatchUrl)}>
+                      {t('تسجيل دفعة الإنتاج', 'Record production batch')}
+                    </Button>
+                  ) : (
                   <Button variant={s.doneDate ? 'ghost' : 'secondary'} className="shrink-0 self-start" onClick={() => markDone(s)}>
                     {s.kind === 'payment' ? (s.doneDate ? t('تفاصيل', 'Details') : t('استلام', 'Receive')) : s.doneDate ? t('تراجع', 'Undo') : t('تمت', 'Done')}
                   </Button>
+                  )}
                 </li>
               )
             })}
