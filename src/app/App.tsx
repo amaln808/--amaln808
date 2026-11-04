@@ -22,6 +22,7 @@ import { AssetsPage } from '../features/assets/AssetsPage'
 import { AuditPage } from '../features/audit/AuditPage'
 import { OrderPage } from '../features/orders/OrderPage'
 import { OrdersPage } from '../features/orders/OrdersPage'
+import { PlanPage } from '../features/orders/PlanPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { TasksPage } from '../features/tasks/TasksPage'
@@ -78,6 +79,7 @@ function makeRouter() {
         { path: '/production/:id', element: <BatchPage /> },
         { path: '/sales', element: <SalesPage /> },
         { path: '/orders', element: <OrdersPage /> },
+        { path: '/orders/plan', element: <PlanPage /> },
         { path: '/orders/:id', element: <OrderPage /> },
         { path: '/expenses', element: <ExpensesPage /> },
         { path: '/receivables', element: <ReceivablesPage /> },
