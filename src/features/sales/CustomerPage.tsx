@@ -1,4 +1,4 @@
-import { FileText, HandCoins, Pencil, Phone, Trash2 } from 'lucide-react'
+import { FileSpreadsheet, FileText, HandCoins, Pencil, Phone, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { FormError } from '../../components/form'
@@ -78,6 +78,10 @@ export function CustomerPage() {
               <Pencil className="size-4" />
               {t('تعديل', 'Edit')}
             </Button>
+            <Link to={`/customers/${id}/statement`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-4">
+              <FileSpreadsheet className="size-4" />
+              {t('كشف حساب', 'Statement')}
+            </Link>
             {wa && (
               <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-4">
                 <Phone className="size-4" />
