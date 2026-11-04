@@ -26,6 +26,7 @@ import { PlanPage } from '../features/orders/PlanPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { TasksPage } from '../features/tasks/TasksPage'
+import { StatementPage } from '../features/sales/StatementPage'
 import { CustomerPage } from '../features/sales/CustomerPage'
 import { InvoicePage } from '../features/sales/InvoicePage'
 import { QuotePage } from '../features/sales/QuotePage'
@@ -89,6 +90,7 @@ function makeRouter() {
         { path: '/expenses/new', element: <ExpenseFormPage key="new" /> },
         { path: '/expenses/:id', element: <ExpenseFormPage key="edit" /> },
         { path: '/customers/:id', element: <CustomerPage /> },
+        { path: '/customers/:id/statement', element: <StatementPage /> },
         { path: '/quotes/new', element: <SaleFormPage key="quote-new" kind="quote" /> },
         { path: '/quotes/:id/edit', element: <SaleFormPage key="quote-edit" kind="quote" /> },
         { path: '/quotes/:id', element: <QuotePage /> },

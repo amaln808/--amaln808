@@ -1,5 +1,5 @@
 import { Download, Loader2, Mail, Share2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
 import { LOGO_URL } from '../../app/assets'
 import { Segmented } from '../../components/form'
 import { Button, Card } from '../../components/ui'
@@ -33,11 +33,20 @@ async function loadImages(settings: Settings, withSeal: boolean): Promise<DocIma
   return { logo: logo ?? LOGO_URL, stamp, signature }
 }
 
-/**
- * Renders the document off-screen, turns it into a PDF in the background, and
- * shows a preview with share / download buttons. Pre-generating keeps the
- * share tap instant, which iOS requires for the share sheet.
- */
+export function docCompany(settings: Settings): DocCompany {
+  return {
+    name: settings.companyName,
+    nameEn: settings.companyNameEn,
+    phone: settings.phone,
+    crNo: settings.crNo,
+    vatNo: settings.vatNo,
+    address: settings.address,
+    addressEn: settings.addressEn,
+    vatRegistered: settings.vatRegistered,
+  }
+}
+
+/** An invoice or quotation as a PDF. */
 export function DocumentPanel({
   doc,
   settings,
@@ -50,12 +59,54 @@ export function DocumentPanel({
   shareText: (lang: DocLang) => string
   email?: string | null
 }) {
+  return (
+    <PdfPanel
+      settings={settings}
+      withSeal={sealAllowed(doc)}
+      dataKey={JSON.stringify(doc)}
+      filename={(l) => `${doc.number}${l === 'en' ? '-EN' : l === 'both' ? '-AR-EN' : ''}.pdf`}
+      subject={doc.number}
+      shareText={shareText}
+      phone={doc.customer?.phone}
+      email={email}
+      render={(ref, { company, images, lang }) => <SalesDocument ref={ref} doc={doc} company={company} images={images} lang={lang} />}
+    />
+  )
+}
+
+/**
+ * Renders a document off-screen, turns it into a PDF in the background, and
+ * shows a preview with share / download buttons. Pre-generating keeps the
+ * share tap instant, which iOS requires for the share sheet.
+ */
+export function PdfPanel({
+  settings,
+  withSeal = false,
+  dataKey,
+  filename: filenameOf,
+  subject,
+  shareText,
+  phone,
+  email,
+  render,
+}: {
+  settings: Settings
+  /** Fetch and pass the stamp and signature (issued invoices only) */
+  withSeal?: boolean
+  /** Changes whenever the document's content does */
+  dataKey: string
+  filename: (lang: DocLang) => string
+  subject: string
+  shareText: (lang: DocLang) => string
+  phone?: string | null
+  email?: string | null
+  render: (ref: RefObject<HTMLDivElement | null>, ctx: { company: DocCompany; images: DocImages; lang: DocLang }) => ReactNode
+}) {
   const [docLang, setDocLang] = useState<DocLang>(settings.docLanguage ?? 'ar')
   const chooseLang = (l: DocLang) => {
     setDocLang(l)
     updateSettings({ docLanguage: l }).catch(() => {}) // remember as the default
   }
-  const withSeal = sealAllowed(doc)
   const [images, setImages] = useState<DocImages | null>(null)
   useEffect(() => {
     let cancelled = false
@@ -65,21 +116,12 @@ export function DocumentPanel({
     }
   }, [settings.logoPath, settings.stampPath, settings.signaturePath, withSeal])
 
-  const company: DocCompany = {
-    name: settings.companyName,
-    nameEn: settings.companyNameEn,
-    phone: settings.phone,
-    crNo: settings.crNo,
-    vatNo: settings.vatNo,
-    address: settings.address,
-    addressEn: settings.addressEn,
-    vatRegistered: settings.vatRegistered,
-  }
+  const company = docCompany(settings)
   const ref = useRef<HTMLDivElement>(null)
   const [rendered, setRendered] = useState<RenderedDocument | null>(null)
   const [failed, setFailed] = useState(false)
-  const filename = `${doc.number}${docLang === 'en' ? '-EN' : docLang === 'both' ? '-AR-EN' : ''}.pdf`
-  const key = JSON.stringify({ doc, docLang, company, ready: !!images, seal: images?.stamp?.length, sig: images?.signature?.length, logo: images?.logo.length })
+  const filename = filenameOf(docLang)
+  const key = JSON.stringify({ dataKey, docLang, company, ready: !!images, seal: images?.stamp?.length, sig: images?.signature?.length, logo: images?.logo.length })
 
   useEffect(() => {
     if (!images) return
@@ -102,14 +144,14 @@ export function DocumentPanel({
   }, [key])
 
   const share = async () => {
-    if (rendered) await sharePdf(rendered.blob, filename, { text: shareText(docLang), phone: doc.customer?.phone ?? undefined })
+    if (rendered) await sharePdf(rendered.blob, filename, { text: shareText(docLang), phone: phone ?? undefined })
   }
   const sendEmail = async () => {
     if (!rendered) return
     const result = await shareOrDownload(rendered.blob, filename, 'application/pdf')
     if (result === 'fallback') {
       // No share sheet here: the PDF was downloaded; open a pre-filled email to attach it to
-      window.location.href = `mailto:${email ?? ''}?subject=${encodeURIComponent(doc.number)}&body=${encodeURIComponent(shareText(docLang))}`
+      window.location.href = `mailto:${email ?? ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(shareText(docLang))}`
     }
   }
 
@@ -155,7 +197,7 @@ export function DocumentPanel({
       {/* Off-screen source for the PDF */}
       {images && (
         <div aria-hidden style={{ position: 'fixed', top: 0, left: -10000, pointerEvents: 'none' }}>
-          <SalesDocument ref={ref} doc={doc} company={company} images={images} lang={docLang} />
+          {render(ref, { company, images, lang: docLang })}
         </div>
       )}
     </Card>
