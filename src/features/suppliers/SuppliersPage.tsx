@@ -1,4 +1,4 @@
-import { ChevronLeft, Plus, Truck } from 'lucide-react'
+import { ChevronLeft, Plus, Scale, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FormError } from '../../components/form'
@@ -24,6 +24,10 @@ export function SuppliersPage() {
         title={t('الموردون', 'Suppliers')}
         actions={
           <>
+            <Link to="/suppliers/prices" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-4">
+              <Scale className="size-4" />
+              {t('مقارنة الأسعار', 'Compare prices')}
+            </Link>
             <Link to="/purchases/new" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-4">
               {t('فاتورة شراء', 'Purchase')}
             </Link>
