@@ -13,6 +13,7 @@ import { formatOMR } from '../../domain/money'
 import { formatQty, formatSignedQty } from '../../domain/quantity'
 import { nameOf, t } from '../../i18n/index'
 import { formatDate } from '../tasks/labels'
+import { ItemSupplierPrices } from '../suppliers/SupplierPricesCard'
 import { DeleteItemButton } from './DeleteItemButton'
 import { ItemFormModal } from './ItemFormModal'
 import { itemTypeLabel, movementLabel, sourceLabel } from './labels'
@@ -140,6 +141,8 @@ export function ItemPage() {
             </ul>
           )}
         </Card>
+
+        {item.type !== 'finished' && <ItemSupplierPrices item={item} itemId={item.id} />}
 
         <Card className="p-0">
           <h2 className="px-5 pt-4 pb-2 text-lg font-bold">{t('الحركات', 'Movements')}</h2>

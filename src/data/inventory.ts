@@ -1,3 +1,4 @@
+import type { PriceLine } from '../domain/supplierPrices'
 import type { Unit } from '../domain/quantity'
 import { toCamel, toSnake } from './case'
 import { db } from './client'
@@ -378,6 +379,24 @@ export async function fetchLastPurchasePrices(): Promise<Map<string, { unitCostB
   const m = new Map<string, { unitCostBaisa: number; vatRate: number }>()
   for (const r of data) if (!m.has(r.item_id)) m.set(r.item_id, { unitCostBaisa: Number(r.unit_cost_baisa), vatRate: Number(r.vat_rate) })
   return m
+}
+
+/** Every purchase line with its supplier and date, for comparing suppliers' prices (key under INVENTORY_KEY so purchases refresh it). */
+export async function fetchPurchasePrices(): Promise<PriceLine[]> {
+  const { data, error } = await db().from('purchase_lines').select('item_id, qty, unit_cost_baisa, vat_rate, created_at, purchases!inner(date, supplier_id)')
+  if (error) throw error
+  return data.map((r) => {
+    const p = r.purchases as unknown as { date: string; supplier_id: string }
+    return {
+      itemId: r.item_id as string,
+      supplierId: p.supplier_id,
+      date: p.date,
+      seq: r.created_at as string,
+      qty: Number(r.qty),
+      unitCostBaisa: Number(r.unit_cost_baisa),
+      vatRate: Number(r.vat_rate),
+    }
+  })
 }
 
 export async function fetchPurchaseDetail(id: string) {

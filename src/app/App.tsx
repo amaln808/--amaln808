@@ -19,6 +19,7 @@ import { ProductsPage } from '../features/products/ProductsPage'
 import { PurchaseFormPage } from '../features/purchases/PurchaseFormPage'
 import { PurchasePage } from '../features/purchases/PurchasePage'
 import { SupplierPage } from '../features/suppliers/SupplierPage'
+import { SupplierPricesPage } from '../features/suppliers/SupplierPricesPage'
 import { SuppliersPage } from '../features/suppliers/SuppliersPage'
 import { AssetsPage } from '../features/assets/AssetsPage'
 import { AuditPage } from '../features/audit/AuditPage'
@@ -71,6 +72,7 @@ function makeRouter() {
         { path: '/inventory', element: <InventoryPage /> },
         { path: '/inventory/:id', element: <ItemPage /> },
         { path: '/suppliers', element: <SuppliersPage /> },
+        { path: '/suppliers/prices', element: <SupplierPricesPage /> },
         { path: '/suppliers/:id', element: <SupplierPage /> },
         { path: '/purchases/new', element: <PurchaseFormPage /> },
         { path: '/purchases/:id', element: <PurchasePage /> },
