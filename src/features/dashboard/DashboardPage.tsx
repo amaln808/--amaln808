@@ -153,7 +153,7 @@ export function DashboardPage() {
   const invested = (input.assets ?? []).reduce((s, a) => s + a.costBaisa, 0)
   const earned = (r: DateRange) => {
     const x = computeKpis(input, r)
-    return x.grossProfitBaisa - x.expensesBaisa
+    return x.grossProfitBaisa - x.expensesBaisa - x.samplesBaisa
   }
   const back = invested ? payback(invested, earned(periodRange('all', today)), past.map((m) => earned({ from: `${m}-01`, to: `${m}-31` }))) : null
 
@@ -217,11 +217,10 @@ export function DashboardPage() {
           label={t('صافي الربح', 'Net profit')}
           value={formatOMR(k.netProfitBaisa)}
           tone={k.netProfitBaisa > 0 ? 'good' : k.netProfitBaisa < 0 ? 'bad' : undefined}
-          sub={
-            k.depreciationBaisa
-              ? t(`هامش الربح ${pct(k.netMargin)} — بعد تكلفة البضاعة ${formatOMR(k.cogsBaisa)} والمصروفات وإهلاك المعدات ${formatOMR(k.depreciationBaisa)}`, `Margin ${pct(k.netMargin)} — after goods sold ${formatOMR(k.cogsBaisa)}, expenses and equipment depreciation ${formatOMR(k.depreciationBaisa)}`)
-              : t(`هامش الربح ${pct(k.netMargin)} — بعد تكلفة البضاعة ${formatOMR(k.cogsBaisa)} والمصروفات`, `Margin ${pct(k.netMargin)} — after goods sold ${formatOMR(k.cogsBaisa)} and expenses`)
-          }
+          sub={t(
+            `هامش الربح ${pct(k.netMargin)} — بعد تكلفة البضاعة ${formatOMR(k.cogsBaisa)} والمصروفات${k.samplesBaisa ? ` والعينات الترويجية ${formatOMR(k.samplesBaisa)}` : ''}${k.depreciationBaisa ? ` وإهلاك المعدات ${formatOMR(k.depreciationBaisa)}` : ''}`,
+            `Margin ${pct(k.netMargin)} — after goods sold ${formatOMR(k.cogsBaisa)}, expenses${k.samplesBaisa ? `, promotional samples ${formatOMR(k.samplesBaisa)}` : ''}${k.depreciationBaisa ? `, equipment depreciation ${formatOMR(k.depreciationBaisa)}` : ''}`,
+          )}
         />
         <Kpi
           label={t('متوسط تكلفة العبوة المنتجة', 'Average cost per jar made')}

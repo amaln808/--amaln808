@@ -15,6 +15,7 @@ export function movementLabel(type: string): string {
     adjustment: ['تسوية', 'Adjustment'],
     waste: ['تالف', 'Waste'],
     return: ['مرتجع', 'Return'],
+    sample: ['عينات ترويجية', 'Promotional samples'],
   }
   const l = labels[type]
   return l ? t(l[0], l[1]) : type

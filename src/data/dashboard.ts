@@ -5,7 +5,7 @@ export const DASHBOARD_KEY = 'dashboard'
 
 /** Everything the dashboard adds up, in the shapes of src/domain/dashboard.ts. */
 export async function fetchDashboard() {
-  const [inv, lines, cp, sp, pur, exp, bat, items, stock, assets] = await Promise.all([
+  const [inv, lines, cp, sp, pur, exp, bat, items, stock, assets, samples] = await Promise.all([
     db().from('sales_invoices').select('id, customer_id, channel_id, date, subtotal_baisa, discount_baisa, total_baisa').eq('status', 'issued'),
     db().from('invoice_lines').select('invoice_id, product_id, qty, unit_price_baisa, invoice_line_lots(qty, unit_cost_baisa)'),
     db().from('customer_payments').select('customer_id, date, amount_baisa'),
@@ -16,8 +16,9 @@ export async function fetchDashboard() {
     db().from('items').select('id, type, active, min_qty'),
     db().from('v_stock').select('item_id, qty, value_baisa'),
     db().from('assets').select('purchase_date, cost_baisa, life_months, residual_baisa').eq('active', true),
+    db().from('samples').select('date, cost_baisa'),
   ])
-  for (const r of [inv, lines, cp, sp, pur, exp, bat, items, stock, assets]) if (r.error) throw r.error
+  for (const r of [inv, lines, cp, sp, pur, exp, bat, items, stock, assets, samples]) if (r.error) throw r.error
 
   const linesBy = new Map<string, DashboardInput['invoices'][number]['lines']>()
   for (const l of lines.data!) {
@@ -62,6 +63,7 @@ export async function fetchDashboard() {
       lifeMonths: Number(a.life_months),
       residualBaisa: Number(a.residual_baisa),
     })),
+    samples: samples.data!.map((s) => ({ date: s.date as string, costBaisa: Number(s.cost_baisa) })),
   }
   return input
 }

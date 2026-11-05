@@ -42,7 +42,7 @@ export function isNavActive(item: NavItem, pathname: string): boolean {
 export function navItems(): NavItem[] {
   return [
     { to: '/', label: t('لوحة المؤشرات', 'Dashboard'), shortLabel: t('المؤشرات', 'Dashboard'), icon: LayoutDashboard, primary: false, phase: 0 },
-    { to: '/ready', label: t('المخزون الجاهز للبيع', 'Ready for sale'), shortLabel: t('الجاهز', 'Ready'), icon: PackageCheck, primary: true, phase: 0 },
+    { to: '/ready', label: t('المخزون الجاهز للبيع', 'Ready for sale'), shortLabel: t('الجاهز', 'Ready'), icon: PackageCheck, primary: true, phase: 0, also: ['/samples'] },
     { to: '/inventory', label: t('مخزون المواد', 'Materials stock'), shortLabel: t('المواد', 'Materials'), icon: Boxes, primary: true, phase: 0 },
     { to: '/suppliers', label: t('الموردون', 'Suppliers'), icon: Truck, primary: false, phase: 0, also: ['/purchases'] },
     { to: '/products', label: t('المنتجات', 'Products'), icon: Package, primary: false, phase: 0 },

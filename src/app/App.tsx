@@ -1,3 +1,4 @@
+import { SamplesPage } from '../features/samples/SamplesPage'
 import { MonthlyReportPage } from '../features/dashboard/MonthlyReportPage'
 import { useEffect, useState } from 'react'
 import { createHashRouter, Navigate, RouterProvider } from 'react-router-dom'
@@ -69,6 +70,7 @@ function makeRouter() {
         ...placeholderRoutes(),
         { path: '/', element: <DashboardPage /> },
         { path: '/ready', element: <ReadyStockPage /> },
+        { path: '/samples', element: <SamplesPage /> },
         { path: '/inventory', element: <InventoryPage /> },
         { path: '/inventory/:id', element: <ItemPage /> },
         { path: '/suppliers', element: <SuppliersPage /> },
