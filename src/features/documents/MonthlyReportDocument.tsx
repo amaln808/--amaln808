@@ -81,6 +81,7 @@ export const MonthlyReportDocument = forwardRef<HTMLDivElement, { data: ReportDo
       { label: L('تكلفة البضاعة المباعة', 'Cost of goods sold'), now: k.cogsBaisa, before: p.cogsBaisa, costly: true },
       { label: L('مجمل الربح', 'Gross profit'), now: k.grossProfitBaisa, before: p.grossProfitBaisa, strong: true, sub: pct(k.grossMargin) },
       { label: L('المصروفات', 'Expenses'), now: k.expensesBaisa, before: p.expensesBaisa, costly: true },
+      ...(k.samplesBaisa || p.samplesBaisa ? [{ label: L('العينات الترويجية', 'Promotional samples'), now: k.samplesBaisa, before: p.samplesBaisa, costly: true }] : []),
       ...(k.depreciationBaisa || p.depreciationBaisa ? [{ label: L('إهلاك المعدات', 'Equipment depreciation'), now: k.depreciationBaisa, before: p.depreciationBaisa, costly: true }] : []),
       { label: L('صافي الربح', 'Net profit'), now: k.netProfitBaisa, before: p.netProfitBaisa, strong: true, sub: pct(k.netMargin) },
     ]

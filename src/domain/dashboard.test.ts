@@ -130,3 +130,15 @@ describe('rankings and balances', () => {
     expect(outstanding(data)).toEqual({ receivableBaisa: 44000, payableBaisa: 23000 })
   })
 })
+
+describe('promotional samples in profit', () => {
+  it('take their cost off net profit, not off cash', () => {
+    const r = { from: '2026-10-01', to: '2026-10-31' }
+    const before = computeKpis(data, r)
+    const after = computeKpis({ ...data, samples: [{ date: '2026-10-20', costBaisa: 8600 }, { date: '2026-09-30', costBaisa: 1 }] }, r)
+    expect(after.samplesBaisa).toBe(8600)
+    expect(after.netProfitBaisa).toBe(before.netProfitBaisa - 8600)
+    expect(after.cashOutBaisa).toBe(before.cashOutBaisa)
+    expect(before.samplesBaisa).toBe(0)
+  })
+})

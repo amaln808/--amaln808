@@ -1,4 +1,4 @@
-import { ChevronLeft, Factory, PackageCheck, Plus } from 'lucide-react'
+import { ChevronLeft, Factory, Gift, PackageCheck, Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { FormError } from '../../components/form'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '../../components/ui'
@@ -33,6 +33,10 @@ export function ReadyStockPage() {
         subtitle={t('المنتجات النهائية فقط — المواد الخام والتغليف في «مخزون المواد».', 'Finished products only — raw materials and packaging are in «Materials stock».')}
         actions={
           <>
+            <Link to="/samples" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-4">
+              <Gift className="size-5" />
+              {t('عينات ترويجية', 'Samples')}
+            </Link>
             <Link to="/production/new" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-4">
               <Factory className="size-5" />
               {t('دفعة إنتاج', 'New batch')}
