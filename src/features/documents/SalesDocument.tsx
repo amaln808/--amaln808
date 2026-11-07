@@ -54,11 +54,15 @@ export interface DocImages {
   signature?: string | null
 }
 
+/** Date-bark brown of the logo: headings, rules and the total */
 const BRAND = '#5b4a2f'
-const MUTED = '#666'
-/** Table rules and the header shading of a plain word-processor table */
-const GRID = '#9a9a9a'
-const HEAD = '#f0f0f0'
+/** Ripe-date amber: the thin second rule and small accents */
+const DATE = '#b08a55'
+const INK = '#1f1d19'
+const MUTED = '#6f6a62'
+/** Light sand behind the table header, and the hairlines between rows */
+const SAND = '#f4efe6'
+const GRID = '#ddd5c7'
 
 /**
  * A4 invoice / quotation (794 × 1123 px at 96 dpi), captured to PDF. Laid out like a
@@ -117,27 +121,54 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
 
     const title = isInvoice
       ? company.vatRegistered
-        ? L('فاتورة ضريبية', 'TAX INVOICE')
-        : L('فاتورة', 'INVOICE')
-      : L('عرض أسعار', 'QUOTATION')
+        ? L('فاتورة ضريبية', 'Tax invoice')
+        : L('فاتورة', 'Invoice')
+      : L('عرض أسعار', 'Quotation')
     const options = !isInvoice && doc.options?.length ? doc.options : null
-    const border = `1px solid ${GRID}`
+    const rule = `1px solid ${GRID}`
     const cell = (align: 'start' | 'end' | 'center' = 'start'): React.CSSProperties => ({
-      padding: '7px 9px',
+      padding: '9px 10px',
       textAlign: align === 'start' ? start : align === 'end' ? end : 'center',
-      border,
+      borderBottom: rule,
       verticalAlign: 'middle',
     })
-    const th = (align: 'start' | 'end' | 'center', width?: number): React.CSSProperties => ({ ...cell(align), width, background: HEAD, fontWeight: 700 })
-    // Company details, one under another, on the left of the page (the right in English)
-    const companyLines: ReactNode[] = [
-      <span key="n" style={{ fontWeight: 700, fontSize: 15, color: '#111' }}>{lang === 'en' ? company.nameEn || company.name : company.name}</span>,
-      ...(lang === 'both' && company.nameEn ? [<span key="ne" dir="ltr">{company.nameEn}</span>] : []),
-      ...(company.crNo ? [<span key="cr">{L('السجل التجاري', 'CR no.', { inline: true })}: {num(company.crNo)}</span>] : []),
-      ...(company.vatRegistered && company.vatNo ? [<span key="vat">{L('الرقم الضريبي', 'VAT no.', { inline: true })}: {num(company.vatNo)}</span>] : []),
-      ...(company.phone ? [<span key="ph">{L('هاتف', 'Tel', { inline: true })}: {num(company.phone)}</span>] : []),
-      ...(lang !== 'en' ? [<span key="a">{company.address ? `${company.address} — سلطنة عُمان` : 'سلطنة عُمان'}</span>] : []),
-      ...(lang !== 'ar' ? [<span key="ae" dir="ltr">{company.addressEn ? `${company.addressEn}, Sultanate of Oman` : 'Sultanate of Oman'}</span>] : []),
+    const th = (align: 'start' | 'end' | 'center', width?: number): React.CSSProperties => ({
+      ...cell(align),
+      width,
+      background: SAND,
+      color: BRAND,
+      fontWeight: 700,
+      fontSize: 13,
+      borderBottom: `1.5px solid ${BRAND}`,
+    })
+    // Small «label  value» lines, aligned in two columns
+    const facts = (rows: Array<[ReactNode, ReactNode]>, size = 13) => (
+      <table style={{ borderCollapse: 'collapse', fontSize: size, lineHeight: 1.75 }}>
+        <tbody>
+          {rows.map(([k, v], i) => (
+            <tr key={i}>
+              <td style={{ padding: 0, paddingInlineEnd: 14, color: MUTED, textAlign: start, whiteSpace: 'nowrap' }}>{k}</td>
+              <td style={{ padding: 0, color: INK, fontWeight: 500, textAlign: start }}>{v}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+    const companyFacts: Array<[ReactNode, ReactNode]> = [
+      ...(company.crNo ? [[L('السجل التجاري', 'CR no.', { inline: true }), num(company.crNo)] as [ReactNode, ReactNode]] : []),
+      ...(company.vatRegistered && company.vatNo ? [[L('الرقم الضريبي', 'VAT no.', { inline: true }), num(company.vatNo)] as [ReactNode, ReactNode]] : []),
+      ...(company.phone ? [[L('الهاتف', 'Tel', { inline: true }), num(company.phone)] as [ReactNode, ReactNode]] : []),
+      [
+        L('العنوان', 'Address', { inline: true }),
+        lang === 'en' ? (company.addressEn ? `${company.addressEn}, Oman` : 'Sultanate of Oman') : company.address ? `${company.address}، سلطنة عُمان` : 'سلطنة عُمان',
+      ],
+    ]
+    const docFacts: Array<[ReactNode, ReactNode]> = [
+      [isInvoice ? L('رقم الفاتورة', 'Invoice no.', { inline: true }) : L('رقم العرض', 'Quotation no.', { inline: true }), <b key="n">{num(doc.number)}</b>],
+      [L('التاريخ', 'Date', { inline: true }), num(formatDate(doc.date))],
+      ...(doc.untilDate
+        ? [[isInvoice ? L('تاريخ الاستحقاق', 'Due date', { inline: true }) : L('ساري حتى', 'Valid until', { inline: true }), num(formatDate(doc.untilDate))] as [ReactNode, ReactNode]]
+        : []),
     ]
 
     return (
@@ -148,11 +179,12 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
         style={{
           width: 794,
           minHeight: 1123,
-          padding: '48px 60px 36px',
+          padding: '46px 58px 34px',
           background: '#fff',
-          color: '#1c1917',
+          color: INK,
           fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-          fontSize: 14,
+          fontSize: 13.5,
+          fontVariantNumeric: 'tabular-nums',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
@@ -178,78 +210,75 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
           </div>
         )}
 
-        {/* Letterhead: logo on one side, the business details stacked on the other */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24 }}>
+        {/* Letterhead: the logo on one side, the business details stacked on the other (left, in Arabic) */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <img src={images.logo} alt="" style={{ height: 92, width: 'auto', objectFit: 'contain' }} />
-            <div dir="ltr" style={{ fontSize: 12, fontWeight: 600, letterSpacing: 3, color: BRAND }}>Zuwardah</div>
+            <img src={images.logo} alt="" style={{ height: 96, width: 'auto', objectFit: 'contain' }} />
+            <div dir="ltr" style={{ fontSize: 11.5, fontWeight: 500, letterSpacing: 4, color: BRAND }}>Zuwardah</div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', textAlign: end, gap: 2, fontSize: 13, color: '#333', lineHeight: 1.5 }}>
-            {companyLines}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: BRAND, lineHeight: 1.3 }}>
+              {lang === 'en' ? company.nameEn || company.name : company.name}
+              {lang === 'both' && company.nameEn && (
+                <span dir="ltr" style={{ fontWeight: 500, fontSize: 13, color: MUTED, unicodeBidi: 'isolate' }}>
+                  {'  '}
+                  {company.nameEn}
+                </span>
+              )}
+            </div>
+            {facts(companyFacts, 12.5)}
           </div>
         </div>
-        <div style={{ marginTop: 14, borderTop: `1.5px solid #333` }} />
+        {/* Double rule: the one decorative device, in the brand's colours */}
+        <div style={{ marginTop: 16, borderTop: `2.5px solid ${BRAND}` }} />
+        <div style={{ marginTop: 3, borderTop: `1px solid ${DATE}` }} />
 
-        {/* Title, centred */}
-        <div style={{ marginTop: 22, textAlign: 'center' }}>
-          <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: lang === 'en' ? 3 : 0, color: '#111', textDecoration: 'underline', textUnderlineOffset: 8, textDecorationThickness: 1.5 }}>{title}</div>
+        {/* Title, centred, with a short rule under it */}
+        <div style={{ marginTop: 26, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontSize: 27, fontWeight: 700, color: INK, lineHeight: 1.2 }}>{title}</div>
+          <div style={{ width: 54, borderTop: `2px solid ${DATE}` }} />
         </div>
 
-        {/* Customer and document details, plain text as on a typed page */}
-        <div style={{ marginTop: 22, display: 'flex', justifyContent: 'space-between', gap: 24, lineHeight: 1.7 }}>
-          <div>
-            <div style={{ color: MUTED, fontSize: 13 }}>{isInvoice ? L('فاتورة إلى', 'Bill to', { inline: true }) : L('مقدَّم إلى', 'Prepared for', { inline: true })}:</div>
-            <div style={{ fontWeight: 700, fontSize: 16 }}>{doc.customer?.name ?? '—'}</div>
-            {doc.customer?.phone && <div>{num(doc.customer.phone)}</div>}
-            {doc.customer?.address && <div>{doc.customer.address}</div>}
+        {/* Customer and document details */}
+        <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 28 }}>
+          <div style={{ borderInlineStart: `3px solid ${BRAND}`, paddingInlineStart: 12, lineHeight: 1.7 }}>
+            <div style={{ color: MUTED, fontSize: 12.5 }}>{isInvoice ? L('فاتورة إلى', 'Bill to', { inline: true }) : L('مقدَّم إلى', 'Prepared for', { inline: true })}</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: INK }}>{doc.customer?.name ?? '—'}</div>
+            {doc.customer?.phone && <div style={{ fontSize: 13 }}>{num(doc.customer.phone)}</div>}
+            {doc.customer?.address && <div style={{ fontSize: 13 }}>{doc.customer.address}</div>}
             {doc.customer?.vatNo && (
-              <div>
+              <div style={{ fontSize: 13 }}>
                 {lang === 'en' ? 'VAT no.' : 'الرقم الضريبي'}: {num(doc.customer.vatNo)}
               </div>
             )}
           </div>
-          <table style={{ borderCollapse: 'collapse', alignSelf: 'flex-start', fontSize: 13.5 }}>
-            <tbody>
-              {[
-                [L('رقم المستند', 'Document no.', { inline: true }), num(doc.number)],
-                [L('التاريخ', 'Date', { inline: true }), num(formatDate(doc.date))],
-                ...(doc.untilDate
-                  ? [[isInvoice ? L('تاريخ الاستحقاق', 'Due date', { inline: true }) : L('ساري حتى', 'Valid until', { inline: true }), num(formatDate(doc.untilDate))]]
-                  : []),
-              ].map(([k, v], i) => (
-                <tr key={i}>
-                  <td style={{ padding: '2px 0', paddingInlineEnd: 14, color: MUTED, textAlign: start }}>{k}:</td>
-                  <td style={{ padding: '2px 0', fontWeight: 700, textAlign: start }}>{v}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {facts(docFacts)}
         </div>
 
-        {/* Items: a plain bordered table */}
-        <table style={{ width: '100%', marginTop: 22, borderCollapse: 'collapse', fontSize: 14 }}>
+        {/* Items */}
+        <table style={{ width: '100%', marginTop: 26, borderCollapse: 'collapse' }}>
           <thead>
             <tr>
               <th style={th('center', 34)}>#</th>
               <th style={th('start')}>{L('الصنف', 'Item')}</th>
               {showLots && <th style={th('center', 140)}>{L('الدفعة / الانتهاء', 'Batch / expiry')}</th>}
-              <th style={th('center', 80)}>{L('الكمية', 'Qty')}</th>
-              <th style={th('end', 105)}>{L('سعر الوحدة', 'Unit price')}</th>
-              <th style={th('end', 115)}>{L('المبلغ', 'Amount')}</th>
+              <th style={th('center', 82)}>{L('الكمية', 'Qty')}</th>
+              <th style={th('end', 104)}>{L('سعر الوحدة', 'Unit price')}</th>
+              <th style={th('end', 112)}>{L('المبلغ', 'Amount')}</th>
             </tr>
           </thead>
           <tbody>
             {doc.lines.map((l, i) => (
               <tr key={i}>
                 <td style={{ ...cell('center'), color: MUTED }}>{i + 1}</td>
-                <td style={cell('start')}>{itemName(l)}</td>
+                <td style={{ ...cell('start'), fontWeight: 500 }}>{itemName(l)}</td>
                 {showLots && (
-                  <td style={{ ...cell('center'), fontSize: 12 }}>
+                  <td style={{ ...cell('center'), fontSize: 12, color: '#3d3a35' }}>
                     {l.lots.length
                       ? l.lots.map((lot, j) => (
-                          <div key={j} style={{ lineHeight: 1.4 }}>
+                          <div key={j} style={{ lineHeight: 1.45 }}>
                             {num(lot.code ?? '—')}
-                            {lot.expiry && <span style={{ color: MUTED }}> · {num(formatDate(lot.expiry))}</span>}
+                            {lot.expiry && <span style={{ color: MUTED }}> / {num(formatDate(lot.expiry))}</span>}
                           </div>
                         ))
                       : '—'}
@@ -264,12 +293,12 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
             ))}
           </tbody>
         </table>
-        <div style={{ marginTop: 5, color: MUTED, fontSize: 12, textAlign: end }}>{L('المبالغ بالريال العماني', 'Amounts in Omani rials (OMR)', { inline: true })}</div>
+        <div style={{ marginTop: 6, color: MUTED, fontSize: 11.5, textAlign: end }}>{L('المبالغ بالريال العماني', 'Amounts in Omani rials (OMR)', { inline: true })}</div>
 
         {/* Quotation: price per way of paying */}
         {options && (
-          <div style={{ marginTop: 18 }}>
-            <div style={{ fontWeight: 700, marginBottom: 6, fontSize: 15 }}>{L('خيارات الأسعار حسب طريقة الدفع', 'Prices by payment option', { inline: true })}</div>
+          <div style={{ marginTop: 20 }}>
+            <div style={{ fontWeight: 700, color: BRAND, marginBottom: 6, fontSize: 14 }}>{L('خيارات الأسعار حسب طريقة الدفع', 'Prices by payment option', { inline: true })}</div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr>
@@ -309,9 +338,9 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
         <div style={{ flex: 1, minHeight: 48 }} />
 
         {/* Notes + totals */}
-        <div style={{ display: 'grid', gridTemplateColumns: lang === 'both' ? '1fr 340px' : '1fr 300px', gap: 28, alignItems: 'start' }}>
-          <div style={{ fontSize: 13, color: '#333', lineHeight: 1.6 }}>
-            {(doc.notes || doc.untilDate) && <div style={{ fontWeight: 700, marginBottom: 2 }}>{L('ملاحظات', 'Notes', { inline: true })}:</div>}
+        <div style={{ display: 'grid', gridTemplateColumns: lang === 'both' ? '1fr 330px' : '1fr 290px', gap: 30, alignItems: 'end' }}>
+          <div style={{ fontSize: 12.5, color: '#3d3a35', lineHeight: 1.7 }}>
+            {(doc.notes || doc.untilDate) && <div style={{ fontWeight: 700, color: BRAND, marginBottom: 2 }}>{L('ملاحظات', 'Notes', { inline: true })}</div>}
             {doc.notes && <div style={{ whiteSpace: 'pre-line', marginBottom: 4 }}>{doc.notes}</div>}
             {doc.untilDate &&
               (isInvoice ? (
@@ -320,15 +349,15 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
                 <div>{L(`هذا العرض ساري حتى ${formatDate(doc.untilDate)}.`, `This quotation is valid until ${formatDate(doc.untilDate)}.`)}</div>
               ))}
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <TotalRow label={L('المجموع', 'Subtotal', { inline: true })} value={num(formatBaisa(doc.subtotalBaisa))} start={start} end={end} />
               {doc.discountBaisa > 0 && <TotalRow label={L('الخصم', 'Discount', { inline: true })} value={num(`− ${formatBaisa(doc.discountBaisa)}`)} start={start} end={end} />}
               {company.vatRegistered && <TotalRow label={L('ضريبة القيمة المضافة', 'VAT', { inline: true })} value={num(formatBaisa(doc.vatBaisa))} start={start} end={end} />}
-              <tr style={{ background: HEAD }}>
-                <td style={{ padding: '10px 12px', border, fontWeight: 700, fontSize: 15, textAlign: start }}>{L('الإجمالي', 'Total', { inline: true })}</td>
-                <td style={{ padding: '10px 12px', border, fontWeight: 700, fontSize: 17, textAlign: end, whiteSpace: 'nowrap' }}>
-                  {num(formatBaisa(doc.totalBaisa))} <span style={{ fontSize: 12, fontWeight: 500 }}>{currency}</span>
+              <tr style={{ background: BRAND, color: '#fff' }}>
+                <td style={{ padding: '11px 14px', fontWeight: 700, fontSize: 15, textAlign: start }}>{L('الإجمالي', 'Total', { inline: true })}</td>
+                <td style={{ padding: '11px 14px', fontWeight: 700, fontSize: 18, textAlign: end, whiteSpace: 'nowrap' }}>
+                  {num(formatBaisa(doc.totalBaisa))} <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.85 }}>{currency}</span>
                 </td>
               </tr>
               {isInvoice && doc.status === 'issued' && doc.paidBaisa !== undefined && doc.paidBaisa > 0 && (
@@ -343,13 +372,13 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
 
         {/* Signature & stamp — issued invoices only */}
         {seal && (
-          <div style={{ marginTop: 28, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60 }}>
+          <div style={{ marginTop: 30, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 70 }}>
             {[
               { label: L('التوقيع', 'Signature', { inline: true }), src: images.signature },
               { label: L('الختم', 'Stamp', { inline: true }), src: images.stamp },
             ].map(({ label, src }, i) => (
               <div key={i}>
-                <div style={{ height: 92, borderBottom: '1px solid #999', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                <div style={{ height: 92, borderBottom: `1px solid ${GRID}`, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
                   {src && <img src={src} alt="" data-seal={i === 0 ? 'signature' : 'stamp'} style={{ maxHeight: 88, maxWidth: '80%', objectFit: 'contain' }} />}
                 </div>
                 <div style={{ marginTop: 6, color: MUTED, fontSize: 12, textAlign: 'center' }}>{label}</div>
@@ -358,15 +387,14 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
           </div>
         )}
 
-        {/* Footer: a thin rule and one centred line, as in a Word footer */}
-        <div style={{ marginTop: 24, paddingTop: 8, borderTop: `1px solid ${GRID}`, textAlign: 'center', fontSize: 12, color: MUTED }}>
-          {L('شكراً لتعاملكم معنا', 'Thank you for your business', { inline: true })}
-          {company.phone && <> · {num(company.phone)}</>}
+        {/* Footer: a thin rule and the business in one quiet line */}
+        <div style={{ marginTop: 26, paddingTop: 9, borderTop: `1px solid ${DATE}`, display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '4px 22px', fontSize: 11.5, color: MUTED }}>
+          <span style={{ color: BRAND, fontWeight: 500 }}>{L('شكراً لتعاملكم معنا', 'Thank you for your business', { inline: true })}</span>
+          {company.phone && <span>{num(company.phone)}</span>}
           {company.crNo && (
-            <>
-              {' '}
-              · {lang === 'en' ? 'CR' : 'س.ت'} {num(company.crNo)}
-            </>
+            <span>
+              {lang === 'en' ? 'CR' : 'س.ت'} {num(company.crNo)}
+            </span>
           )}
         </div>
       </div>
@@ -375,11 +403,10 @@ export const SalesDocument = forwardRef<HTMLDivElement, { doc: DocData; company:
 )
 
 function TotalRow({ label, value, bold, start, end }: { label: ReactNode; value: ReactNode; bold?: boolean; start: string; end: string }) {
-  const border = `1px solid ${GRID}`
   return (
-    <tr>
-      <td style={{ padding: '7px 12px', border, color: bold ? '#1c1917' : '#444', fontWeight: bold ? 700 : 400, textAlign: start as 'left', whiteSpace: 'nowrap' }}>{label}</td>
-      <td style={{ padding: '7px 12px', border, textAlign: end as 'left', fontWeight: bold ? 700 : 500, whiteSpace: 'nowrap' }}>{value}</td>
+    <tr style={{ borderBottom: `1px solid ${GRID}` }}>
+      <td style={{ padding: '8px 14px', color: bold ? INK : MUTED, fontWeight: bold ? 700 : 400, textAlign: start as 'left', whiteSpace: 'nowrap' }}>{label}</td>
+      <td style={{ padding: '8px 14px', color: INK, textAlign: end as 'left', fontWeight: bold ? 700 : 500, whiteSpace: 'nowrap' }}>{value}</td>
     </tr>
   )
 }
