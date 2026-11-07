@@ -1,12 +1,12 @@
 import { buildLabel, forceUpdate } from '../../app/pwaUpdate'
-import { Check, LogOut } from 'lucide-react'
+import { Check, KeyRound, LogOut } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSettingsQuery } from '../../app/settingsContext'
 import { applyTheme, BRAND_SWATCHES } from '../../app/theme'
 import { Field, FormError, Segmented, TextInput } from '../../components/form'
 import { useConfirm } from '../../components/useConfirm'
 import { Button, Card, PageHeader } from '../../components/ui'
-import { useAuth } from '../../data/auth'
+import { changePassword, useAuth } from '../../data/auth'
 import { serverError } from '../../data/errors'
 import { type FontScale, type Settings, type ThemeMode, updateSettings } from '../../data/settings'
 import { useOutboxCounts } from '../../data/useOnline'
@@ -185,8 +185,53 @@ function AppearanceCard({ settings }: { settings: Settings }) {
   )
 }
 
+/** New password for the signed-in account (typed twice, at least 8 characters). */
+function PasswordForm({ onDone }: { onDone: () => void }) {
+  const [a, setA] = useState('')
+  const [b, setB] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+  const save = async () => {
+    setError(null)
+    if (a.length < 8) return setError(t('8 خانات على الأقل.', 'At least 8 characters.'))
+    if (a !== b) return setError(t('الكلمتان غير متطابقتين.', "The two don't match."))
+    setBusy(true)
+    try {
+      await changePassword(a)
+      setSaved(true)
+      setTimeout(onDone, 1500)
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="mt-4 grid max-w-md gap-3 rounded-xl border border-line p-4">
+      <Field label={t('كلمة المرور الجديدة', 'New password')}>
+        <TextInput type="password" dir="ltr" autoComplete="new-password" value={a} onChange={(e) => setA(e.target.value)} />
+      </Field>
+      <Field label={t('تأكيدها', 'Confirm it')}>
+        <TextInput type="password" dir="ltr" autoComplete="new-password" value={b} onChange={(e) => setB(e.target.value)} />
+      </Field>
+      <FormError message={error} />
+      {saved ? (
+        <p className="flex items-center gap-2 text-sm text-palm">
+          <Check className="size-4" /> {t('حُفظت كلمة المرور الجديدة.', 'New password saved.')}
+        </p>
+      ) : (
+        <Button onClick={save} disabled={busy}>
+          {busy ? t('جارٍ الحفظ…', 'Saving…') : t('حفظ كلمة المرور', 'Save password')}
+        </Button>
+      )}
+    </div>
+  )
+}
+
 function AccountCard() {
   const { session, signOut } = useAuth()
+  const [changing, setChanging] = useState(false)
   const { pending, failed } = useOutboxCounts()
   const { confirm, dialog } = useConfirm()
 
@@ -213,11 +258,18 @@ function AccountCard() {
         <span dir="ltr" className="text-muted">
           {session?.user.email}
         </span>
-        <Button variant="secondary" onClick={out}>
-          <LogOut className="size-5 ltr:rotate-180" />
-          {t('تسجيل الخروج', 'Sign out')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setChanging((x) => !x)}>
+            <KeyRound className="size-5" />
+            {t('تغيير كلمة المرور', 'Change password')}
+          </Button>
+          <Button variant="secondary" onClick={out}>
+            <LogOut className="size-5 ltr:rotate-180" />
+            {t('تسجيل الخروج', 'Sign out')}
+          </Button>
+        </div>
       </div>
+      {changing && <PasswordForm onDone={() => setChanging(false)} />}
       <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted">
         <span>
           {t('إصدار التطبيق:', 'App version:')} <span dir="ltr" className="num">{buildLabel()}</span>

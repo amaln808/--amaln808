@@ -3,6 +3,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useS
 import { t } from '../i18n/index'
 import { isNetworkError, supabase } from './client'
 import { clearLocal } from './local'
+import { parseResetLink } from './resetLink'
 
 export type AuthStatus = 'loading' | 'signedOut' | 'notMember' | 'ready'
 
@@ -78,4 +79,46 @@ export function useAuth(): AuthState {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth outside AuthProvider')
   return ctx
+}
+
+/** Emails a password-reset link to the account's address. */
+export async function sendPasswordReset(email: string) {
+  const { error } = await supabase!.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin + window.location.pathname })
+  if (error) {
+    if (isNetworkError(error)) throw new Error(t('لا يوجد اتصال بالإنترنت.', 'No internet connection.'))
+    if (/rate limit|too many|seconds/i.test(error.message))
+      throw new Error(t('أُرسلت رسالة قبل قليل. يُرجى الانتظار قليلاً ثم المحاولة مجدداً.', 'An email was just sent. Wait a little and try again.'))
+    throw new Error(error.message)
+  }
+}
+
+const passwordError = (message: string) =>
+  /should be at least|weak|short/i.test(message)
+    ? t('كلمة المرور قصيرة أو ضعيفة: 8 خانات على الأقل.', 'The password is too short or weak: at least 8 characters.')
+    : /different from the old/i.test(message)
+      ? t('هذه كلمة المرور نفسها السابقة؛ يُرجى اختيار غيرها.', 'That is the same as the old password; choose another.')
+      : message
+
+/** Sets a new password for the signed-in account. */
+export async function changePassword(password: string) {
+  const { error } = await supabase!.auth.updateUser({ password })
+  if (error) throw new Error(passwordError(error.message))
+}
+
+/**
+ * Uses the link from the reset email (pasted, not opened) to sign in, then sets
+ * the new password. Works whatever address the link would have opened.
+ */
+export async function resetWithLink(linkText: string, password: string) {
+  const link = parseResetLink(linkText)
+  if (!link) throw new Error(t('لم يُعثر على الرابط. يُرجى نسخ الرابط من رسالة البريد كما هو ولصقه.', "That doesn't look like the link. Copy the link from the email as it is and paste it."))
+  const { error } =
+    link.kind === 'session'
+      ? await supabase!.auth.setSession({ access_token: link.accessToken, refresh_token: link.refreshToken })
+      : await supabase!.auth.verifyOtp({ token_hash: link.tokenHash, type: 'recovery' })
+  if (error) {
+    if (isNetworkError(error)) throw new Error(t('لا يوجد اتصال بالإنترنت.', 'No internet connection.'))
+    throw new Error(t('الرابط انتهى أو استُعمل من قبل. يُرجى طلب رسالة جديدة.', 'The link has expired or was already used. Ask for a new email.'))
+  }
+  await changePassword(password)
 }

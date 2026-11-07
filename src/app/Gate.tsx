@@ -1,8 +1,8 @@
-import { Eye, EyeOff, LockKeyhole, Plug } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, LockKeyhole, Mail, Plug } from 'lucide-react'
 import { type FormEvent, type ReactNode, useState } from 'react'
 import { Button } from '../components/ui'
-import { Field, FormError, TextInput } from '../components/form'
-import { useAuth } from '../data/auth'
+import { Field, FormError, Textarea, TextInput } from '../components/form'
+import { resetWithLink, sendPasswordReset, useAuth } from '../data/auth'
 import { t } from '../i18n/index'
 import { LanguageToggle } from './LanguageToggle'
 import { LogoMark } from './Layout'
@@ -39,8 +39,101 @@ export function LoadingScreen() {
   )
 }
 
+/** A password box with a show / hide button. */
+function PasswordInput({ value, onChange, autoComplete }: { value: string; onChange: (v: string) => void; autoComplete: string }) {
+  const [show, setShow] = useState(false)
+  return (
+    <div className="relative">
+      <TextInput type={show ? 'text' : 'password'} dir="ltr" autoComplete={autoComplete} required value={value} onChange={(e) => onChange(e.target.value)} className="pe-12" />
+      <button
+        type="button"
+        onClick={() => setShow((x) => !x)}
+        className="absolute inset-y-0 end-0 flex w-12 items-center justify-center text-muted"
+        aria-label={show ? t('إخفاء كلمة المرور', 'Hide password') : t('إظهار كلمة المرور', 'Show password')}
+      >
+        {show ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+      </button>
+    </div>
+  )
+}
+
+/**
+ * Forgotten password: an email with a reset link, then the link pasted here with
+ * a new password. Pasting (rather than opening the link) works on any address
+ * the app is served from.
+ */
+function ForgotPassword({ initialEmail, onBack }: { initialEmail: string; onBack: () => void }) {
+  const [email, setEmail] = useState(initialEmail)
+  const [sent, setSent] = useState(false)
+  const [link, setLink] = useState('')
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const run = async (e: FormEvent, task: () => Promise<void>) => {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await task()
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Frame>
+      <h1 className="text-2xl font-bold">{t('نسيت كلمة المرور', 'Forgot password')}</h1>
+      {!sent ? (
+        <form onSubmit={(e) => run(e, async () => (await sendPasswordReset(email), setSent(true)))} className="mt-6 flex flex-col gap-4">
+          <p className="text-muted">{t('تصل رسالة إلى بريد الحساب فيها رابط لتعيين كلمة مرور جديدة.', 'An email with a link to set a new password is sent to the account address.')}</p>
+          <Field label={t('البريد الإلكتروني', 'Email')}>
+            <TextInput type="email" dir="ltr" autoComplete="username" autoCapitalize="none" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          </Field>
+          <FormError message={error} />
+          <Button type="submit" disabled={busy} className="mt-2 min-h-12">
+            <Mail className="size-5" />
+            {busy ? t('جارٍ الإرسال…', 'Sending…') : t('إرسال الرابط', 'Send the link')}
+          </Button>
+          <button type="button" onClick={() => setSent(true)} className="text-sm text-brand-800 underline">
+            {t('وصلتني الرسالة من قبل', 'I already have the email')}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={(e) => run(e, () => resetWithLink(link, password))} className="mt-6 flex flex-col gap-4">
+          <ol className="list-decimal space-y-1 ps-5 text-sm text-muted">
+            <li>{t('في البريد: رسالة «Reset Your Password» (وفي «غير المرغوب» إن لم تظهر).', 'Open the email «Reset Your Password» (check spam too).')}</li>
+            <li>{t('دون فتح الرابط: ضغطة مطولة عليه ثم «نسخ الرابط».', "Don't open the link: press and hold it, then «Copy link».")}</li>
+            <li>{t('يُلصق الرابط هنا، وتُكتب كلمة المرور الجديدة.', 'Paste it here and type the new password.')}</li>
+          </ol>
+          <Field label={t('الرابط من الرسالة', 'Link from the email')}>
+            <Textarea dir="ltr" required value={link} onChange={(e) => setLink(e.target.value)} rows={3} />
+          </Field>
+          <Field label={t('كلمة المرور الجديدة (8 خانات على الأقل)', 'New password (at least 8 characters)')}>
+            <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" />
+          </Field>
+          <FormError message={error} />
+          <Button type="submit" disabled={busy || password.length < 8} className="mt-2 min-h-12">
+            <KeyRound className="size-5" />
+            {busy ? t('جارٍ الحفظ…', 'Saving…') : t('حفظ كلمة المرور والدخول', 'Save password and sign in')}
+          </Button>
+          <button type="button" onClick={() => setSent(false)} className="text-sm text-brand-800 underline">
+            {t('إرسال رسالة جديدة', 'Send a new email')}
+          </button>
+        </form>
+      )}
+      <button type="button" onClick={onBack} className="mt-6 text-sm text-muted underline">
+        {t('رجوع لتسجيل الدخول', 'Back to sign in')}
+      </button>
+    </Frame>
+  )
+}
+
 export function LoginScreen() {
   const { signIn } = useAuth()
+  const [forgot, setForgot] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
@@ -59,6 +152,8 @@ export function LoginScreen() {
       setBusy(false)
     }
   }
+
+  if (forgot) return <ForgotPassword initialEmail={email} onBack={() => setForgot(false)} />
 
   return (
     <Frame>
@@ -102,6 +197,9 @@ export function LoginScreen() {
           <LockKeyhole className="size-5" />
           {busy ? t('جارٍ الدخول…', 'Signing in…') : t('دخول', 'Sign in')}
         </Button>
+        <button type="button" onClick={() => setForgot(true)} className="text-sm text-brand-800 underline">
+          {t('نسيت كلمة المرور؟', 'Forgot password?')}
+        </button>
       </form>
     </Frame>
   )
