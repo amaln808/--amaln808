@@ -445,3 +445,36 @@ export async function markReminded(customerId: string) {
   if (error) throw error
   invalidate(SALES_KEY)
 }
+
+/** Every line of every invoice or quotation, for the Excel export (with the batch numbers each invoice line came from). */
+export async function fetchExportLines(kind: 'invoice' | 'quote') {
+  if (kind === 'invoice') {
+    const { data, error } = await db()
+      .from('invoice_lines')
+      .select('invoice_id, product_id, qty, unit_price_baisa, discount_baisa, vat_baisa, created_at, invoice_line_lots(stock_lots(lot_code))')
+      .order('created_at')
+    if (error) throw error
+    return data.map((l) => ({
+      docId: l.invoice_id as string,
+      productId: l.product_id as string,
+      qty: Number(l.qty),
+      unitPriceBaisa: Number(l.unit_price_baisa),
+      discountBaisa: Number(l.discount_baisa),
+      vatBaisa: Number(l.vat_baisa),
+      lots: ((l.invoice_line_lots as unknown as Array<{ stock_lots: { lot_code: string | null } | null }>) ?? [])
+        .map((x) => x.stock_lots?.lot_code)
+        .filter((x): x is string => !!x),
+    }))
+  }
+  const { data, error } = await db().from('quotation_lines').select('quotation_id, product_id, qty, unit_price_baisa, created_at').order('created_at')
+  if (error) throw error
+  return data.map((l) => ({
+    docId: l.quotation_id as string,
+    productId: l.product_id as string,
+    qty: Number(l.qty),
+    unitPriceBaisa: Number(l.unit_price_baisa),
+    discountBaisa: 0,
+    vatBaisa: 0,
+    lots: [] as string[],
+  }))
+}

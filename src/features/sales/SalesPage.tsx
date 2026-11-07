@@ -1,4 +1,4 @@
-import { ChevronLeft, FileText, Plus, ReceiptText, Users } from 'lucide-react'
+import { ChevronLeft, FileSpreadsheet, FileText, Plus, ReceiptText, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { FormError, Segmented } from '../../components/form'
@@ -13,6 +13,7 @@ import { formatOMR } from '../../domain/money'
 import { t } from '../../i18n/index'
 import { formatDate } from '../tasks/labels'
 import { CustomerFormModal } from './CustomerFormModal'
+import { ExportModal } from './ExportModal'
 import { PricesPanel } from './PricesPanel'
 import { type CustomerBalance, INVOICE_TONE, type InvoiceInfo, invoiceStatusLabel, QUOTE_TONE, quoteStatusLabel, quoteStatusOf, summarize } from './summary'
 
@@ -26,6 +27,7 @@ export function SalesPage() {
   const items = useQuery(INVENTORY_KEY, fetchItemsWithStock)
   const orders = useQuery(ORDERS_KEY, fetchOrders)
   const [addingCustomer, setAddingCustomer] = useState(false)
+  const [exporting, setExporting] = useState<'invoice' | 'quote' | null>(null)
   const today = todayIso()
   const data = q.data
   const sum = data ? summarize(data, today, orders.data ?? []) : null
@@ -76,6 +78,15 @@ export function SalesPage() {
           ]}
         />
       </div>
+
+      {(tab === 'invoices' || tab === 'quotes') && !!(tab === 'invoices' ? data?.invoices : data?.quotations)?.length && (
+        <div className="mb-3 flex justify-end">
+          <Button variant="secondary" onClick={() => setExporting(tab === 'invoices' ? 'invoice' : 'quote')}>
+            <FileSpreadsheet className="size-5" />
+            {t('تصدير Excel', 'Export Excel')}
+          </Button>
+        </div>
+      )}
 
       {tab === 'invoices' && (
         <Card className="p-0">
@@ -197,6 +208,9 @@ export function SalesPage() {
 
       {tab === 'prices' && data && <PricesPanel data={data} products={(items.data ?? []).filter((i) => i.type === 'finished' && i.active)} />}
 
+      {exporting && data && (
+        <ExportModal kind={exporting} data={data} invoiceInfo={invoiceInfo} products={items.data ?? []} onClose={() => setExporting(null)} />
+      )}
       {addingCustomer && <CustomerFormModal channels={data?.channels ?? []} onClose={() => setAddingCustomer(false)} />}
     </>
   )
