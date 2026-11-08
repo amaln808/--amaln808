@@ -1,6 +1,6 @@
 {
-  "url": "https://ekgykjfbodyylyozgqft.supabase.co",
-  "publishableKey": "sb_publishable_69ePUZNaLKPYtgr4Nj9Hhg_x3ZxsCvl",
-  "dbUser": "postgres.ekgykjfbodyylyozgqft",
-  "dbHost": "aws-0-ap-northeast-1.pooler.supabase.com"
+  "url": "https://mgtftmbzklildygzykjl.supabase.co",
+  "publishableKey": "sb_publishable_x2TS7oW4dCS9HuzJBhOJjQ_XX_O8wqC",
+  "dbUser": "postgres.mgtftmbzklildygzykjl",
+  "dbHost": "aws-0-ap-northeast-2.pooler.supabase.com"
 }
