@@ -18,7 +18,7 @@ function Frame({ children }: { children: ReactNode }) {
         <LogoMark className="h-40 w-20 md:h-[58vh] md:w-[29vh]" />
         <div className="text-xl font-semibold tracking-[0.25em]" dir="ltr">Zuwardah</div>
         <p className="max-w-[16rem] text-center text-sm leading-relaxed opacity-80">
-          {t('معجون التمر بزبدة الفول السوداني', 'Date paste with peanut butter')}
+          {t('إدارة المصنع', 'Factory management')}
         </p>
       </div>
       <div className="flex flex-1 flex-col px-6 py-8 pt-[max(2rem,env(safe-area-inset-top))]">
