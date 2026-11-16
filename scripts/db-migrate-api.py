@@ -11,7 +11,11 @@ import sys
 import urllib.error
 import urllib.request
 
-config = json.loads(pathlib.Path("src/data/supabase.config.json").read_text())
+# الهمة (a second app with its own project) passes its own config and migrations folder
+config = json.loads(pathlib.Path(os.environ.get("MIGRATE_CONFIG", "src/data/supabase.config.json")).read_text())
+if not config.get("url"):
+    print("::warning::Supabase is not configured for this app yet — nothing applied.")
+    sys.exit(0)
 ref = config["url"].split("//")[1].split(".")[0]
 token = os.environ["SUPABASE_ACCESS_TOKEN"].strip()
 
@@ -40,7 +44,7 @@ run(
 )
 done = {row["name"] for row in run("select name from public.schema_migrations")}
 
-for f in sorted(pathlib.Path("supabase/migrations").glob("*.sql")):
+for f in sorted(pathlib.Path(os.environ.get("MIGRATE_DIR", "supabase/migrations")).glob("*.sql")):
     if f.name in done:
         print(f"✓ {f.name} (already applied)")
         continue

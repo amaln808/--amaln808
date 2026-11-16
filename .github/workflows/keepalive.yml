@@ -24,6 +24,13 @@ jobs:
           if [ -z "$url" ]; then echo "::warning::Supabase not configured yet"; exit 0; fi
           curl -fsS --retry 3 --retry-delay 10 -X POST "$url/rest/v1/rpc/ping" \
             -H "apikey: $key" -H "Content-Type: application/json" -d '{}'
+      - name: Ping الهمة's Supabase project
+        run: |
+          url=$(jq -r .url himma/src/supabase.config.json)
+          key=$(jq -r .publishableKey himma/src/supabase.config.json)
+          if [ -z "$url" ]; then echo "::warning::الهمة not configured yet"; exit 0; fi
+          curl -fsS --retry 3 --retry-delay 10 -X POST "$url/rest/v1/rpc/ping" \
+            -H "apikey: $key" -H "Content-Type: application/json" -d '{}'
       - name: Keep this schedule enabled
         env:
           GH_TOKEN: ${{ github.token }}
