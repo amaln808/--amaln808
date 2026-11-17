@@ -68,6 +68,15 @@ export function VoiceAdd() {
   const [form, setForm] = useState<Partial<Task> | null>(null)
   const speech = useSpeech(setText)
 
+  // a sentence sent from Siri or the share sheet opens straight in the review window
+  useEffect(() => {
+    const added = sessionStorage.getItem('himma-add')
+    if (!added) return
+    sessionStorage.removeItem('himma-add')
+    setText(added)
+    setOpen(true)
+  }, [])
+
   function openAndListen() {
     setText('')
     speech.start()
@@ -172,7 +181,7 @@ function VoiceSheet({
   }
 
   return (
-    <Modal title="مهمة بالصوت" onClose={onClose}>
+    <Modal title="مهمة جديدة" onClose={onClose}>
       {speech.supported && (
         <div className="flex flex-col items-center gap-2 pb-4">
           <button
