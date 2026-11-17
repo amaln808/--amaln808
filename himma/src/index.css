@@ -1,0 +1,92 @@
+@import 'tailwindcss' source('..');
+@import '@fontsource/ibm-plex-sans-arabic/400.css';
+@import '@fontsource/ibm-plex-sans-arabic/500.css';
+@import '@fontsource/ibm-plex-sans-arabic/700.css';
+
+/*
+ * الهمة — night-indigo rail, cool mist ground, white cards.
+ * Saffron is spent in one place only: a day where every task was done.
+ * Work and personal series colours were checked with the dataviz validator on both surfaces.
+ */
+:root {
+  --ground: #eef0f5;
+  --card: #ffffff;
+  --ink: #1b2033;
+  --muted: #5b6176;
+  --line: #d9dce6;
+  --brand: #232a57;
+  --brand-soft: #e3e6f4;
+  --on-brand: #f4f5fb;
+  --button: #2f3a7a;
+  --saffron: #d6952a;
+  --saffron-soft: #f8ead0;
+  --work: #3e54a3;
+  --personal: #b5507e;
+  --late: #b4232f;
+  --good: #23704f;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #12141c;
+    --card: #1b1e29;
+    --ink: #e9ebf2;
+    --muted: #a0a6b8;
+    --line: #2e3244;
+    --brand: #171b38;
+    --brand-soft: #262b4d;
+    --on-brand: #e9ebf7;
+    --button: #4a57a8;
+    --saffron: #e0a542;
+    --saffron-soft: #3a2e17;
+    --work: #6c82d6;
+    --personal: #cc6a96;
+    --late: #ef7d86;
+    --good: #6cc39c;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --color-ground: var(--ground);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
+  --color-button: var(--button);
+  --color-saffron: var(--saffron);
+  --color-saffron-soft: var(--saffron-soft);
+  --color-work: var(--work);
+  --color-personal: var(--personal);
+  --color-late: var(--late);
+  --color-good: var(--good);
+}
+
+html {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+:focus-visible {
+  outline: 2px solid var(--button);
+  outline-offset: 2px;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

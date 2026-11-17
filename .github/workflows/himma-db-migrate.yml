@@ -1,0 +1,31 @@
+# Applies الهمة's database changes (himma/supabase/migrations) to its own Supabase project
+# after each merge to main. Uses the same SUPABASE_ACCESS_TOKEN secret (it covers every
+# project in the Supabase account); does nothing until himma/src/supabase.config.json is filled in.
+name: Apply database changes (الهمة)
+
+on:
+  push:
+    branches: [main]
+    paths: ['himma/supabase/migrations/**', 'himma/src/supabase.config.json']
+  workflow_dispatch:
+
+concurrency:
+  group: himma-db-migrate
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          MIGRATE_CONFIG: himma/src/supabase.config.json
+          MIGRATE_DIR: himma/supabase/migrations
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "::warning::SUPABASE_ACCESS_TOKEN is not set"; exit 0; fi
+          python3 scripts/db-migrate-api.py
