@@ -39,18 +39,20 @@ export function TaskForm({ task, defaults, onClose }: { task?: Task; defaults?: 
     () => [...new Set(store.tasks.map((t) => t.category).filter((c): c is string => !!c))].sort(),
     [store.tasks],
   )
+  // a new task can arrive pre-filled (from the voice input)
+  const src: Partial<Task> | undefined = task ?? defaults
   const [f, setF] = useState({
-    title: task?.title ?? '',
-    scope: (task?.scope ?? defaults?.scope ?? 'work') as Scope,
-    category: task?.category ?? '',
-    important: task?.important ?? false,
-    recurrence: task?.recurrence ?? ('once' as Recurrence),
-    intervalN: String(task?.intervalN ?? 1),
-    weekdays: task?.weekdays ?? [],
-    startDate: task?.startDate ?? defaults?.startDate ?? iso(new Date()),
-    endDate: task?.endDate ?? '',
-    dueTime: task?.dueTime ?? '',
-    notes: task?.notes ?? '',
+    title: src?.title ?? '',
+    scope: (src?.scope ?? 'work') as Scope,
+    category: src?.category ?? '',
+    important: src?.important ?? false,
+    recurrence: src?.recurrence ?? ('once' as Recurrence),
+    intervalN: String(src?.intervalN ?? 1),
+    weekdays: src?.weekdays ?? [],
+    startDate: src?.startDate ?? iso(new Date()),
+    endDate: src?.endDate ?? '',
+    dueTime: src?.dueTime ?? '',
+    notes: src?.notes ?? '',
   })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)

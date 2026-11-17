@@ -10,6 +10,7 @@ import { TasksPage } from './pages/TasksPage'
 import { GoalsPage } from './pages/GoalsPage'
 import { PerformancePage } from './pages/PerformancePage'
 import { LogPage } from './pages/LogPage'
+import { VoiceAdd } from './components/VoiceAdd'
 
 const NAV = [
   { to: '/', label: 'اليوم', icon: CalendarCheck },
@@ -139,7 +140,7 @@ function Layout() {
         </button>
       </aside>
 
-      <div className="min-w-0 flex-1 pb-24 md:pb-10">
+      <div className="min-w-0 flex-1 pb-44 md:pb-28">
         <header className="flex items-center justify-between bg-brand px-4 py-3 text-on-brand md:hidden">
           <Wordmark />
           <button type="button" onClick={signOut} aria-label="خروج" className="grid size-11 place-items-center rounded-xl hover:bg-white/10">
@@ -160,6 +161,7 @@ function Layout() {
             <Route path="/log" element={<LogPage />} />
           </Routes>
         </main>
+        <VoiceAdd />
       </div>
 
       {/* Bottom bar on the phone */}
