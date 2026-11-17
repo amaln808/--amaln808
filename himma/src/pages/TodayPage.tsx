@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Plus } from 'lucide-react'
 import { dueToday, upcoming } from '../../../src/domain/schedule'
 import { TaskForm } from '../components/TaskForm'
 import { TaskRow } from '../components/TaskRow'
 import { inScope, SCOPE_OPTIONS, useScopeFilter } from '../components/scope'
-import { Button, Empty, Section, Segmented } from '../components/ui'
+import { Empty, Section, Segmented } from '../components/ui'
 import { useStore, useToday, type Task } from '../data/store'
 import { activeOn, doneKey, doneSet, streak, weekDays, type DayCell } from '../domain/performance'
 import { day } from '../../../src/domain/schedule'
@@ -19,7 +18,7 @@ export function TodayPage() {
   const store = useStore()
   const today = useToday()
   const [scope, setScope] = useScopeFilter()
-  const [editing, setEditing] = useState<Task | 'new' | null>(null)
+  const [editing, setEditing] = useState<Task | null>(null)
 
   const tasks = useMemo(() => store.tasks.filter(inScope(scope)), [store.tasks, scope])
   const done = useMemo(() => doneSet(store.done), [store.done])
@@ -74,7 +73,7 @@ export function TodayPage() {
         {todays.length ? (
           <ul className="rounded-2xl border border-line bg-card">{todays.map((i) => row(i))}</ul>
         ) : (
-          <Empty>{store.tasks.length ? 'لا شيء مجدول لليوم.' : 'ابدئي بإضافة أول مهمة: عمل أو شخصية، لمرة واحدة أو متكررة.'}</Empty>
+          <Empty>{store.tasks.length ? 'لا شيء مجدول لليوم.' : 'اضغطي الميكروفون وقولي أول مهمة، مثل: «متابعة الطلبيات كل يوم الساعة 9».'}</Empty>
         )}
       </Section>
 
@@ -95,13 +94,9 @@ export function TodayPage() {
         </Section>
       )}
 
-      <Button onClick={() => setEditing('new')} className="fixed bottom-20 end-4 z-10 shadow-lg md:bottom-8 md:end-8" aria-label="مهمة جديدة">
-        <Plus size={20} aria-hidden /> مهمة جديدة
-      </Button>
       {editing && (
         <TaskForm
-          task={editing === 'new' ? undefined : editing}
-          defaults={{ scope: scope === 'all' ? 'work' : scope }}
+          task={editing}
           onClose={() => setEditing(null)}
         />
       )}
