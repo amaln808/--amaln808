@@ -32,8 +32,8 @@ export default defineConfig({
         // The receipt reader (~8 MB) loads on first use only, not with the app
         globIgnores: ['tesseract/**'],
         navigateFallback: 'index.html',
-        // الهمة lives at ./himma/ with its own service worker; never answer its pages with Zuwardah
-        navigateFallbackDenylist: [/\/himma\//],
+        // الهمة (./himma/) and مسار (./masar/) have their own service workers; never answer their pages with Zuwardah
+        navigateFallbackDenylist: [/\/himma\//, /\/masar\//],
         cleanupOutdatedCaches: true,
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
