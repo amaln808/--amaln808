@@ -15,5 +15,5 @@
     "noEmit": true,
     "types": ["vite/client", "vitest/config", "vite-plugin-pwa/client"]
   },
-  "include": ["src", "vite.config.ts", "himma"]
+  "include": ["src", "vite.config.ts", "himma", "masar"]
 }

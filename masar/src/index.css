@@ -1,0 +1,117 @@
+@import 'tailwindcss' source('.');
+@import '@fontsource/ibm-plex-sans-arabic/400.css';
+@import '@fontsource/ibm-plex-sans-arabic/500.css';
+@import '@fontsource/ibm-plex-sans-arabic/700.css';
+
+/*
+ * مسار — a deep petrol rail, a cool slate-green ground, white sheets.
+ * The one memorable element is "the track": each person's year drawn as a ruler whose
+ * segments are their goals (width = weight, fill = progress). Everything else stays quiet.
+ * Series colours were checked with the dataviz validator on both surfaces (table views carry the contrast relief).
+ */
+:root {
+  --ground: #eef1ef;
+  --card: #ffffff;
+  --sunk: #f4f7f6;
+  --ink: #15242a;
+  --muted: #56666c;
+  --line: #d5dedc;
+  --brand: #0e3f47;
+  --brand-soft: #e1ecea;
+  --on-brand: #f1f7f6;
+  --button: #0f5f6b;
+  --track: #0b8aa0;
+  --track-empty: #dde6e4;
+  --s1: #0b8aa0;
+  --s2: #eb6834;
+  --s3: #6250d6;
+  --s4: #eda100;
+  --s5: #e87ba4;
+  --s6: #008300;
+  --good: #1f7a4d;
+  --good-soft: #e2f1e8;
+  --warn: #9a5b00;
+  --warn-soft: #fbefd9;
+  --late: #b42318;
+  --late-soft: #fbe5e2;
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  --ground: #101716;
+  --card: #18211f;
+  --sunk: #1d2826;
+  --ink: #e6eeec;
+  --muted: #9fb0ad;
+  --line: #2c3a37;
+  --brand: #0a2c31;
+  --brand-soft: #20343a;
+  --on-brand: #e3f0ee;
+  --button: #1a8a9a;
+  --track: #1aa3ba;
+  --track-empty: #2a3a38;
+  --s1: #1aa3ba;
+  --s2: #d95926;
+  --s3: #9085e9;
+  --s4: #c98500;
+  --s5: #d55181;
+  --s6: #0ca30c;
+  --good: #5cc28f;
+  --good-soft: #17332a;
+  --warn: #e0a548;
+  --warn-soft: #3a2d15;
+  --late: #f08a80;
+  --late-soft: #3d1f1c;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --color-ground: var(--ground);
+  --color-card: var(--card);
+  --color-sunk: var(--sunk);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
+  --color-button: var(--button);
+  --color-track: var(--track);
+  --color-track-empty: var(--track-empty);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-late: var(--late);
+  --color-late-soft: var(--late-soft);
+}
+
+html {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+:focus-visible {
+  outline: 2px solid var(--button);
+  outline-offset: 2px;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+/* The track's tick marks: a ruler under the goal segments */
+.ticks {
+  background-image: repeating-linear-gradient(to left, var(--line) 0 1px, transparent 1px 8.333%);
+}
+@media print {
+  aside, nav, .no-print { display: none !important; }
+  html, body { background: #fff; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

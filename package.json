@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc -b && vite build && vite build --config himma/vite.config.ts",
+    "build": "tsc -b && vite build && vite build --config himma/vite.config.ts && vite build --config masar/vite.config.ts",
     "preview": "vite preview --host",
     "test": "vitest run",
     "typecheck": "tsc -b",
     "predev": "node scripts/copy-tesseract.mjs",
     "prebuild": "node scripts/copy-tesseract.mjs",
-    "dev:himma": "vite --host --config himma/vite.config.ts"
+    "dev:himma": "vite --host --config himma/vite.config.ts",
+    "dev:masar": "vite --host --config masar/vite.config.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans-arabic": "^5.3.0",
