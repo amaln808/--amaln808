@@ -1,0 +1,324 @@
+/* موقع زوردة — ألوان الهوية نفسها في التطبيق: لحاء التمر على رمادي سعف النخيل */
+:root {
+  --ground: #e9ebe3; /* سعف النخيل */
+  --paper: #f5f6f1;
+  --ink: #261d15;
+  --muted: #625849;
+  --bark: #6b5433; /* لون الشعار */
+  --date: #34251a; /* التمر الداكن — قسم التواصل */
+  --peanut: #c99a55; /* لمسة الفول السوداني، بقلة */
+  --line: #cfd2c6;
+  --on-date: #efe6d8;
+
+  --measure: 34rem;
+  --gutter: clamp(1.25rem, 5vw, 4rem);
+
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--ground);
+  line-height: 1.75;
+  -webkit-text-size-adjust: 100%;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; }
+p { margin: 0; }
+h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
+
+:focus-visible {
+  outline: 3px solid var(--peanut);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.skip {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: -4rem;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.5rem 1rem;
+  z-index: 10;
+}
+.skip:focus { top: 1rem; }
+
+.wrap {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ---------- الشريط العلوي ---------- */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1.25rem;
+}
+.top nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  font-size: 0.95rem;
+}
+.top nav a,
+.lang {
+  text-decoration: none;
+  color: var(--muted);
+  padding-block: 0.6rem; /* هدف لمس ≥ 44px */
+}
+.top nav a:hover,
+.lang:hover { color: var(--ink); }
+.lang {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+@media (max-width: 40rem) {
+  .top nav { display: none; }
+}
+
+/* ---------- الواجهة: الشعار الطولي هو العنصر الوحيد اللافت ---------- */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(9rem, 0.8fr) 1.2fr;
+  align-items: center;
+  gap: clamp(1.5rem, 6vw, 6rem);
+  min-height: calc(100svh - 5.5rem);
+  padding-block: 1rem 4rem;
+}
+.mark {
+  justify-self: center;
+  height: min(78svh, 46rem);
+  aspect-ratio: 274 / 584;
+  background-color: var(--bark);
+  -webkit-mask: url('./zuwardah-logo.png') center / contain no-repeat;
+  mask: url('./zuwardah-logo.png') center / contain no-repeat;
+  animation: write 1.6s cubic-bezier(0.6, 0, 0.2, 1) both;
+}
+/* الحركة الوحيدة في الصفحة: الشعار يُكتب من الأعلى إلى الأسفل */
+@keyframes write {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.hero h1 {
+  font-size: clamp(2.6rem, 7vw, 4.75rem);
+  letter-spacing: -0.01em;
+}
+.hero .latin {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-weight: 500;
+  color: var(--bark);
+  letter-spacing: 0.08em;
+}
+.hero .lead {
+  margin-top: 1.75rem;
+  font-size: clamp(1.15rem, 2.2vw, 1.45rem);
+  max-width: 24em;
+}
+.hero .sub {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  max-width: var(--measure);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2.25rem;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 3rem;
+  padding: 0.7rem 1.5rem;
+  border-radius: 999px;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1.5px solid var(--bark);
+}
+.btn svg { width: 1.25rem; height: 1.25rem; flex: none; }
+.btn-solid { background: var(--bark); color: var(--paper); }
+.btn-solid:hover { background: var(--date); border-color: var(--date); }
+.btn-line { color: var(--bark); }
+.btn-line:hover { background: var(--paper); }
+
+@media (max-width: 40rem) {
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    text-align: center;
+    padding-top: 0;
+  }
+  .mark { height: 44svh; }
+  .hero .lead, .hero .sub { margin-inline: auto; }
+  .actions { justify-content: center; }
+}
+
+/* ---------- الأقسام ---------- */
+section { padding-block: clamp(4rem, 10vw, 7.5rem); }
+section + section { border-top: 1px solid var(--line); }
+.section-head { max-width: var(--measure); }
+.section-head h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); }
+.section-head p { margin-top: 1rem; color: var(--muted); font-size: 1.1rem; }
+
+/* المنتج: نص + العبوتان مرسومتان بنسبة حجميهما */
+.product {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: end;
+}
+.jars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(1.5rem, 5vw, 3.5rem);
+}
+.jar { text-align: center; }
+.jar svg { margin-inline: auto; }
+.jar .w {
+  margin-top: 1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.jar .w small { font-size: 0.95rem; font-weight: 500; color: var(--muted); }
+.facts {
+  list-style: none;
+  padding: 0;
+  margin: 2.5rem 0 0;
+  max-width: var(--measure);
+}
+.facts li {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 1rem;
+  padding-block: 1rem;
+  border-top: 1px solid var(--line);
+}
+.facts li:last-child { border-bottom: 1px solid var(--line); }
+.facts b { font-weight: 500; color: var(--bark); }
+@media (max-width: 48rem) {
+  .product { grid-template-columns: 1fr; }
+  .jars { order: -1; }
+}
+@media (max-width: 26rem) {
+  .facts li { grid-template-columns: 1fr; gap: 0.15rem; }
+}
+
+/* طرق الأكل: قائمة قصيرة لا ترتيب فيها */
+.uses {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 2.5rem 3rem;
+  margin-top: 3rem;
+}
+.uses h3 { font-size: 1.15rem; }
+.uses p { margin-top: 0.4rem; color: var(--muted); }
+.uses .dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--peanut);
+  margin-bottom: 1rem;
+}
+
+/* الدفعة: ما هو مطبوع على كل عبوة — يشبه الملصق الحقيقي */
+.batch {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: center;
+}
+.label-card {
+  justify-self: center;
+  width: min(100%, 21rem);
+  aspect-ratio: 50 / 30;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  padding: 1.1rem 1.4rem;
+  display: grid;
+  align-content: center;
+  gap: 0.35rem;
+  transform: rotate(-2deg);
+  font-size: 0.95rem;
+}
+.label-card div { display: flex; justify-content: space-between; gap: 1rem; }
+.label-card span { color: var(--muted); }
+.label-card b { font-weight: 700; direction: ltr; unicode-bidi: isolate; }
+@media (max-width: 48rem) {
+  .batch { grid-template-columns: 1fr; }
+}
+
+/* لمن نصنع */
+.audiences {
+  list-style: none;
+  padding: 0;
+  margin: 3rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  border-top: 1px solid var(--line);
+}
+.audiences li {
+  padding: 1.5rem 0;
+  padding-inline-end: 2rem;
+  border-bottom: 1px solid var(--line);
+}
+.audiences h3 { font-size: 1.1rem; }
+.audiences p { margin-top: 0.35rem; color: var(--muted); }
+.wholesale { margin-top: 2.5rem; }
+
+/* ---------- التواصل بلون التمر الداكن ---------- */
+.contact {
+  background: var(--date);
+  color: var(--on-date);
+  border-top: none;
+}
+.contact .section-head p { color: #c9bba6; }
+.contact .btn-solid { background: var(--on-date); color: var(--date); border-color: var(--on-date); }
+.contact .btn-solid:hover { background: #fff; border-color: #fff; }
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 2.5rem;
+  margin-top: 3rem;
+}
+.contact h3 {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--peanut);
+  margin-bottom: 0.6rem;
+}
+.contact ul { list-style: none; padding: 0; margin: 0; }
+.contact li a,
+.contact li span.v {
+  display: inline-block;
+  padding-block: 0.45rem;
+  text-decoration: none;
+  font-size: 1.05rem;
+}
+.contact li a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.ltr { direction: ltr; unicode-bidi: isolate; }
+
+footer {
+  background: var(--date);
+  color: #a99a85;
+  font-size: 0.9rem;
+  padding-block: 2rem 2.5rem;
+  border-top: 1px solid #4a3828;
+}
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 2rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mark { animation: none; }
+}

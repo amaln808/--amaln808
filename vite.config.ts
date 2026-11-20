@@ -33,7 +33,7 @@ export default defineConfig({
         globIgnores: ['tesseract/**'],
         navigateFallback: 'index.html',
         // الهمة lives at ./himma/ with its own service worker; never answer its pages with Zuwardah
-        navigateFallbackDenylist: [/\/himma\//],
+        navigateFallbackDenylist: [/\/himma\//, /\/site\//],
         cleanupOutdatedCaches: true,
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
