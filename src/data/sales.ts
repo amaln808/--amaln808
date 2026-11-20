@@ -31,6 +31,8 @@ export interface Customer {
   notes: string | null
   lastReminderAt: string | null
   active: boolean
+  /** «رابط المستند»: link to a PDF kept elsewhere (migration 0025) */
+  documentUrl: string | null
 }
 
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected'
@@ -70,6 +72,7 @@ export interface Invoice {
   voidedAt: string | null
   voidReason: string | null
   notes: string | null
+  documentUrl: string | null
   createdAt: string
 }
 
@@ -81,6 +84,7 @@ export interface CustomerPayment {
   amountBaisa: number
   method: PaymentMethod
   notes: string | null
+  documentUrl: string | null
 }
 
 export interface SaleLine {
@@ -239,7 +243,7 @@ export async function setChannelPrice(channelId: string, productId: string, pric
 
 // ── Customers ───────────────────────────────────────────────────────
 
-export type CustomerDraft = Omit<Customer, 'id' | 'channelId' | 'lastReminderAt'> & { id?: string; channelName: string }
+export type CustomerDraft = Omit<Customer, 'id' | 'channelId' | 'lastReminderAt' | 'documentUrl'> & { id?: string; channelName: string; documentUrl?: string | null }
 
 export async function saveCustomer(c: CustomerDraft): Promise<string> {
   const channelId = c.channelName.trim() ? await channelByName(c.channelName) : null
@@ -252,6 +256,7 @@ export async function saveCustomer(c: CustomerDraft): Promise<string> {
     notes: c.notes,
     active: c.active,
     channel_id: channelId,
+    document_url: c.documentUrl ?? null,
   }
   const q = c.id ? db().from('customers').update(row).eq('id', c.id).select('id').single() : db().from('customers').insert(row).select('id').single()
   const { data, error } = await q
@@ -319,6 +324,13 @@ export async function voidInvoice(id: string, reason: string | null) {
   stockChanged()
 }
 
+/** «رابط المستند» of an invoice (the only thing that can change on an issued invoice). */
+export async function setInvoiceDocumentUrl(id: string, url: string | null) {
+  const { error } = await db().from('sales_invoices').update({ document_url: url }).eq('id', id)
+  if (error) throw error
+  changed()
+}
+
 // ── Customer payments (work offline; the outbox id becomes the row id) ──
 
 interface PaymentPayload {
@@ -328,6 +340,7 @@ interface PaymentPayload {
   amountBaisa: number
   method: PaymentMethod
   notes: string | null
+  documentUrl?: string | null
 }
 
 registerOutboxHandler<PaymentPayload>('customer.payment', async (p, entry) => {
@@ -342,6 +355,8 @@ registerOutboxHandler<PaymentPayload>('customer.payment', async (p, entry) => {
         amount_baisa: p.amountBaisa,
         method: p.method,
         notes: p.notes,
+        // Only sent when set, so a receipt queued by an older version still goes through
+        ...(p.documentUrl ? { document_url: p.documentUrl } : {}),
       },
       { onConflict: 'id', ignoreDuplicates: true },
     )
@@ -356,8 +371,10 @@ export async function recordCustomerPayment(p: PaymentPayload): Promise<string> 
   return id
 }
 
-export async function updateCustomerPayment(id: string, p: Pick<PaymentPayload, 'date' | 'amountBaisa' | 'method'>) {
-  const { error } = await db().from('customer_payments').update({ date: p.date, amount_baisa: p.amountBaisa, method: p.method }).eq('id', id)
+export async function updateCustomerPayment(id: string, p: Pick<PaymentPayload, 'date' | 'amountBaisa' | 'method' | 'documentUrl'>) {
+  const row: Record<string, unknown> = { date: p.date, amount_baisa: p.amountBaisa, method: p.method }
+  if (p.documentUrl !== undefined) row.document_url = p.documentUrl
+  const { error } = await db().from('customer_payments').update(row).eq('id', id)
   if (error) throw error
   changed()
 }

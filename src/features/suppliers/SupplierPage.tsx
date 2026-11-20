@@ -1,3 +1,4 @@
+import { DocIcon, OpenDocumentButton } from '../../components/DocumentLink'
 import { HandCoins, Pencil, Phone, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -39,8 +40,9 @@ export function SupplierPage() {
       kind: 'purchase' as const,
       ref: p.supplierInvoiceNo ?? '',
       amountBaisa: p.totalBaisa,
+      documentUrl: p.documentUrl,
     })),
-    ...payments.map((p) => ({ id: p.id, date: p.date, kind: 'payment' as const, ref: methodLabel(p.method), amountBaisa: p.amountBaisa })),
+    ...payments.map((p) => ({ id: p.id, date: p.date, kind: 'payment' as const, ref: methodLabel(p.method), amountBaisa: p.amountBaisa, documentUrl: p.documentUrl })),
   ]).reverse()
 
   return (
@@ -61,6 +63,7 @@ export function SupplierPage() {
               <Pencil className="size-4" />
               {t('تعديل', 'Edit')}
             </Button>
+            <OpenDocumentButton url={supplier.documentUrl} />
           </>
         }
       />
@@ -97,6 +100,7 @@ export function SupplierPage() {
                       <div>{r.kind === 'purchase' ? t('فاتورة شراء', 'Purchase') : t('دفعة', 'Payment')}</div>
                       {r.ref && <div className="text-sm text-muted">{r.ref}</div>}
                     </div>
+                    <DocIcon url={r.documentUrl} />
                     <span className={`num w-32 text-end ${r.kind === 'payment' ? 'text-palm' : ''}`}>
                       {r.kind === 'payment' ? '−' : '+'}
                       {formatOMR(r.amountBaisa)}

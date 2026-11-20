@@ -187,6 +187,8 @@ export interface Supplier {
   kind: string | null
   notes: string | null
   active: boolean
+  /** «رابط المستند» (migration 0025) */
+  documentUrl: string | null
 }
 
 export interface SupplierWithBalance extends Supplier {
@@ -229,6 +231,7 @@ export interface PurchaseRow {
   totalBaisa: number
   attachmentPath: string | null
   notes: string | null
+  documentUrl: string | null
 }
 
 export interface SupplierPayment {
@@ -239,6 +242,7 @@ export interface SupplierPayment {
   amountBaisa: number
   method: PaymentMethod
   notes: string | null
+  documentUrl: string | null
 }
 
 const toPurchase = (r: Record<string, unknown>): PurchaseRow => {
@@ -264,10 +268,10 @@ export async function fetchSupplierDetail(id: string) {
   }
 }
 
-export type SupplierDraft = Omit<Supplier, 'id'> & { id?: string }
+export type SupplierDraft = Omit<Supplier, 'id' | 'documentUrl'> & { id?: string; documentUrl?: string | null }
 
 export async function saveSupplier(s: SupplierDraft): Promise<string> {
-  const row = toSnake({ ...s })
+  const row = toSnake({ ...s, documentUrl: s.documentUrl ?? null })
   const q = s.id ? db().from('suppliers').update(row).eq('id', s.id) : db().from('suppliers').insert(row)
   const { data, error } = await q.select('id').single()
   if (error) throw error
@@ -283,6 +287,7 @@ interface PaymentPayload {
   amountBaisa: number
   method: PaymentMethod
   notes: string | null
+  documentUrl?: string | null
 }
 
 // Supplier payments can be recorded offline; the outbox id becomes the row id.
@@ -298,6 +303,7 @@ registerOutboxHandler<PaymentPayload>('supplier.payment', async (p, entry) => {
         amount_baisa: p.amountBaisa,
         method: p.method,
         notes: p.notes,
+        ...(p.documentUrl ? { document_url: p.documentUrl } : {}),
       },
       { onConflict: 'id', ignoreDuplicates: true },
     )
@@ -346,6 +352,7 @@ export async function createPurchase(p: {
   paidBaisa: number
   method: PaymentMethod
   lines: PurchaseLineInput[]
+  documentUrl?: string | null
 }): Promise<string> {
   const { data, error } = await db().rpc('create_purchase_named', {
     p: {
@@ -361,6 +368,10 @@ export async function createPurchase(p: {
     },
   })
   if (error) throw error
+  if (p.documentUrl) {
+    const link = await db().from('purchases').update({ document_url: p.documentUrl }).eq('id', data as string)
+    if (link.error) throw link.error
+  }
   invalidate(INVENTORY_KEY)
   invalidate(SUPPLIERS_KEY)
   invalidate('supplier:')
@@ -419,6 +430,15 @@ export async function fetchPurchaseDetail(id: string) {
     })),
     payments: pay.data!.map(toPayment),
   }
+}
+
+/** «رابط المستند» of a purchase invoice. */
+export async function setPurchaseDocumentUrl(id: string, url: string | null) {
+  const { error } = await db().from('purchases').update({ document_url: url }).eq('id', id)
+  if (error) throw error
+  invalidate(SUPPLIERS_KEY)
+  invalidate('supplier:')
+  invalidate('purchase:')
 }
 
 export async function deletePurchase(id: string) {

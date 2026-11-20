@@ -9,12 +9,20 @@ export const MIGRATIONS = readdirSync(join(dir, 'migrations'))
   .filter((f) => f.endsWith('.sql'))
   .sort()
 
-/** A fresh in-memory database with the Supabase stand-ins and every migration applied. */
-export async function freshDb() {
+/**
+ * A fresh in-memory database with the Supabase stand-ins and every migration applied
+ * (or only those before `before`, to test a migration on existing data).
+ */
+export async function freshDb(before?: string) {
   const db = new PGlite()
   await db.exec(read('tests/supabase_stubs.sql'))
-  for (const f of MIGRATIONS) await db.exec(read(`migrations/${f}`))
+  for (const f of MIGRATIONS) if (!before || f < before) await db.exec(read(`migrations/${f}`))
   return db
+}
+
+export async function applyMigration(db: PGlite, file: string) {
+  await db.exec('reset role')
+  await db.exec(read(`migrations/${file}`))
 }
 
 export type Who = { role: 'anon' } | { role: 'authenticated'; userId: string } | { role: 'admin' }

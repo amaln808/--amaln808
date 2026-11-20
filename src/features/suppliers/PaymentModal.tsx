@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { DateInput, Field, FormError, NumberInput, Select, Textarea } from '../../components/form'
 import { Modal } from '../../components/Modal'
+import { DocumentUrlField, documentUrlError } from '../../components/DocumentLink'
 import { Button } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { type PaymentMethod, recordSupplierPayment } from '../../data/inventory'
 import { todayIso } from '../../data/schedule'
 import { baisaToInput, formatOMR, parseRialToBaisa } from '../../domain/money'
+import { cleanDocumentUrl } from '../../domain/documentUrl'
 import { t } from '../../i18n/index'
 import { METHODS, methodLabel } from '../inventory/labels'
 
@@ -25,16 +27,19 @@ export function PaymentModal({
   const [date, setDate] = useState(todayIso())
   const [method, setMethod] = useState<PaymentMethod>('cash')
   const [notes, setNotes] = useState('')
+  const [docUrl, setDocUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const save = async () => {
     const a = parseRialToBaisa(amount)
     if (!a || a <= 0) return setError(t('المبلغ غير صحيح.', 'Invalid amount.'))
+    const linkError = documentUrlError(docUrl)
+    if (linkError) return setError(linkError)
     setBusy(true)
     setError(null)
     try {
-      await recordSupplierPayment({ supplierId, purchaseId, date, amountBaisa: a, method, notes: notes.trim() || null })
+      await recordSupplierPayment({ supplierId, purchaseId, date, amountBaisa: a, method, notes: notes.trim() || null, documentUrl: cleanDocumentUrl(docUrl) })
       onClose()
     } catch (e) {
       setError(serverError(e))
@@ -75,6 +80,7 @@ export function PaymentModal({
         <Field label={t('ملاحظات', 'Notes')}>
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
         </Field>
+        <DocumentUrlField value={docUrl} onChange={setDocUrl} />
         <FormError message={error} />
       </div>
     </Modal>

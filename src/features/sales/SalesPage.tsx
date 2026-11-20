@@ -1,3 +1,4 @@
+import { DocIcon } from '../../components/DocumentLink'
 import { ChevronLeft, FileSpreadsheet, FileText, Plus, ReceiptText, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -106,6 +107,7 @@ export function SalesPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className={`font-bold ${i.status === 'void' ? 'line-through' : ''}`} dir="ltr">{i.invoiceNo}</span>
+                          <DocIcon url={i.documentUrl} />
                           <span>{customerName.get(i.customerId)}</span>
                           {info && <Badge tone={INVOICE_TONE[info.status]}>{invoiceStatusLabel(info.status)}</Badge>}
                         </div>
@@ -187,7 +189,7 @@ export function SalesPage() {
                     <li key={c.id}>
                       <Link to={`/customers/${c.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-brand-50">
                         <div className="min-w-0 flex-1">
-                          <div className="font-medium">{c.name}</div>
+                          <div className="flex items-center gap-2 font-medium">{c.name}<DocIcon url={c.documentUrl} /></div>
                           <div className="text-sm text-muted">{[c.channelId ? channelName.get(c.channelId) : null, c.phone].filter(Boolean).join(' · ')}</div>
                         </div>
                         <div className="text-end">

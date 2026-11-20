@@ -24,6 +24,8 @@ export interface Expense {
   receiptPath: string | null
   ocrText: string | null
   notes: string | null
+  /** «رابط المستند» (migration 0025) */
+  documentUrl: string | null
 }
 
 export const EXPENSES_KEY = 'expenses'
@@ -64,6 +66,7 @@ export interface ExpenseDraft {
   ocrText: string | null
   /** Kept path when editing; replaced when a new photo is attached */
   receiptPath: string | null
+  documentUrl?: string | null
 }
 
 interface ExpensePayload extends ExpenseDraft {
@@ -90,6 +93,7 @@ registerOutboxHandler<ExpensePayload>('expense.save', async (p) => {
       receipt_path: receiptPath,
       ocr_text: p.ocrText,
       notes: p.notes,
+      document_url: p.documentUrl ?? null,
     },
   })
   if (error) throw error

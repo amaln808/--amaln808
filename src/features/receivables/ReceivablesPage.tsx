@@ -1,3 +1,4 @@
+import { DocIcon } from '../../components/DocumentLink'
 import { ChevronLeft, HandCoins, MessageCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useSettingsQuery } from '../../app/settingsContext'
@@ -45,6 +46,8 @@ export function ReceivablesPage() {
     ...(sum?.owedOnOrders ?? []).map((o) => ({ id: o.orderId, customerId: o.customerId, invoiceNo: o.orderNo, dueDate: o.dueDate, leftBaisa: o.leftBaisa })),
   ].filter((i) => i.leftBaisa > 0)
   const { byCustomer, all } = agingTable(open, today)
+  // Open invoices that have a «رابط المستند», to open them from here
+  const withDoc = (data?.invoices ?? []).filter((i) => i.documentUrl && open.some((o) => o.id === i.id))
   const rows = (data?.customers ?? [])
     .filter((c) => byCustomer.has(c.id))
     .map((c) => ({ customer: c, totals: byCustomer.get(c.id)! }))
@@ -116,6 +119,21 @@ export function ReceivablesPage() {
                         {bucketLabel(b)}: <span className="num font-bold">{formatOMR(totals[b])}</span>
                       </span>
                     ))}
+                    {withDoc
+                      .filter((i) => i.customerId === c.id)
+                      .map((i) => (
+                        <a
+                          key={i.id}
+                          href={i.documentUrl!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 hover:bg-brand-50"
+                          title={t('فتح المستند', 'Open document')}
+                        >
+                          <DocIcon url={i.documentUrl} />
+                          <span dir="ltr">{i.invoiceNo}</span>
+                        </a>
+                      ))}
                   </div>
                 </li>
               )

@@ -1,3 +1,4 @@
+import { DocIcon, OpenDocumentButton } from '../../components/DocumentLink'
 import { addDays } from 'date-fns'
 import { CalendarPlus, Paperclip, Plus, RefreshCw, ScrollText } from 'lucide-react'
 import { useState } from 'react'
@@ -114,7 +115,7 @@ export function AgreementsPage() {
                 <button type="button" onClick={() => setEditing({ draft: a })} className="block w-full text-start">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-lg font-bold">{a.title}</div>
+                      <div className="flex items-center gap-2 text-lg font-bold">{a.title}<DocIcon url={a.documentUrl} /></div>
                       <div className="text-sm text-muted">
                         {kindLabel(a.kind)}
                         {a.kind === 'product_permit' && productName(a.productId) ? ` — ${productName(a.productId)}` : a.party ? ` — ${a.party}` : ''}
@@ -143,6 +144,7 @@ export function AgreementsPage() {
                       <CalendarPlus className="size-4" />
                       {t('للتقويم', 'Calendar')}
                     </Button>
+                    <OpenDocumentButton url={a.documentUrl} />
                     {a.filePath && <Paperclip className="ms-auto size-4 self-center text-muted" aria-label={t('وثيقة مرفقة', 'Document attached')} />}
                   </div>
                 )}

@@ -63,7 +63,7 @@ export interface LedgerEntry {
 }
 
 /** Supplier statement with a running balance, oldest first. */
-export function statement(entries: LedgerEntry[]): Array<LedgerEntry & { balance: number }> {
+export function statement<T extends LedgerEntry>(entries: T[]): Array<T & { balance: number }> {
   let balance = 0
   return [...entries]
     .sort((a, b) => a.date.localeCompare(b.date) || (a.kind === 'purchase' ? -1 : 1))

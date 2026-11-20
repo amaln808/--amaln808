@@ -1,3 +1,4 @@
+import { DocIcon } from '../../components/DocumentLink'
 import { Camera, ChevronLeft, Paperclip, Plus, ReceiptText, Search } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -140,6 +141,7 @@ export function ExpensesPage() {
                     </div>
                   </div>
                   {e.receiptPath && <Paperclip className="size-4 text-muted" aria-label={t('صورة مرفقة', 'Photo attached')} />}
+                  <DocIcon url={e.documentUrl} />
                   <span className="num font-bold">{formatOMR(e.amountBaisa)}</span>
                   <ChevronLeft className="size-5 text-muted ltr:rotate-180" />
                 </Link>

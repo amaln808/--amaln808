@@ -2,6 +2,7 @@ import { Camera, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Combobox, DateInput, Field, FormError, NumberInput, Segmented, Select, Textarea, TextInput } from '../../components/form'
+import { DocumentUrlField, documentUrlError } from '../../components/DocumentLink'
 import { Button, Card, PageHeader } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { compressImage, uploadFile } from '../../data/files'
@@ -61,6 +62,7 @@ export function PurchaseFormPage() {
   const [date, setDate] = useState(todayIso())
   const [invoiceNo, setInvoiceNo] = useState('')
   const [notes, setNotes] = useState('')
+  const [docUrl, setDocUrl] = useState('')
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()])
   const [payMode, setPayMode] = useState<PayMode>('none')
   const [paid, setPaid] = useState('')
@@ -133,6 +135,8 @@ export function PurchaseFormPage() {
       if (a > total) return setError(t('المبلغ المدفوع أكبر من الإجمالي.', 'Amount paid exceeds the total.'))
       paidBaisa = a
     }
+    const linkError = documentUrlError(docUrl)
+    if (linkError) return setError(linkError)
     setSaving(true)
     try {
       let attachmentPath: string | null = null
@@ -144,6 +148,7 @@ export function PurchaseFormPage() {
         supplierInvoiceNo: invoiceNo.trim() || null,
         notes: notes.trim() || null,
         attachmentPath,
+        documentUrl: docUrl.trim() || null,
         paidBaisa,
         method,
         lines: filled.map(({ l, p }) => {
@@ -303,6 +308,7 @@ export function PurchaseFormPage() {
             <Field label={t('ملاحظات', 'Notes')}>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
             </Field>
+            <DocumentUrlField value={docUrl} onChange={setDocUrl} />
             <div>
               <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
               <Button variant="secondary" onClick={() => camera.current?.click()}>

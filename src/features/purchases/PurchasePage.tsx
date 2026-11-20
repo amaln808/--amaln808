@@ -1,12 +1,13 @@
 import { HandCoins, Paperclip, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { DocIcon, DocumentLinkEditor } from '../../components/DocumentLink'
 import { FormError } from '../../components/form'
 import { Button, Card, PageHeader, Stat } from '../../components/ui'
 import { useConfirm } from '../../components/useConfirm'
 import { serverError } from '../../data/errors'
 import { signedUrl } from '../../data/files'
-import { deletePurchase, fetchItemsWithStock, fetchPurchaseDetail, fetchSuppliers, INVENTORY_KEY, SUPPLIERS_KEY } from '../../data/inventory'
+import { deletePurchase, fetchItemsWithStock, fetchPurchaseDetail, fetchSuppliers, INVENTORY_KEY, setPurchaseDocumentUrl, SUPPLIERS_KEY } from '../../data/inventory'
 import { useQuery } from '../../data/useQuery'
 import { formatOMR, lineTotal } from '../../domain/money'
 import { formatQty } from '../../domain/quantity'
@@ -86,6 +87,7 @@ export function PurchasePage() {
           <Stat label={t('المتبقي', 'Remaining')} value={formatOMR(purchase.totalBaisa - paid)} tone={purchase.totalBaisa - paid > 0 ? 'red' : 'green'} />
         </div>
         <FormError message={error} />
+        <DocumentLinkEditor url={purchase.documentUrl} onSave={(url) => setPurchaseDocumentUrl(purchase.id, url)} />
         <Card className="p-0">
           <h2 className="px-5 pt-4 pb-2 text-lg font-bold">{t('البنود', 'Lines')}</h2>
           <ul className="divide-y divide-line">
@@ -135,6 +137,7 @@ export function PurchasePage() {
                 <li key={p.id} className="flex items-center gap-3 px-5 py-3">
                   <span className="num w-24 text-sm text-muted">{formatDate(p.date)}</span>
                   <span className="flex-1">{methodLabel(p.method)}</span>
+                  <DocIcon url={p.documentUrl} />
                   <span className="num font-bold text-palm">{formatOMR(p.amountBaisa)}</span>
                 </li>
               ))}

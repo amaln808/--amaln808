@@ -1,3 +1,4 @@
+import { DocIcon } from '../../components/DocumentLink'
 import { ChevronLeft, Plus, Scale, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -52,7 +53,7 @@ export function SuppliersPage() {
               <li key={s.id}>
                 <Link to={`/suppliers/${s.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-brand-50">
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium">{s.name}</div>
+                    <div className="flex items-center gap-2 font-medium">{s.name}<DocIcon url={s.documentUrl} /></div>
                     <div className="text-sm text-muted">
                       {[s.kind, s.phone].filter(Boolean).join(' · ')}
                     </div>

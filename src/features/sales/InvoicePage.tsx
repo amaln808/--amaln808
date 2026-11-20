@@ -3,11 +3,12 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useSettingsQuery } from '../../app/settingsContext'
 import { Field, FormError, Textarea } from '../../components/form'
+import { DocIcon, DocumentLinkEditor } from '../../components/DocumentLink'
 import { Modal } from '../../components/Modal'
 import { Badge, Button, Card, PageHeader, Stat } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { fetchItemsWithStock, INVENTORY_KEY } from '../../data/inventory'
-import { fetchInvoiceDetail, fetchSales, SALES_KEY, voidInvoice } from '../../data/sales'
+import { fetchInvoiceDetail, fetchSales, SALES_KEY, setInvoiceDocumentUrl, voidInvoice } from '../../data/sales'
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
 import { formatBaisa, formatOMR, lineTotal } from '../../domain/money'
@@ -105,6 +106,9 @@ export function InvoicePage() {
         </div>
         <Card className="flex flex-wrap items-center gap-3">
           <Badge tone={INVOICE_TONE[info.status]}>{invoiceStatusLabel(info.status)}</Badge>
+          <div className="ms-auto">
+            <DocumentLinkEditor url={inv.documentUrl} onSave={(url) => setInvoiceDocumentUrl(inv.id, url)} />
+          </div>
           {inv.status === 'void' && (
             <span className="text-sm text-muted">
               {t('أُلغيت', 'Voided')} {inv.voidedAt ? formatDate(inv.voidedAt.slice(0, 10)) : ''}
@@ -166,6 +170,7 @@ export function InvoicePage() {
                     {formatDate(p.date)} · {methodLabel(p.method)}
                     {p.notes ? ` · ${p.notes}` : ''}
                   </span>
+                  <DocIcon url={p.documentUrl} />
                   <span className="num font-bold text-palm">{formatOMR(p.amountBaisa)}</span>
                 </li>
               ))}

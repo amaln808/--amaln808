@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Combobox, Field, FormError, Textarea, TextInput } from '../../components/form'
 import { Modal } from '../../components/Modal'
+import { DocumentUrlField, documentUrlError } from '../../components/DocumentLink'
 import { Button } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { type Channel, type Customer, saveCustomer } from '../../data/sales'
@@ -24,6 +25,7 @@ export function CustomerFormModal({
     vatNo: customer?.vatNo ?? '',
     notes: customer?.notes ?? '',
     channelName: channels.find((c) => c.id === customer?.channelId)?.name ?? '',
+    documentUrl: customer?.documentUrl ?? '',
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,6 +34,8 @@ export function CustomerFormModal({
 
   const save = async (active = customer?.active ?? true) => {
     if (!f.name.trim()) return setError(t('اسم العميل مطلوب.', 'The customer name is required.'))
+    const linkError = documentUrlError(f.documentUrl)
+    if (linkError) return setError(linkError)
     setBusy(true)
     setError(null)
     try {
@@ -44,6 +48,7 @@ export function CustomerFormModal({
         vatNo: clean(f.vatNo),
         notes: clean(f.notes),
         channelName: f.channelName,
+        documentUrl: clean(f.documentUrl),
         active,
       })
       onClose(id)
@@ -98,6 +103,7 @@ export function CustomerFormModal({
         <Field label={t('ملاحظات', 'Notes')} className="sm:col-span-2">
           <Textarea value={f.notes} onChange={set('notes')} />
         </Field>
+        <DocumentUrlField className="sm:col-span-2" value={f.documentUrl} onChange={(v) => setF((x) => ({ ...x, documentUrl: v }))} />
         <FormError message={error} />
       </div>
     </Modal>

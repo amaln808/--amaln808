@@ -2,6 +2,7 @@ import { Camera, Copy, Loader2, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Combobox, DateInput, Field, FormError, NumberInput, Select, Textarea } from '../../components/form'
+import { DocumentUrlField, documentUrlError, OpenDocumentButton } from '../../components/DocumentLink'
 import { Button, Card, PageHeader } from '../../components/ui'
 import { useConfirm } from '../../components/useConfirm'
 import { serverError } from '../../data/errors'
@@ -11,6 +12,7 @@ import type { PaymentMethod } from '../../data/inventory'
 import { todayIso } from '../../data/schedule'
 import { useQuery } from '../../data/useQuery'
 import { useSignedUrl } from '../../data/useSignedUrl'
+import { cleanDocumentUrl } from '../../domain/documentUrl'
 import { baisaToInput, parseRialToBaisa } from '../../domain/money'
 import { guessReceipt } from '../../domain/receipt'
 import { distinctNames, nameKey } from '../../domain/text'
@@ -39,6 +41,7 @@ export function ExpenseFormPage() {
   const [vat, setVat] = useState('')
   const [method, setMethod] = useState<PaymentMethod>('cash')
   const [notes, setNotes] = useState('')
+  const [docUrl, setDocUrl] = useState('')
   const [photo, setPhoto] = useState<Blob | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [ocrText, setOcrText] = useState<string | null>(null)
@@ -64,6 +67,7 @@ export function ExpenseFormPage() {
     setVat(existing.vatBaisa ? baisaToInput(existing.vatBaisa) : '')
     setMethod(existing.method)
     setNotes(existing.notes ?? '')
+    setDocUrl(existing.documentUrl ?? '')
     setLoaded(true)
   }, [existing, data, loaded])
 
@@ -112,6 +116,8 @@ export function ExpenseFormPage() {
     if (!category.trim()) return setError(t('التصنيف مطلوب.', 'The category is required.'))
     if (!a || a <= 0) return setError(t('المبلغ غير صحيح.', 'Invalid amount.'))
     if (v == null || v < 0 || v > a) return setError(t('الضريبة غير صحيحة.', 'Invalid VAT.'))
+    const linkError = documentUrlError(docUrl)
+    if (linkError) return setError(linkError)
     setBusy(true)
     try {
       await saveExpense(
@@ -125,6 +131,7 @@ export function ExpenseFormPage() {
           notes: notes.trim() || null,
           ocrText,
           receiptPath: asNew ? null : (existing?.receiptPath ?? null),
+          documentUrl: cleanDocumentUrl(docUrl),
         },
         { id: asNew ? undefined : existing?.id, photo: photo ?? undefined },
       )
@@ -231,6 +238,8 @@ export function ExpenseFormPage() {
               <Field label={t('ملاحظات', 'Notes')} className="sm:col-span-2">
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
               </Field>
+              <DocumentUrlField className="sm:col-span-2" value={docUrl} onChange={setDocUrl} />
+              {existing?.documentUrl && <OpenDocumentButton url={existing.documentUrl} className="sm:col-span-2 sm:justify-self-start" />}
             </div>
           </Card>
           <FormError message={error} />

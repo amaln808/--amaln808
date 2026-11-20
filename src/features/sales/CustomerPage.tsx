@@ -1,3 +1,4 @@
+import { DocIcon, OpenDocumentButton } from '../../components/DocumentLink'
 import { FileSpreadsheet, FileText, HandCoins, Pencil, Phone, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -78,6 +79,7 @@ export function CustomerPage() {
               <Pencil className="size-4" />
               {t('تعديل', 'Edit')}
             </Button>
+            <OpenDocumentButton url={customer.documentUrl} />
             <Link to={`/customers/${id}/statement`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-4">
               <FileSpreadsheet className="size-4" />
               {t('كشف حساب', 'Statement')}
@@ -138,6 +140,7 @@ export function CustomerPage() {
                   <li key={i.id}>
                     <Link to={`/invoices/${i.id}`} className={`flex items-center gap-3 px-5 py-3 hover:bg-brand-50 ${i.status === 'void' ? 'opacity-60' : ''}`}>
                       <span className="font-bold" dir="ltr">{i.invoiceNo}</span>
+                      <DocIcon url={i.documentUrl} />
                       <span className="flex-1 text-sm text-muted">{formatDate(i.date)}</span>
                       {info && <Badge tone={INVOICE_TONE[info.status]}>{invoiceStatusLabel(info.status)}</Badge>}
                       <span className="num font-bold">{formatOMR(i.totalBaisa)}</span>
@@ -197,6 +200,7 @@ export function CustomerPage() {
                         {p.notes ? ` · ${p.notes}` : ''}
                       </div>
                     </div>
+                    <DocIcon url={p.documentUrl} />
                     <span className="num font-bold text-palm">{formatOMR(p.amountBaisa)}</span>
                     <button type="button" onClick={() => removePayment(p.id)} className="flex size-11 items-center justify-center rounded-xl text-muted hover:bg-red-50 hover:text-red-700" aria-label={t('حذف', 'Delete')}>
                       <Trash2 className="size-4" />

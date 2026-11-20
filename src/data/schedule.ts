@@ -38,6 +38,8 @@ export interface Agreement {
   notes: string | null
   renewedById: string | null
   active: boolean
+  /** «رابط المستند» (migration 0025) */
+  documentUrl?: string | null
 }
 
 export interface ProductOption {

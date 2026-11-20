@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Combobox, Field, FormError, Textarea, TextInput } from '../../components/form'
 import { Modal } from '../../components/Modal'
+import { DocumentUrlField, documentUrlError } from '../../components/DocumentLink'
 import { Button } from '../../components/ui'
 import { serverError } from '../../data/errors'
 import { fetchSuppliers, saveSupplier, type Supplier, type SupplierDraft, SUPPLIERS_KEY } from '../../data/inventory'
@@ -21,6 +22,8 @@ export function SupplierFormModal({ supplier, onClose }: { supplier?: Supplier; 
 
   const save = async (patch: Partial<SupplierDraft> = {}) => {
     if (!f.name.trim()) return setError(t('اسم المورد مطلوب.', 'The supplier name is required.'))
+    const linkError = documentUrlError(f.documentUrl)
+    if (linkError) return setError(linkError)
     setBusy(true)
     setError(null)
     try {
@@ -33,6 +36,7 @@ export function SupplierFormModal({ supplier, onClose }: { supplier?: Supplier; 
         vatNo: clean(f.vatNo),
         kind: clean(f.kind),
         notes: clean(f.notes),
+        documentUrl: clean(f.documentUrl ?? null),
         ...patch,
       })
       onClose(id)
@@ -82,6 +86,7 @@ export function SupplierFormModal({ supplier, onClose }: { supplier?: Supplier; 
         <Field label={t('ملاحظات', 'Notes')} className="sm:col-span-2">
           <Textarea value={f.notes ?? ''} onChange={(e) => set('notes', e.target.value)} />
         </Field>
+        <DocumentUrlField className="sm:col-span-2" value={f.documentUrl ?? ''} onChange={(v) => set('documentUrl', v)} />
         <FormError message={error} />
       </div>
     </Modal>

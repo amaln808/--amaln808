@@ -6,6 +6,7 @@ import { Button } from '../../components/ui'
 import { useConfirm } from '../../components/useConfirm'
 import { serverError } from '../../data/errors'
 import { compressImage, signedUrl, uploadFile } from '../../data/files'
+import { DocumentUrlField, documentUrlError } from '../../components/DocumentLink'
 import { type Agreement, type AgreementKind, deleteAgreement, type ProductOption, renewAgreement, saveAgreement, todayIso } from '../../data/schedule'
 import { buildIcs, type IcsEvent, openIcs } from '../../domain/ics'
 import { endAfterMonths } from '../../domain/schedule'
@@ -89,6 +90,8 @@ export function AgreementFormModal({
     if (f.startDate && f.endDate < f.startDate) return setError(t('تاريخ الانتهاء قبل البداية.', 'End date is before the start.'))
     if (amountBaisa === 'bad') return setError(t('القيمة غير صحيحة.', 'The amount is not valid.'))
     if (!Number.isInteger(alertDays) || alertDays < 0 || alertDays > 365) return setError(t('أيام التنبيه من 0 إلى 365.', 'Alert days must be 0–365.'))
+    const linkError = documentUrlError(f.documentUrl)
+    if (linkError) return setError(linkError)
     setBusy(true)
     setError(null)
     try {
@@ -108,6 +111,7 @@ export function AgreementFormModal({
         amountBaisa,
         alertDays,
         filePath,
+        documentUrl: f.documentUrl?.trim() || null,
       }
       if (renewingId) {
         const { id: _drop, ...rest } = record
@@ -264,6 +268,7 @@ export function AgreementFormModal({
         <Field label={t('ملاحظات', 'Notes')}>
           <Textarea value={f.notes ?? ''} onChange={(e) => set('notes', e.target.value)} />
         </Field>
+        <DocumentUrlField value={f.documentUrl ?? ''} onChange={(v) => set('documentUrl', v)} />
         <FormError message={error} />
       </div>
       {dialog}
