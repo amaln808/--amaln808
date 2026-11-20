@@ -1,5 +1,5 @@
 import { toCamel } from './case'
-import { db } from './client'
+import { all, db } from './client'
 import { DASHBOARD_KEY } from './dashboard'
 import { INVENTORY_KEY } from './inventory'
 import { invalidate } from './useQuery'
@@ -20,7 +20,7 @@ export interface Sample {
 }
 
 export async function fetchSamples(): Promise<Sample[]> {
-  const { data, error } = await db().from('samples').select('*').order('date', { ascending: false }).order('created_at', { ascending: false })
+  const { data, error } = await all(() => db().from('samples').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }))
   if (error) throw error
   return data.map((r) => {
     const s = toCamel(r) as unknown as Sample

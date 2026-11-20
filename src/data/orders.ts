@@ -1,7 +1,7 @@
 import type { StepKind } from '../domain/orders'
 import type { PaymentMethod } from './inventory'
 import { toCamel, toSnake } from './case'
-import { db } from './client'
+import { all, db } from './client'
 import { invalidate } from './useQuery'
 
 export type OrderStatus = 'open' | 'done' | 'cancelled'
@@ -49,7 +49,7 @@ const toStep = (r: Record<string, unknown>): OrderStep => {
 
 /** Every order with its stages, newest first. */
 export async function fetchOrders(): Promise<Order[]> {
-  const { data, error } = await db().from('orders').select('*, order_steps(*)').order('order_date', { ascending: false }).order('order_no', { ascending: false })
+  const { data, error } = await all(() => db().from('orders').select('*, order_steps(*)').order('order_date', { ascending: false }).order('order_no', { ascending: false }))
   if (error) throw error
   return data.map((r) => {
     const { order_steps, ...rest } = r as Record<string, unknown>

@@ -1,22 +1,22 @@
 import type { DashboardInput } from '../domain/dashboard'
-import { db } from './client'
+import { all, db } from './client'
 
 export const DASHBOARD_KEY = 'dashboard'
 
 /** Everything the dashboard adds up, in the shapes of src/domain/dashboard.ts. */
 export async function fetchDashboard() {
   const [inv, lines, cp, sp, pur, exp, bat, items, stock, assets, samples] = await Promise.all([
-    db().from('sales_invoices').select('id, customer_id, channel_id, date, subtotal_baisa, discount_baisa, total_baisa').eq('status', 'issued'),
-    db().from('invoice_lines').select('invoice_id, product_id, qty, unit_price_baisa, invoice_line_lots(qty, unit_cost_baisa)'),
-    db().from('customer_payments').select('customer_id, date, amount_baisa'),
-    db().from('supplier_payments').select('supplier_id, date, amount_baisa'),
-    db().from('purchases').select('supplier_id, date, total_baisa'),
-    db().from('expenses').select('date, amount_baisa, category_id'),
-    db().from('production_batches').select('production_date, qty_produced, total_cost_baisa'),
+    all(() => db().from('sales_invoices').select('id, customer_id, channel_id, date, subtotal_baisa, discount_baisa, total_baisa').eq('status', 'issued')),
+    all(() => db().from('invoice_lines').select('invoice_id, product_id, qty, unit_price_baisa, invoice_line_lots(qty, unit_cost_baisa)')),
+    all(() => db().from('customer_payments').select('customer_id, date, amount_baisa')),
+    all(() => db().from('supplier_payments').select('supplier_id, date, amount_baisa')),
+    all(() => db().from('purchases').select('supplier_id, date, total_baisa')),
+    all(() => db().from('expenses').select('date, amount_baisa, category_id')),
+    all(() => db().from('production_batches').select('production_date, qty_produced, total_cost_baisa')),
     db().from('items').select('id, type, active, min_qty'),
     db().from('v_stock').select('item_id, qty, value_baisa'),
     db().from('assets').select('purchase_date, cost_baisa, life_months, residual_baisa').eq('active', true),
-    db().from('samples').select('date, cost_baisa'),
+    all(() => db().from('samples').select('date, cost_baisa')),
   ])
   for (const r of [inv, lines, cp, sp, pur, exp, bat, items, stock, assets, samples]) if (r.error) throw r.error
 

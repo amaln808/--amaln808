@@ -1,5 +1,5 @@
 import { toCamel } from './case'
-import { db } from './client'
+import { all, db } from './client'
 import { INVENTORY_KEY, type PaymentMethod } from './inventory'
 import { enqueue, flushOutbox, registerOutboxHandler } from './outbox'
 import type { OptionKey, PriceOption } from '../domain/quoteOptions'
@@ -114,10 +114,10 @@ export async function fetchSales() {
   const [ch, pr, cu, qu, inv, pay] = await Promise.all([
     db().from('channels').select('*').order('sort_order').order('name'),
     db().from('channel_prices').select('channel_id, product_id, price_baisa'),
-    db().from('customers').select('*').order('name'),
-    db().from('quotations').select('*').order('date', { ascending: false }).order('quote_no', { ascending: false }),
-    db().from('sales_invoices').select('*').order('date', { ascending: false }).order('invoice_no', { ascending: false }),
-    db().from('customer_payments').select('*').order('date', { ascending: false }),
+    all(() => db().from('customers').select('*').order('name')),
+    all(() => db().from('quotations').select('*').order('date', { ascending: false }).order('quote_no', { ascending: false })),
+    all(() => db().from('sales_invoices').select('*').order('date', { ascending: false }).order('invoice_no', { ascending: false })),
+    all(() => db().from('customer_payments').select('*').order('date', { ascending: false })),
   ])
   for (const r of [ch, pr, cu, qu, inv, pay]) if (r.error) throw r.error
   return {
@@ -168,7 +168,7 @@ export async function fetchInvoiceDetail(id: string) {
 export async function fetchQuotationDetail(id: string) {
   const [q, lines] = await Promise.all([
     db().from('quotations').select('*').eq('id', id).single(),
-    db().from('quotation_lines').select('*').eq('quotation_id', id).order('created_at'),
+    all(() => db().from('quotation_lines').select('*').eq('quotation_id', id).order('created_at')),
   ])
   if (q.error) throw q.error
   if (lines.error) throw lines.error
@@ -185,8 +185,8 @@ export interface PastPrice {
 /** Prices on earlier invoices and quotations, newest first — the form reuses them. */
 export async function fetchPastPrices(): Promise<PastPrice[]> {
   const [inv, quo] = await Promise.all([
-    db().from('invoice_lines').select('product_id, unit_price_baisa, created_at, sales_invoices(customer_id, date, status)'),
-    db().from('quotation_lines').select('product_id, unit_price_baisa, created_at, quotations(customer_id, date)'),
+    all(() => db().from('invoice_lines').select('product_id, unit_price_baisa, created_at, sales_invoices(customer_id, date, status)')),
+    all(() => db().from('quotation_lines').select('product_id, unit_price_baisa, created_at, quotations(customer_id, date)')),
   ])
   if (inv.error) throw inv.error
   if (quo.error) throw quo.error
@@ -466,10 +466,12 @@ export async function markReminded(customerId: string) {
 /** Every line of every invoice or quotation, for the Excel export (with the batch numbers each invoice line came from). */
 export async function fetchExportLines(kind: 'invoice' | 'quote') {
   if (kind === 'invoice') {
-    const { data, error } = await db()
-      .from('invoice_lines')
-      .select('invoice_id, product_id, qty, unit_price_baisa, discount_baisa, vat_baisa, created_at, invoice_line_lots(stock_lots(lot_code))')
-      .order('created_at')
+    const { data, error } = await all(() =>
+      db()
+        .from('invoice_lines')
+        .select('invoice_id, product_id, qty, unit_price_baisa, discount_baisa, vat_baisa, created_at, invoice_line_lots(stock_lots(lot_code))')
+        .order('created_at'),
+    )
     if (error) throw error
     return data.map((l) => ({
       docId: l.invoice_id as string,
@@ -483,7 +485,7 @@ export async function fetchExportLines(kind: 'invoice' | 'quote') {
         .filter((x): x is string => !!x),
     }))
   }
-  const { data, error } = await db().from('quotation_lines').select('quotation_id, product_id, qty, unit_price_baisa, created_at').order('created_at')
+  const { data, error } = await all(() => db().from('quotation_lines').select('quotation_id, product_id, qty, unit_price_baisa, created_at').order('created_at'))
   if (error) throw error
   return data.map((l) => ({
     docId: l.quotation_id as string,

@@ -1,6 +1,6 @@
 import type { Unit } from '../domain/quantity'
 import { toCamel } from './case'
-import { db } from './client'
+import { all, db } from './client'
 import { INVENTORY_KEY, type Lot, toLot } from './inventory'
 import { invalidate } from './useQuery'
 
@@ -84,8 +84,8 @@ const toBatch = (r: Record<string, unknown>): Batch => {
 
 export async function fetchBatches(): Promise<Array<Batch & { qcStatus: Lot['qcStatus'] | null; remaining: number }>> {
   const [b, lots] = await Promise.all([
-    db().from('production_batches').select('*').order('production_date', { ascending: false }).order('batch_no', { ascending: false }),
-    db().from('stock_lots').select('id, qc_status, qty_remaining').eq('source_type', 'production'),
+    all(() => db().from('production_batches').select('*').order('production_date', { ascending: false }).order('batch_no', { ascending: false })),
+    all(() => db().from('stock_lots').select('id, qc_status, qty_remaining').eq('source_type', 'production')),
   ])
   if (b.error) throw b.error
   if (lots.error) throw lots.error

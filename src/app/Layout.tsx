@@ -1,5 +1,5 @@
 import { Ellipsis } from 'lucide-react'
-import type { CSSProperties } from 'react'
+import { type CSSProperties, Suspense } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { MyTasksButton } from '../features/tasks/MyTasksButton'
 import { t } from '../i18n/index'
@@ -100,7 +100,15 @@ export function Layout() {
           </div>
           <UpdateBanner />
           <BackupReminder />
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="flex min-h-[40vh] items-center justify-center text-brand-800" role="status" aria-label={t('جارٍ التحميل…', 'Loading…')}>
+                <LogoMark className="h-16 w-8 animate-pulse" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </div>
       </main>
       <BottomBar />

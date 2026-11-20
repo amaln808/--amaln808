@@ -1,5 +1,5 @@
 import { toCamel } from './case'
-import { db } from './client'
+import { all, db } from './client'
 import { uploadFile } from './files'
 import { type PaymentMethod, SUPPLIERS_KEY } from './inventory'
 import { enqueue, flushOutbox, registerOutboxHandler } from './outbox'
@@ -33,7 +33,7 @@ export const EXPENSES_KEY = 'expenses'
 /** Every expense with its categories and the suppliers that can be picked. */
 export async function fetchExpenses() {
   const [e, c, s] = await Promise.all([
-    db().from('expenses').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }),
+    all(() => db().from('expenses').select('*').order('date', { ascending: false }).order('created_at', { ascending: false })),
     db().from('expense_categories').select('*').order('name'),
     db().from('suppliers').select('id, name, active, last_expense_category_id').order('name'),
   ])

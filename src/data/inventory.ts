@@ -1,7 +1,7 @@
 import type { PriceLine } from '../domain/supplierPrices'
 import type { Unit } from '../domain/quantity'
 import { toCamel, toSnake } from './case'
-import { db } from './client'
+import { all, db } from './client'
 import { enqueue, flushOutbox, registerOutboxHandler } from './outbox'
 import { invalidate } from './useQuery'
 
@@ -107,7 +107,7 @@ export async function fetchItemsWithStock(): Promise<ItemWithStock[]> {
 
 /** All lots with stock left (for alerts and FEFO previews). */
 export async function fetchOpenLots(): Promise<Lot[]> {
-  const { data, error } = await db().from('stock_lots').select('*').gt('qty_remaining', 0)
+  const { data, error } = await all(() => db().from('stock_lots').select('*').gt('qty_remaining', 0))
   if (error) throw error
   return data.map(toLot)
 }
@@ -115,7 +115,7 @@ export async function fetchOpenLots(): Promise<Lot[]> {
 export async function fetchItemDetail(id: string) {
   const [item, lots, moves] = await Promise.all([
     db().from('items').select('*').eq('id', id).single(),
-    db().from('stock_lots').select('*').eq('item_id', id).order('received_date', { ascending: false }),
+    all(() => db().from('stock_lots').select('*').eq('item_id', id).order('received_date', { ascending: false })),
     db().from('stock_movements').select('*').eq('item_id', id).order('date', { ascending: false }).order('created_at', { ascending: false }).limit(200),
   ])
   if (item.error) throw item.error
@@ -202,8 +202,8 @@ export const SUPPLIERS_KEY = 'suppliers'
 export async function fetchSuppliers(): Promise<SupplierWithBalance[]> {
   const [s, p, pay] = await Promise.all([
     db().from('suppliers').select('*').order('name'),
-    db().from('purchases').select('supplier_id, total_baisa'),
-    db().from('supplier_payments').select('supplier_id, amount_baisa'),
+    all(() => db().from('purchases').select('supplier_id, total_baisa')),
+    all(() => db().from('supplier_payments').select('supplier_id, amount_baisa')),
   ])
   for (const r of [s, p, pay]) if (r.error) throw r.error
   const sum = (rows: Array<Record<string, unknown>>, key: string) => {
@@ -257,8 +257,8 @@ const toPayment = (r: Record<string, unknown>): SupplierPayment => {
 export async function fetchSupplierDetail(id: string) {
   const [s, p, pay] = await Promise.all([
     db().from('suppliers').select('*').eq('id', id).single(),
-    db().from('purchases').select('*').eq('supplier_id', id).order('date', { ascending: false }),
-    db().from('supplier_payments').select('*').eq('supplier_id', id).order('date', { ascending: false }),
+    all(() => db().from('purchases').select('*').eq('supplier_id', id).order('date', { ascending: false })),
+    all(() => db().from('supplier_payments').select('*').eq('supplier_id', id).order('date', { ascending: false })),
   ])
   for (const r of [s, p, pay]) if (r.error) throw r.error
   return {
@@ -394,7 +394,7 @@ export async function fetchLastPurchasePrices(): Promise<Map<string, { unitCostB
 
 /** Every purchase line with its supplier and date, for comparing suppliers' prices (key under INVENTORY_KEY so purchases refresh it). */
 export async function fetchPurchasePrices(): Promise<PriceLine[]> {
-  const { data, error } = await db().from('purchase_lines').select('item_id, qty, unit_cost_baisa, vat_rate, created_at, purchases!inner(date, supplier_id)')
+  const { data, error } = await all(() => db().from('purchase_lines').select('item_id, qty, unit_cost_baisa, vat_rate, created_at, purchases!inner(date, supplier_id)'))
   if (error) throw error
   return data.map((r) => {
     const p = r.purchases as unknown as { date: string; supplier_id: string }
@@ -413,8 +413,8 @@ export async function fetchPurchasePrices(): Promise<PriceLine[]> {
 export async function fetchPurchaseDetail(id: string) {
   const [p, lines, pay] = await Promise.all([
     db().from('purchases').select('*').eq('id', id).single(),
-    db().from('purchase_lines').select('*').eq('purchase_id', id),
-    db().from('supplier_payments').select('*').eq('purchase_id', id).order('date'),
+    all(() => db().from('purchase_lines').select('*').eq('purchase_id', id)),
+    all(() => db().from('supplier_payments').select('*').eq('purchase_id', id).order('date')),
   ])
   for (const r of [p, lines, pay]) if (r.error) throw r.error
   return {

@@ -1,7 +1,7 @@
 import { addDays } from 'date-fns'
 import { iso, type Recurrence } from '../domain/schedule'
 import { toCamel, toSnake } from './case'
-import { db } from './client'
+import { all, db } from './client'
 import { enqueue, flushOutbox, registerOutboxHandler } from './outbox'
 import { invalidate } from './useQuery'
 
@@ -62,7 +62,7 @@ export async function fetchSchedule(): Promise<ScheduleBundle> {
   const since = iso(addDays(new Date(), -400))
   const [tasks, done, agreements, products] = await Promise.all([
     db().from('tasks').select('*').order('start_date'),
-    db().from('task_completions').select('task_id, due_date').gte('due_date', since),
+    all(() => db().from('task_completions').select('task_id, due_date').gte('due_date', since)),
     db().from('agreements').select('*').order('end_date'),
     db().from('items').select('id, name, name_en').eq('type', 'finished').eq('active', true).order('name'),
   ])

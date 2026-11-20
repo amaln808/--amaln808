@@ -327,6 +327,8 @@ src/
   - `backup.yml`: أسبوعياً (الخميس ليلاً) `scripts/backup.sh` ← ملف مشفّر `zawrda-backup-*.tar.gz.gpg` كـ Artifact لمدة 90 يوماً. الفك: `gpg -d … | tar xz`، والاستعادة: `scripts/db-restore.sh` (اختُبرت ذهاباً وإياباً على Postgres محلي).
   - الأسرار المعتمدة: **`SUPABASE_ACCESS_TOKEN`** (مفتاح شخصي `sbp_` بصلاحية قاعدة البيانات — الترحيلات `scripts/db-migrate-api.py` والنسخ الاحتياطي `scripts/backup-api.py` عبر Management API، **بلا كلمة مرور قاعدة البيانات**)، `SUPABASE_SECRET_KEY` (تنزيل الصور)، `BACKUP_PASSPHRASE`. مسار `psql`/`pg_dump` بـ `SUPABASE_DB_PASSWORD`/`SUPABASE_DB_URL` باقٍ احتياطياً لكن كلمة المرور الحالية مرفوضة — لا يُعتمد عليه.
   - صيغة النسخة عبر الـ API: `tables/<جدول>.json` + `manifest.json`؛ الاستعادة `scripts/db-restore-api.py <مجلد> <project-ref>` (معاملة واحدة، `session_replication_role = replica`، لا تمس `members`) — مُختبرة ذهاباً وإياباً محلياً.
+- **حد 1000 صف:** Supabase يُرجع 1000 صف على الأكثر لكل استعلام **دون خطأ**؛ كل قائمة لجدول قد يكبر تُقرأ عبر `all(() => db().from(...)...)` في `src/data/client.ts` (صفحات مرتبة بـ `id`، مختبر في `all.test.ts`). أي استعلام قائمة جديد لجدول ينمو يجب أن يستعملها.
+- **التحميل:** الصفحات تُحمَّل عند فتحها (`React.lazy` في `App.tsx` + `Suspense` في `Layout`)؛ الحزمة الأولى ≈ 270 ك.ب بدل 1.5 م.ب، والـ Service Worker يحفظ كل الصفحات للعمل دون اتصال.
 - **Supabase يرفض `UPDATE`/`DELETE` بلا `WHERE`** حتى داخل الدوال (pg-safeupdate) — اكتب `where true` عند القصد؛ اختبار في `security.test.ts` يفحص كل الدوال.
 - **الأمان في قاعدة البيانات:** أول حساب = المالكة (`bootstrap_owner`)؛ `is_member()` في كل سياسة؛ `anon` بلا أي صلاحية سوى `ping()`؛ سجل التعديلات بـ Trigger لا يُعدَّل.
 
